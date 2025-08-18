@@ -1,0 +1,31 @@
+name: Build Only - No Cache
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      
+      - name: Remove any lock files
+        run: rm -f package-lock.json yarn.lock pnpm-lock.yaml
+      
+      - name: Fresh install
+        run: npm install --no-package-lock
+      
+      - name: List installed packages
+        run: npm list --depth=0 | grep upstash || echo "Upstash not found"
+      
+      - name: Build
+        run: npm run build
+        
+      - name: Success
+        run: echo "✅ Build completed successfully!"
