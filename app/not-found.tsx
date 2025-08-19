@@ -17,12 +17,12 @@ export default function NotFound() {
 
         {/* Error Message */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-4">Oops! This destination doesn't exist</h2>
+          <h2 className="text-3xl font-bold mb-4">Oops! This destination doesn&apos;t exist</h2>
           <p className="text-xl text-gray-300 mb-6">
-            Looks like this page took a wrong turn. Let's get you back on track for your next adventure!
+            Looks like this page took a wrong turn. Let&apos;s get you back on track for your next adventure!
           </p>
           <p className="text-gray-400">
-            The page you're looking for might have been moved, deleted, or doesn't exist.
+            The page you&apos;re looking for might have been moved, deleted, or doesn&apos;t exist.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default function NotFound() {
 
         {/* Footer */}
         <div className="mt-8 text-gray-500 text-sm">
-          <p>Still lost? Contact our support team and we'll help you find your way!</p>
+          <p>Still lost? Contact our support team and we&apos;ll help you find your way!</p>
         </div>
       </div>
     </div>

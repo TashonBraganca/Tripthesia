@@ -12,7 +12,7 @@ export function CTA() {
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-indigo-200">
             Join thousands of travelers who trust Tripthesia to create their perfect itineraries. 
-            Start planning your dream trip today - it's free to get started!
+            Start planning your dream trip today - it&apos;s free to get started!
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Button

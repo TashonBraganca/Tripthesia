@@ -103,7 +103,7 @@ export function Features() {
           </h2>
           
           <p className="mt-6 text-xl leading-8 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            From AI-powered itineraries to real-time pricing, we've revolutionized travel planning with cutting-edge technology and global partnerships.
+            From AI-powered itineraries to real-time pricing, we&apos;ve revolutionized travel planning with cutting-edge technology and global partnerships.
           </p>
         </div>
 

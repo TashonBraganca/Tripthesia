@@ -150,7 +150,7 @@ export default function UpgradePage() {
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-2">Can I cancel anytime?</h3>
               <p className="text-gray-300">
-                Yes! You can cancel your subscription at any time. You'll continue to have access to premium features until the end of your billing period.
+                Yes! You can cancel your subscription at any time. You&apos;ll continue to have access to premium features until the end of your billing period.
               </p>
             </div>
             
@@ -164,7 +164,7 @@ export default function UpgradePage() {
             <div className="bg-gray-800 rounded-lg p-6">
               <h3 className="text-lg font-semibold mb-2">Do you offer refunds?</h3>
               <p className="text-gray-300">
-                We offer a 7-day money-back guarantee. If you're not satisfied with your upgrade, contact us for a full refund.
+                We offer a 7-day money-back guarantee. If you&apos;re not satisfied with your upgrade, contact us for a full refund.
               </p>
             </div>
           </div>

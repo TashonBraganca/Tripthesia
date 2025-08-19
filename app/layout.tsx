@@ -82,7 +82,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <head>
-          <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+          <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
           <script dangerouslySetInnerHTML={{
             __html: `
               // Suppress Clerk warnings in production

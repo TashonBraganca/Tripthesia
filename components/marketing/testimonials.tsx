@@ -119,7 +119,7 @@ export function Testimonials() {
                 Ready to Start Your Adventure?
               </h3>
               <p className="text-indigo-100 mb-6 max-w-2xl mx-auto">
-                Join thousands of travelers who've discovered the future of trip planning. 
+                Join thousands of travelers who&apos;ve discovered the future of trip planning. 
                 Create your first AI-powered itinerary today!
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
