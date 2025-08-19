@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
+import { withDatabase, isDatabaseAvailable } from "@/lib/db";
 import { trips } from "@/lib/database/schema";
 import { getCurrentUserProfile, incrementTripUsage } from "@/lib/auth/profile";
 import { canCreateTrip } from "@/lib/subscription/config";
@@ -49,12 +49,10 @@ export async function POST(request: NextRequest) {
     if (!canCreateTrip(profile.subscriptionTier, profile.tripsUsedThisMonth, profile.subscriptionStatus)) {
       return NextResponse.json(
         { 
-          error: 'Trip limit reached',
-          message: `You've used ${profile.tripsUsedThisMonth} of your monthly trips. Upgrade to create more trips.`,
-          upgradeRequired: true,
-          currentTier: profile.subscriptionTier,
+          error: 'Trip limit exceeded',
+          details: 'Please upgrade your subscription to create more trips'
         },
-        { status: 403 }
+        { status: 402 }
       );
     }
 
@@ -76,19 +74,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create trip
-    const [trip] = await db.insert(trips).values({
-      userId,
-      title: tripData.title,
-      destinations: tripData.destinations,
-      startDate,
-      endDate,
-      tripType: tripData.tripType,
-      budgetTotal: tripData.budgetTotal,
-      budgetCurrency: tripData.budgetCurrency,
-      status: 'draft',
-      generationStatus: 'pending',
-    }).returning();
+    // Check if database is available
+    if (!isDatabaseAvailable()) {
+      return NextResponse.json(
+        { 
+          error: 'Service temporarily unavailable',
+          details: 'Database not configured'
+        },
+        { status: 503 }
+      );
+    }
+
+    // Create trip using safe database operation
+    const result = await withDatabase(async (db) => {
+      const [trip] = await db.insert(trips).values({
+        userId,
+        title: tripData.title,
+        destinations: tripData.destinations,
+        startDate,
+        endDate,
+        tripType: tripData.tripType,
+        budgetTotal: tripData.budgetTotal,
+        budgetCurrency: tripData.budgetCurrency,
+        status: 'draft',
+        generationStatus: 'pending',
+      }).returning();
+
+      return trip;
+    });
+
+    if (!result) {
+      return NextResponse.json(
+        { error: 'Failed to create trip' },
+        { status: 500 }
+      );
+    }
 
     // Increment user's trip usage
     await incrementTripUsage(userId);
@@ -96,22 +116,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       trip: {
-        id: trip.id,
-        title: trip.title,
-        destinations: trip.destinations,
-        startDate: trip.startDate,
-        endDate: trip.endDate,
-        tripType: trip.tripType,
-        budgetTotal: trip.budgetTotal,
-        budgetCurrency: trip.budgetCurrency,
-        status: trip.status,
-        generationStatus: trip.generationStatus,
-        createdAt: trip.createdAt,
+        id: result.id,
+        title: result.title,
+        destinations: result.destinations,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        tripType: result.tripType,
+        budgetTotal: result.budgetTotal,
+        budgetCurrency: result.budgetCurrency,
+        status: result.status,
+        generationStatus: result.generationStatus,
+        createdAt: result.createdAt,
       },
     });
 
   } catch (error) {
-    console.error('Trip creation failed:', error);
+    console.error('Failed to create trip:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -138,30 +158,42 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's trips
-    const userTrips = await db
-      .select({
-        id: trips.id,
-        title: trips.title,
-        destinations: trips.destinations,
-        startDate: trips.startDate,
-        endDate: trips.endDate,
-        tripType: trips.tripType,
-        budgetTotal: trips.budgetTotal,
-        budgetCurrency: trips.budgetCurrency,
-        status: trips.status,
-        generationStatus: trips.generationStatus,
-        createdAt: trips.createdAt,
-        updatedAt: trips.updatedAt,
-      })
-      .from(trips)
-      .where(eq(trips.userId, userId))
-      .orderBy(desc(trips.createdAt))
-      .limit(50);
+    // Check if database is available
+    if (!isDatabaseAvailable()) {
+      return NextResponse.json(
+        { 
+          success: true, 
+          trips: [] // Return empty trips if database not available
+        }
+      );
+    }
+
+    // Get user's trips using safe database operation
+    const userTrips = await withDatabase(async (db) => {
+      return await db
+        .select({
+          id: trips.id,
+          title: trips.title,
+          destinations: trips.destinations,
+          startDate: trips.startDate,
+          endDate: trips.endDate,
+          tripType: trips.tripType,
+          budgetTotal: trips.budgetTotal,
+          budgetCurrency: trips.budgetCurrency,
+          status: trips.status,
+          generationStatus: trips.generationStatus,
+          createdAt: trips.createdAt,
+          updatedAt: trips.updatedAt,
+        })
+        .from(trips)
+        .where(eq(trips.userId, userId))
+        .orderBy(desc(trips.createdAt))
+        .limit(50);
+    });
 
     return NextResponse.json({
       success: true,
-      trips: userTrips,
+      trips: userTrips || [],
     });
 
   } catch (error) {

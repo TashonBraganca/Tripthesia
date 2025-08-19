@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:safe": "cp .env.build .env.local && next build && rm -f .env.local",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

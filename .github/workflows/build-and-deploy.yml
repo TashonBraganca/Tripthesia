@@ -1,0 +1,59 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build project
+        env:
+          # Build-time environment variables (safe placeholders)
+          NEXT_PUBLIC_APP_URL: https://tripthesia.vercel.app
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
+          UPSTASH_REDIS_REST_URL: https://build.upstash.io
+          UPSTASH_REDIS_REST_TOKEN: build_token
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_build_key
+          CLERK_SECRET_KEY: sk_build_key
+          OPENAI_API_KEY: sk-build-key
+          FOURSQUARE_API_KEY: build_key
+          NEXT_PUBLIC_MAPBOX_TOKEN: pk.build_token
+          RAZORPAY_KEY_ID: rzp_build_key
+          RAZORPAY_KEY_SECRET: build_secret
+          NEXT_PUBLIC_RAZORPAY_KEY_ID: rzp_build_key
+        run: npm run build
+
+      - name: Build success
+        run: echo "🎉 Build completed successfully!"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Deploy to Production
+        run: echo "🚀 Ready for production deployment!"

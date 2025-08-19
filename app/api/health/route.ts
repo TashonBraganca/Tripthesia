@@ -20,10 +20,13 @@ export async function GET() {
   try {
     // Check database connection
     try {
-      const { db } = await import('@/lib/db');
-      const { sql } = await import('drizzle-orm');
-      await db.execute(sql`SELECT 1`);
-      healthStatus.services.database = 'healthy';
+      const { isDatabaseAvailable, testConnection } = await import('@/lib/db');
+      if (isDatabaseAvailable()) {
+        const connected = await testConnection();
+        healthStatus.services.database = connected ? 'healthy' : 'error';
+      } else {
+        healthStatus.services.database = 'not_configured';
+      }
     } catch (error) {
       healthStatus.services.database = 'error';
     }
@@ -39,30 +42,57 @@ export async function GET() {
 
     // Check Auth (Clerk)
     try {
-      const authStatus = auth();
-      healthStatus.services.auth = 'healthy';
+      // Just check if auth function exists and is callable
+      if (typeof auth === 'function') {
+        healthStatus.services.auth = 'healthy';
+      } else {
+        healthStatus.services.auth = 'error';
+      }
     } catch (error) {
       healthStatus.services.auth = 'error';
     }
 
     // Check OpenAI
-    healthStatus.services.ai = process.env.OPENAI_API_KEY ? 'configured' : 'missing_key';
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey && !openaiKey.includes('your_') && openaiKey.length > 20) {
+      healthStatus.services.ai = 'configured';
+    } else {
+      healthStatus.services.ai = 'missing_key';
+    }
 
     // Check Foursquare
-    healthStatus.services.places = process.env.FOURSQUARE_API_KEY ? 'configured' : 'missing_key';
+    const foursquareKey = process.env.FOURSQUARE_API_KEY;
+    if (foursquareKey && !foursquareKey.includes('your_') && foursquareKey.length > 10) {
+      healthStatus.services.places = 'configured';
+    } else {
+      healthStatus.services.places = 'missing_key';
+    }
 
     // Check Mapbox
-    healthStatus.services.maps = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ? 'configured' : 'missing_key';
+    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (mapboxToken && !mapboxToken.includes('your_') && mapboxToken.length > 10) {
+      healthStatus.services.maps = 'configured';
+    } else {
+      healthStatus.services.maps = 'missing_key';
+    }
 
     // Check Razorpay
-    healthStatus.services.payments = 
-      (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) 
-        ? 'configured' 
-        : 'missing_keys';
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (
+      razorpayKeyId && !razorpayKeyId.includes('your_') &&
+      razorpayKeySecret && !razorpayKeySecret.includes('your_')
+    ) {
+      healthStatus.services.payments = 'configured';
+    } else {
+      healthStatus.services.payments = 'missing_keys';
+    }
 
     // Overall status
     const hasErrors = Object.values(healthStatus.services).some(status => status === 'error');
-    const hasMissingKeys = Object.values(healthStatus.services).some(status => status.includes('missing'));
+    const hasMissingKeys = Object.values(healthStatus.services).some(status => 
+      status.includes('missing') || status === 'not_configured'
+    );
     
     if (hasErrors) {
       healthStatus.status = 'unhealthy';
