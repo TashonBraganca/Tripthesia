@@ -1,0 +1,39 @@
+{
+  "name": "tripthesia",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:generate": "cd apps/web && pnpm drizzle-kit generate",
+    "db:migrate": "cd apps/web && pnpm drizzle-kit migrate",
+    "db:seed": "cd apps/web && tsx infra/seed/index.ts",
+    "pre-deploy": "tsx scripts/check-deployment.ts",
+    "launch-check": "curl -H \"Authorization: Bearer ${ADMIN_SECRET}\" ${NEXT_PUBLIC_APP_URL}/api/launch-checklist"
+  },
+  "devDependencies": {
+    "@turbo/gen": "^1.10.12",
+    "prettier": "^3.0.3",
+    "turbo": "latest",
+    "typescript": "^5.2.2"
+  },
+  "packageManager": "pnpm@8.10.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.10",
+    "@radix-ui/react-tabs": "^1.0.4",
+    "@types/pg": "^8.15.5",
+    "drizzle-orm": "^0.29.5",
+    "pg": "^8.16.3",
+    "razorpay": "^2.9.6"
+  }
+}

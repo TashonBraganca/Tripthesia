@@ -1,0 +1,3 @@
+{
+  "extends": ["@tripthesia/config/eslint", "next/core-web-vitals"]
+}
