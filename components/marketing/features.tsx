@@ -1,3 +1,5 @@
+"use client"
+
 import { 
   MapPinIcon, 
   SparklesIcon, 
@@ -9,6 +11,8 @@ import {
   Users,
   Download
 } from "lucide-react"
+import { motion } from "framer-motion"
+import { fadeInUp, staggerContainer, cardHover, scaleIn } from "@/lib/motion-variants"
 
 const features = [
   {
@@ -89,33 +93,70 @@ export function Features() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-6 py-2 mb-8">
+        <motion.div 
+          className="mx-auto max-w-3xl text-center"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <motion.div 
+            className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-900/20 px-6 py-2 mb-8"
+            variants={scaleIn}
+          >
             <SparklesIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2" />
             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
               Powered by Advanced AI
             </span>
-          </div>
+          </motion.div>
           
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl">
+          <motion.h2 
+            className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-6xl"
+            variants={fadeInUp}
+          >
             Everything you need to plan the
             <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"> perfect trip</span>
-          </h2>
+          </motion.h2>
           
-          <p className="mt-6 text-xl leading-8 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <motion.p 
+            className="mt-6 text-xl leading-8 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
+            variants={fadeInUp}
+          >
             From AI-powered itineraries to real-time pricing, we&apos;ve revolutionized travel planning with cutting-edge technology and global partnerships.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
-        <div className="mx-auto mt-20 max-w-7xl">
+        <motion.div 
+          className="mx-auto mt-20 max-w-7xl"
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div
+                <motion.div
                   key={feature.name}
-                  className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition-all duration-500 hover:scale-105 animate-fade-in-up"
-                  style={{ animationDelay: feature.delay }}
+                  className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700"
+                  variants={cardHover}
+                  initial="rest"
+                  whileHover="hover"
+                  whileInView={{ 
+                    opacity: 1, 
+                    y: 0,
+                    transition: { 
+                      duration: 0.5, 
+                      delay: index * 0.1,
+                      ease: "easeOut" 
+                    }
+                  }}
+                  viewport={{ once: true }}
+                  style={{ 
+                    opacity: 0, 
+                    y: 50 
+                  }}
                 >
                   {/* Gradient Background on Hover */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-2xl`} />
@@ -137,24 +178,44 @@ export function Features() {
 
                   {/* Decorative Element */}
                   <div className="absolute top-4 right-4 w-2 h-2 bg-gray-200 dark:bg-gray-600 rounded-full group-hover:bg-indigo-400 transition-colors duration-300" />
-                </div>
+                </motion.div>
               );
             })}
           </div>
-        </div>
+        </motion.div>
 
         {/* Call to Action */}
-        <div className="text-center mt-20">
+        <motion.div 
+          className="text-center mt-20"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
           <div className="inline-flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <motion.button 
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg"
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+              }}
+              whileTap={{ scale: 0.95 }}
+            >
               <SparklesIcon className="mr-2 h-5 w-5" />
               Start Planning Now
-            </button>
-            <button className="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 shadow-lg">
+            </motion.button>
+            <motion.button 
+              className="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 font-semibold rounded-xl transition-all duration-300 shadow-lg"
+              whileHover={{ 
+                scale: 1.05,
+                backgroundColor: "rgb(249 250 251)"
+              }}
+              whileTap={{ scale: 0.95 }}
+            >
               View Live Demo
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
     </div>
