@@ -75,6 +75,36 @@ NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key_id
 # External APIs
 FOURSQUARE_API_KEY=your_foursquare_key
 NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token
+
+# Flight Search APIs (For real flight pricing)
+AMADEUS_CLIENT_ID=your_amadeus_client_id
+AMADEUS_CLIENT_SECRET=your_amadeus_client_secret
+RAPIDAPI_KEY=your_rapidapi_key
+```
+
+### Flight API Setup (Optional - Enhanced Features)
+
+For real flight pricing and booking links, configure one of these APIs:
+
+#### Option 1: Amadeus API (Recommended)
+1. Visit [Amadeus for Developers](https://developers.amadeus.com/)
+2. Create free account (1000 transactions/month)
+3. Create new application to get Client ID and Secret
+4. Add to `.env.local`:
+   ```bash
+   AMADEUS_CLIENT_ID=your_client_id_here
+   AMADEUS_CLIENT_SECRET=your_client_secret_here
+   ```
+
+#### Option 2: RapidAPI SkyScanner
+1. Visit [RapidAPI SkyScanner](https://rapidapi.com/skyscanner/api/skyscanner80)
+2. Subscribe to free tier (100 requests/day)
+3. Add to `.env.local`:
+   ```bash
+   RAPIDAPI_KEY=your_rapidapi_key_here
+   ```
+
+**Note**: The app works without these APIs using enhanced mock flight data.
 ```
 
 ## Pricing Tiers
@@ -139,7 +169,7 @@ vercel --prod
 
 ### Search APIs
 - `POST /api/places/search` - Search places
-- `POST /api/flights/search` - Search flights (mock data)
+- `POST /api/flights/search` - Search flights (real pricing with API fallbacks)
 
 ## Development
 

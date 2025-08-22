@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git fetch:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
