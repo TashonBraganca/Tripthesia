@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { MapPin, Calendar, Users, Plane, Car, Hotel, MapIcon, Clock, ChevronRight, ChevronDown } from 'lucide-react';
+import { MapPin, Calendar, Users, Plane, Car, Hotel, MapIcon, Clock, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
@@ -321,11 +321,83 @@ export default function NewTripPage() {
   );
 }
 
+// Location interface for autocomplete
+interface Location {
+  id: string;
+  name: string;
+  city: string;
+  state?: string;
+  country: string;
+  formatted: string;
+}
+
 // Enhanced Step Components
 function LocationStep({ tripData, setTripData, onNext }: any) {
   const [tripType, setTripType] = useState('');
   const [validationErrors, setValidationErrors] = useState<any>({});
   const [touched, setTouched] = useState<any>({});
+  
+  // Autocomplete states
+  const [fromSuggestions, setFromSuggestions] = useState<Location[]>([]);
+  const [toSuggestions, setToSuggestions] = useState<Location[]>([]);
+  const [fromQuery, setFromQuery] = useState('');
+  const [toQuery, setToQuery] = useState('');
+  const [showFromSuggestions, setShowFromSuggestions] = useState(false);
+  const [showToSuggestions, setShowToSuggestions] = useState(false);
+  const [loadingFrom, setLoadingFrom] = useState(false);
+  const [loadingTo, setLoadingTo] = useState(false);
+  
+  const fromInputRef = useRef<HTMLInputElement>(null);
+  const toInputRef = useRef<HTMLInputElement>(null);
+
+  // Popular destinations database
+  const popularLocations: Location[] = [
+    // United States
+    { id: '1', name: 'New York', city: 'New York', state: 'New York', country: 'United States', formatted: 'New York, New York, United States' },
+    { id: '2', name: 'Los Angeles', city: 'Los Angeles', state: 'California', country: 'United States', formatted: 'Los Angeles, California, United States' },
+    { id: '3', name: 'Chicago', city: 'Chicago', state: 'Illinois', country: 'United States', formatted: 'Chicago, Illinois, United States' },
+    { id: '4', name: 'Miami', city: 'Miami', state: 'Florida', country: 'United States', formatted: 'Miami, Florida, United States' },
+    { id: '5', name: 'San Francisco', city: 'San Francisco', state: 'California', country: 'United States', formatted: 'San Francisco, California, United States' },
+    { id: '6', name: 'Las Vegas', city: 'Las Vegas', state: 'Nevada', country: 'United States', formatted: 'Las Vegas, Nevada, United States' },
+    { id: '7', name: 'Seattle', city: 'Seattle', state: 'Washington', country: 'United States', formatted: 'Seattle, Washington, United States' },
+    { id: '8', name: 'Boston', city: 'Boston', state: 'Massachusetts', country: 'United States', formatted: 'Boston, Massachusetts, United States' },
+    
+    // Europe
+    { id: '9', name: 'London', city: 'London', country: 'United Kingdom', formatted: 'London, United Kingdom' },
+    { id: '10', name: 'Paris', city: 'Paris', country: 'France', formatted: 'Paris, France' },
+    { id: '11', name: 'Rome', city: 'Rome', country: 'Italy', formatted: 'Rome, Italy' },
+    { id: '12', name: 'Barcelona', city: 'Barcelona', country: 'Spain', formatted: 'Barcelona, Spain' },
+    { id: '13', name: 'Amsterdam', city: 'Amsterdam', country: 'Netherlands', formatted: 'Amsterdam, Netherlands' },
+    { id: '14', name: 'Berlin', city: 'Berlin', country: 'Germany', formatted: 'Berlin, Germany' },
+    { id: '15', name: 'Prague', city: 'Prague', country: 'Czech Republic', formatted: 'Prague, Czech Republic' },
+    { id: '16', name: 'Vienna', city: 'Vienna', country: 'Austria', formatted: 'Vienna, Austria' },
+    
+    // Asia
+    { id: '17', name: 'Tokyo', city: 'Tokyo', country: 'Japan', formatted: 'Tokyo, Japan' },
+    { id: '18', name: 'Bangkok', city: 'Bangkok', country: 'Thailand', formatted: 'Bangkok, Thailand' },
+    { id: '19', name: 'Singapore', city: 'Singapore', country: 'Singapore', formatted: 'Singapore, Singapore' },
+    { id: '20', name: 'Hong Kong', city: 'Hong Kong', country: 'Hong Kong', formatted: 'Hong Kong, Hong Kong' },
+    { id: '21', name: 'Seoul', city: 'Seoul', country: 'South Korea', formatted: 'Seoul, South Korea' },
+    { id: '22', name: 'Mumbai', city: 'Mumbai', state: 'Maharashtra', country: 'India', formatted: 'Mumbai, Maharashtra, India' },
+    { id: '23', name: 'Dubai', city: 'Dubai', country: 'United Arab Emirates', formatted: 'Dubai, United Arab Emirates' },
+    
+    // Australia & New Zealand
+    { id: '24', name: 'Sydney', city: 'Sydney', state: 'New South Wales', country: 'Australia', formatted: 'Sydney, New South Wales, Australia' },
+    { id: '25', name: 'Melbourne', city: 'Melbourne', state: 'Victoria', country: 'Australia', formatted: 'Melbourne, Victoria, Australia' },
+    { id: '26', name: 'Auckland', city: 'Auckland', country: 'New Zealand', formatted: 'Auckland, New Zealand' },
+    
+    // Canada
+    { id: '27', name: 'Toronto', city: 'Toronto', state: 'Ontario', country: 'Canada', formatted: 'Toronto, Ontario, Canada' },
+    { id: '28', name: 'Vancouver', city: 'Vancouver', state: 'British Columbia', country: 'Canada', formatted: 'Vancouver, British Columbia, Canada' },
+    
+    // South America
+    { id: '29', name: 'Rio de Janeiro', city: 'Rio de Janeiro', country: 'Brazil', formatted: 'Rio de Janeiro, Brazil' },
+    { id: '30', name: 'Buenos Aires', city: 'Buenos Aires', country: 'Argentina', formatted: 'Buenos Aires, Argentina' },
+    
+    // Africa
+    { id: '31', name: 'Cape Town', city: 'Cape Town', country: 'South Africa', formatted: 'Cape Town, South Africa' },
+    { id: '32', name: 'Cairo', city: 'Cairo', country: 'Egypt', formatted: 'Cairo, Egypt' }
+  ];
 
   const tripTypes = [
     { id: 'adventure', name: 'Adventure & Trekking', icon: '🏔️' },
@@ -335,6 +407,83 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     { id: 'family', name: 'Family Vacation', icon: '👨‍👩‍👧‍👦' },
     { id: 'foodie', name: 'Food & Wine', icon: '🍷' }
   ];
+
+  // Location search functionality
+  const searchLocations = (query: string, type: 'from' | 'to') => {
+    if (query.length < 2) {
+      if (type === 'from') {
+        setFromSuggestions([]);
+        setShowFromSuggestions(false);
+      } else {
+        setToSuggestions([]);
+        setShowToSuggestions(false);
+      }
+      return;
+    }
+
+    const filtered = popularLocations.filter(location => 
+      location.name.toLowerCase().includes(query.toLowerCase()) ||
+      location.city.toLowerCase().includes(query.toLowerCase()) ||
+      location.country.toLowerCase().includes(query.toLowerCase()) ||
+      (location.state && location.state.toLowerCase().includes(query.toLowerCase())) ||
+      location.formatted.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 5); // Limit to 5 suggestions
+
+    if (type === 'from') {
+      setFromSuggestions(filtered);
+      setShowFromSuggestions(true);
+      setLoadingFrom(false);
+    } else {
+      setToSuggestions(filtered);
+      setShowToSuggestions(true);
+      setLoadingTo(false);
+    }
+  };
+
+  const handleLocationSearch = (query: string, type: 'from' | 'to') => {
+    if (type === 'from') {
+      setFromQuery(query);
+      setLoadingFrom(query.length >= 2);
+    } else {
+      setToQuery(query);
+      setLoadingTo(query.length >= 2);
+    }
+
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      searchLocations(query, type);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  const selectLocation = (location: Location, type: 'from' | 'to') => {
+    if (type === 'from') {
+      setFromQuery(location.formatted);
+      setTripData({ ...tripData, from: location.formatted });
+      setShowFromSuggestions(false);
+      handleFieldChange('from', location.formatted);
+    } else {
+      setToQuery(location.formatted);
+      setTripData({ ...tripData, to: location.formatted });
+      setShowToSuggestions(false);
+      handleFieldChange('to', location.formatted);
+    }
+  };
+
+  const clearLocation = (type: 'from' | 'to') => {
+    if (type === 'from') {
+      setFromQuery('');
+      setTripData({ ...tripData, from: '' });
+      setShowFromSuggestions(false);
+      fromInputRef.current?.focus();
+    } else {
+      setToQuery('');
+      setTripData({ ...tripData, to: '' });
+      setShowToSuggestions(false);
+      toInputRef.current?.focus();
+    }
+  };
 
   // Enhanced validation with real-time feedback
   const validateField = (name: string, value: string) => {
@@ -382,7 +531,20 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     if (touched[name]) {
       validateField(name, value);
     }
+    
+    // Handle location search
+    if (name === 'from') {
+      handleLocationSearch(value, 'from');
+    } else if (name === 'to') {
+      handleLocationSearch(value, 'to');
+    }
   };
+
+  // Initialize query states with existing trip data
+  useEffect(() => {
+    setFromQuery(tripData.from || '');
+    setToQuery(tripData.to || '');
+  }, []);
 
   const handleFieldBlur = (name: string) => {
     setTouched((prev: any) => ({ ...prev, [name]: true }));
@@ -452,12 +614,20 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           </label>
           <div className="relative">
             <motion.input
+              ref={fromInputRef}
               type="text"
-              placeholder="New York, NY"
-              value={tripData.from || ''}
+              placeholder="Search cities (e.g. New York, Paris)"
+              value={fromQuery}
               onChange={(e) => handleFieldChange('from', e.target.value)}
-              onBlur={() => handleFieldBlur('from')}
-              className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
+              onBlur={() => {
+                handleFieldBlur('from');
+                // Hide suggestions after a delay to allow selection
+                setTimeout(() => setShowFromSuggestions(false), 200);
+              }}
+              onFocus={() => {
+                if (fromQuery.length >= 2) setShowFromSuggestions(true);
+              }}
+              className={`w-full pl-10 pr-10 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
                 validationErrors.from && touched.from
                   ? 'border-red-500 focus:ring-red-500 bg-red-50'
                   : tripData.from && !validationErrors.from
@@ -472,6 +642,35 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               }}
               whileTap={{ scale: 0.99 }}
             />
+            
+            {/* Search Icon */}
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+              {loadingFrom ? (
+                <motion.div
+                  className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <Search className="w-4 h-4 text-gray-400" />
+              )}
+            </div>
+
+            {/* Clear Button */}
+            {fromQuery && (
+              <motion.button
+                type="button"
+                onClick={() => clearLocation('from')}
+                className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <X className="w-3 h-3 text-gray-400" />
+              </motion.button>
+            )}
+
             {/* Success/Error Icon */}
             <motion.div 
               className="absolute right-3 top-1/2 transform -translate-y-1/2"
@@ -496,7 +695,39 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
                 </div>
               ) : null}
             </motion.div>
+
+            {/* Suggestions Dropdown */}
+            <AnimatePresence>
+              {showFromSuggestions && fromSuggestions.length > 0 && (
+                <motion.div
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {fromSuggestions.map((location, index) => (
+                    <motion.div
+                      key={location.id}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      onClick={() => selectLocation(location, 'from')}
+                      whileHover={{ backgroundColor: "#f9fafb" }}
+                    >
+                      <MapPin className="w-4 h-4 text-indigo-500 mr-3 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-gray-900">{location.city}</div>
+                        <div className="text-sm text-gray-500">{location.formatted}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+          
           {/* Error Message */}
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -524,12 +755,20 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           </label>
           <div className="relative">
             <motion.input
+              ref={toInputRef}
               type="text"
-              placeholder="Paris, France"
-              value={tripData.to || ''}
+              placeholder="Search destination (e.g. Paris, Tokyo)"
+              value={toQuery}
               onChange={(e) => handleFieldChange('to', e.target.value)}
-              onBlur={() => handleFieldBlur('to')}
-              className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
+              onBlur={() => {
+                handleFieldBlur('to');
+                // Hide suggestions after a delay to allow selection
+                setTimeout(() => setShowToSuggestions(false), 200);
+              }}
+              onFocus={() => {
+                if (toQuery.length >= 2) setShowToSuggestions(true);
+              }}
+              className={`w-full pl-10 pr-10 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
                 validationErrors.to && touched.to
                   ? 'border-red-500 focus:ring-red-500 bg-red-50'
                   : tripData.to && !validationErrors.to
@@ -544,6 +783,36 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               }}
               whileTap={{ scale: 0.99 }}
             />
+            
+            {/* Search Icon */}
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+              {loadingTo ? (
+                <motion.div
+                  className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <Search className="w-4 h-4 text-gray-400" />
+              )}
+            </div>
+
+            {/* Clear Button */}
+            {toQuery && (
+              <motion.button
+                type="button"
+                onClick={() => clearLocation('to')}
+                className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <X className="w-3 h-3 text-gray-400" />
+              </motion.button>
+            )}
+
+            {/* Success/Error Icon */}
             <motion.div 
               className="absolute right-3 top-1/2 transform -translate-y-1/2"
               initial={{ opacity: 0, scale: 0.5 }}
@@ -567,7 +836,40 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
                 </div>
               ) : null}
             </motion.div>
+
+            {/* Suggestions Dropdown */}
+            <AnimatePresence>
+              {showToSuggestions && toSuggestions.length > 0 && (
+                <motion.div
+                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {toSuggestions.map((location, index) => (
+                    <motion.div
+                      key={location.id}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      onClick={() => selectLocation(location, 'to')}
+                      whileHover={{ backgroundColor: "#f9fafb" }}
+                    >
+                      <MapPin className="w-4 h-4 text-indigo-500 mr-3 flex-shrink-0" />
+                      <div>
+                        <div className="font-medium text-gray-900">{location.city}</div>
+                        <div className="text-sm text-gray-500">{location.formatted}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+          
+          {/* Error Message */}
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{
