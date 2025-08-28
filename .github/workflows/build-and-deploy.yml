@@ -17,21 +17,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pre-build validation
+        run: pnpm run pre-build-check
 
       - name: Type check
-        run: npm run typecheck
+        run: pnpm typecheck
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Build project
         env:
           # Build-time environment variables (safe placeholders)
+          NODE_ENV: production
           NEXT_PUBLIC_APP_URL: https://tripthesia.vercel.app
           DATABASE_URL: postgresql://build:build@localhost:5432/build
           UPSTASH_REDIS_REST_URL: https://build.upstash.io
@@ -44,7 +53,18 @@ jobs:
           RAZORPAY_KEY_ID: rzp_build_key
           RAZORPAY_KEY_SECRET: build_secret
           NEXT_PUBLIC_RAZORPAY_KEY_ID: rzp_build_key
-        run: npm run build
+          # Flight API credentials (build-safe placeholders)
+          AMADEUS_CLIENT_ID: build_amadeus_client
+          AMADEUS_CLIENT_SECRET: build_amadeus_secret
+          RAPIDAPI_KEY: build_rapidapi_key
+        run: pnpm build
+
+      - name: Verify build artifacts
+        run: |
+          echo "📦 Build artifacts:"
+          ls -la .next/
+          echo "📊 Build stats:"
+          du -sh .next/
 
       - name: Build success
         run: echo "🎉 Build completed successfully!"
