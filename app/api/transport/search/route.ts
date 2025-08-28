@@ -222,7 +222,7 @@ async function searchBuses(params: {
   return busOptions;
 }
 
-// Get flights from existing flight search API
+// Mock flight data for transport comparison (avoid internal API calls)
 async function getFlights(params: {
   from: string;
   to: string;
@@ -232,24 +232,60 @@ async function getFlights(params: {
   currency: string;
 }): Promise<TransportOption[]> {
   try {
-    // Make internal API call to flight search
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/flights/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-    });
+    const distance = calculateDistance(params.from, params.to);
+    const flightOptions: TransportOption[] = [];
+    
+    // Generate 2-3 flight options for comparison
+    const airlines = ['Delta Airlines', 'United Airlines', 'American Airlines', 'British Airways', 'Emirates'];
+    const numOptions = Math.min(Math.floor(Math.random() * 2) + 2, 3);
 
-    if (!response.ok) {
-      console.error('Flight search failed:', response.status);
-      return [];
+    for (let i = 0; i < numOptions; i++) {
+      const isPremium = i === 1;
+      const basePrice = distance * (isPremium ? 0.25 : 0.18); // Price per km for flights
+      const priceMultiplier = params.currency === 'USD' ? 1 : params.currency === 'EUR' ? 0.85 : 0.75;
+      
+      const departureHour = 8 + (i * 4) + Math.random() * 2;
+      const travelTimeHours = distance / 800 + 1; // Flight speed + processing time
+      const arrivalHour = departureHour + travelTimeHours;
+
+      flightOptions.push({
+        id: `flight-${i + 1}`,
+        type: 'flight',
+        provider: airlines[i] || airlines[0],
+        airline: airlines[i] || airlines[0],
+        flightNumber: `${['DL', 'UA', 'AA', 'BA', 'EK'][i] || 'DL'}${Math.floor(Math.random() * 9000) + 1000}`,
+        price: Math.floor(basePrice * priceMultiplier * (0.8 + Math.random() * 0.4)),
+        currency: params.currency,
+        duration: `${Math.floor(travelTimeHours)}h ${Math.floor((travelTimeHours % 1) * 60)}m`,
+        departure: {
+          time: `${Math.floor(departureHour).toString().padStart(2, '0')}:${Math.floor((departureHour % 1) * 60).toString().padStart(2, '0')}`,
+          airport: isPremium ? 'International Airport' : 'Airport',
+          city: params.from,
+        },
+        arrival: {
+          time: `${Math.floor(arrivalHour).toString().padStart(2, '0')}:${Math.floor((arrivalHour % 1) * 60).toString().padStart(2, '0')}`,
+          airport: isPremium ? 'International Airport' : 'Airport',
+          city: params.to,
+        },
+        stops: Math.random() > 0.6 ? 0 : 1,
+        rating: 4.0 + Math.random() * 1.0,
+        bookingLink: 'https://booking.com',
+        baggage: {
+          carry: true,
+          checked: Math.random() > 0.3,
+        },
+        amenities: isPremium 
+          ? ['WiFi', 'Entertainment', 'Meals', 'Premium Seating']
+          : ['WiFi', 'Entertainment'],
+        score: (isPremium ? 8.5 : 7.5) + Math.random() * 1.0,
+        co2Emissions: Math.floor(distance * 0.15), // Higher emissions
+        comfort: isPremium ? 'Business' : 'Economy'
+      });
     }
 
-    const data = await response.json();
-    return data.flights || [];
+    return flightOptions;
   } catch (error) {
-    console.error('Flight search error:', error);
+    console.error('Flight generation error:', error);
     return [];
   }
 }

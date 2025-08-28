@@ -1,10 +1,24 @@
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+// Initialize Redis client safely
+function createRedisClient(): Redis | null {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  if (!url || !token) {
+    console.warn('Redis credentials not found, caching disabled');
+    return null;
+  }
+  
+  try {
+    return new Redis({ url, token });
+  } catch (error) {
+    console.error('Failed to initialize Redis client:', error);
+    return null;
+  }
+}
+
+const redis = createRedisClient();
 
 export interface FlightSearchParams {
   from: string;
@@ -66,6 +80,10 @@ export async function cacheFlightResults(
   provider: 'amadeus' | 'rapidapi' | 'mock',
   isPremium = false
 ): Promise<boolean> {
+  if (!redis) {
+    return false;
+  }
+  
   try {
     const cacheKey = generateFlightCacheKey(params);
     const now = Date.now();
@@ -105,6 +123,10 @@ export async function cacheFlightResults(
 export async function getCachedFlightResults(
   params: FlightSearchParams
 ): Promise<CachedFlightData | null> {
+  if (!redis) {
+    return null;
+  }
+  
   try {
     const cacheKey = generateFlightCacheKey(params);
     const cachedData = await redis.get(cacheKey);
@@ -136,6 +158,10 @@ export async function getCachedFlightResults(
  * Invalidate flight cache for specific route
  */
 export async function invalidateFlightCache(params: FlightSearchParams): Promise<boolean> {
+  if (!redis) {
+    return false;
+  }
+  
   try {
     const cacheKey = generateFlightCacheKey(params);
     const result = await redis.del(cacheKey);
@@ -157,6 +183,14 @@ export async function getFlightCacheStats(): Promise<{
   keysSample: string[];
   memoryUsage?: string;
 }> {
+  if (!redis) {
+    return {
+      totalEntries: 0,
+      keysSample: [],
+      memoryUsage: 'Redis not available'
+    };
+  }
+  
   try {
     const keys = await redis.keys(`${CACHE_CONFIG.FLIGHT_PREFIX}*`);
     
@@ -180,6 +214,10 @@ export async function getFlightCacheStats(): Promise<{
  * Clear all flight cache (use carefully)
  */
 export async function clearAllFlightCache(): Promise<number> {
+  if (!redis) {
+    return 0;
+  }
+  
   try {
     const keys = await redis.keys(`${CACHE_CONFIG.FLIGHT_PREFIX}*`);
     
@@ -202,6 +240,10 @@ export async function clearAllFlightCache(): Promise<number> {
  * Check if Redis cache is available
  */
 export async function isFlightCacheAvailable(): Promise<boolean> {
+  if (!redis) {
+    return false;
+  }
+  
   try {
     await redis.ping();
     return true;
