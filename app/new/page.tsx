@@ -1186,8 +1186,8 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
   const searchTransport = async () => {
     setLoading(true);
     try {
-      // Real flight search API integration
-      const response = await fetch('/api/flights/search', {
+      // Comprehensive transport search API integration (flights, trains, buses)
+      const response = await fetch('/api/transport/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1203,68 +1203,39 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
       });
 
       if (!response.ok) {
-        throw new Error('Flight search failed');
+        throw new Error('Transport search failed');
       }
 
       const data = await response.json();
       
-      if (data.success && data.flights) {
-        // Convert API response to our format
-        const flightOptions = data.flights.map((flight: any) => ({
-          id: flight.id,
-          type: 'flight',
-          airline: flight.airline,
-          flightNumber: flight.flightNumber,
-          duration: flight.duration,
-          price: flight.price,
-          currency: flight.currency,
-          departure: flight.departure.time,
-          arrival: flight.arrival.time,
-          departureAirport: flight.departure.airport,
-          arrivalAirport: flight.arrival.airport,
-          stops: flight.stops,
-          bookingUrl: flight.bookingLink,
-          rating: flight.score,
-          baggage: `${flight.baggage.carry ? '1 carry-on' : 'No carry-on'}${flight.baggage.checked ? ' + 1 checked bag' : ''}`,
+      if (data.success && data.transportOptions) {
+        // Convert API response to our format for backward compatibility
+        const transportOptions = data.transportOptions.map((option: any) => ({
+          id: option.id,
+          type: option.type,
+          airline: option.provider || option.airline,
+          flightNumber: option.flightNumber || option.trainNumber || '',
+          duration: option.duration,
+          price: option.price,
+          currency: option.currency,
+          departure: option.departure.time,
+          arrival: option.arrival.time,
+          departureAirport: option.departure.airport,
+          arrivalAirport: option.arrival.airport,
+          stops: option.stops || 0,
+          bookingUrl: option.bookingLink,
+          rating: option.rating || option.score,
+          baggage: option.amenities ? option.amenities.join(', ') : 
+                   option.baggage ? `${option.baggage.carry ? '1 carry-on' : 'No carry-on'}${option.baggage.checked ? ' + 1 checked bag' : ''}` : '',
+          comfort: option.comfort,
+          co2Emissions: option.co2Emissions,
         }));
 
-        // Add some alternative transport options as fallback
-        const additionalOptions = [
-          {
-            id: `train-${Date.now()}`,
-            type: 'train',
-            airline: 'Amtrak',
-            duration: '12h 45m',
-            price: 89,
-            departure: '8:00 AM',
-            arrival: '8:45 PM',
-            stops: 0,
-            bookingUrl: 'https://www.amtrak.com',
-            rating: 4.0,
-            baggage: 'Business Class - WiFi, Meals',
-          },
-          {
-            id: `bus-${Date.now()}`,
-            type: 'bus',
-            airline: 'Greyhound',
-            duration: '15h 20m',
-            price: 45,
-            departure: '11:00 PM',
-            arrival: '2:20 PM+1',
-            stops: 2,
-            bookingUrl: 'https://www.greyhound.com',
-            rating: 3.5,
-            baggage: 'Standard - WiFi, Restroom',
-          },
-        ];
-
-        const allOptions = [...flightOptions, ...additionalOptions];
-        setTransportOptions(allOptions);
+        setTransportOptions(transportOptions);
         setShowOptions(true);
-        setLoading(false);
       } else {
         // Fallback to mock data if API fails
-        throw new Error('No flight data received');
+        throw new Error('No transport data received');
       }
     } catch (error) {
       console.error('Flight search error:', error);
