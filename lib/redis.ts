@@ -1,14 +1,24 @@
-// Mock Redis implementation for build compatibility
-const Redis = {
-  prototype: {
-    get: async () => null,
-    setex: async () => 'OK',
-    del: async () => 1,
-    ping: async () => 'PONG'
-  }
-};
+import { Redis } from '@upstash/redis';
 
-// Create a simple Redis-like interface
+// Create Redis client with proper error handling
+function createRedisClient() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  if (!url || !token || url.includes('build') || token.includes('build')) {
+    console.warn('Redis not configured or in build mode, using mock');
+    return null;
+  }
+  
+  try {
+    return new Redis({ url, token });
+  } catch (error) {
+    console.error('Failed to initialize Redis client:', error);
+    return null;
+  }
+}
+
+// Mock Redis implementation for fallback
 class MockRedis {
   async get(key: string) {
     return null;
@@ -23,18 +33,27 @@ class MockRedis {
   }
   
   async ping() {
-    return 'PONG';
+    throw new Error('Redis not available');
+  }
+  
+  async keys(pattern: string) {
+    return [];
   }
 }
 
-// Use mock Redis for build compatibility
-export const redis = new MockRedis();
+// Use real Redis if available, otherwise mock
+const redisClient = createRedisClient();
+export const redis = redisClient || new MockRedis();
 
 // Cache helper functions
 export async function getFromCache<T>(key: string): Promise<T | null> {
+  if (!redisClient) {
+    return null;
+  }
+  
   try {
     const cached = await redis.get(key);
-    return cached as T;
+    return cached ? JSON.parse(cached as string) : null;
   } catch (error) {
     console.error('Redis get error:', error);
     return null;
@@ -46,6 +65,10 @@ export async function setInCache(
   value: any, 
   ttlSeconds: number = 3600
 ): Promise<boolean> {
+  if (!redisClient) {
+    return false;
+  }
+  
   try {
     await redis.setex(key, ttlSeconds, JSON.stringify(value));
     return true;
@@ -56,6 +79,10 @@ export async function setInCache(
 }
 
 export async function deleteFromCache(key: string): Promise<boolean> {
+  if (!redisClient) {
+    return false;
+  }
+  
   try {
     await redis.del(key);
     return true;
@@ -78,6 +105,11 @@ export const CacheKeys = {
 
 // Test Redis connection
 export async function testRedisConnection(): Promise<boolean> {
+  if (!redisClient) {
+    console.log('⚠️  Redis not configured');
+    return false;
+  }
+  
   try {
     await redis.ping();
     console.log('✅ Redis connected successfully');
