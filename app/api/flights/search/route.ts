@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
+import {
+  getCachedFlightResults,
+  cacheFlightResults,
+  isFlightCacheAvailable,
+  type FlightSearchParams
+} from "@/lib/cache/flight-cache";
 
 const flightSearchSchema = z.object({
   from: z.string().min(2),
@@ -163,7 +169,7 @@ async function searchFlightsWithAmadeus(params: {
   returnDate?: string;
   adults: number;
   currency: string;
-}) {
+}): Promise<{ flights: any[], provider: 'amadeus' | 'rapidapi' | 'mock' }> {
   const AMADEUS_CLIENT_ID = process.env.AMADEUS_CLIENT_ID;
   const AMADEUS_CLIENT_SECRET = process.env.AMADEUS_CLIENT_SECRET;
   const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
@@ -171,7 +177,8 @@ async function searchFlightsWithAmadeus(params: {
   // Try RapidAPI first (easier to get), then Amadeus
   if (RAPIDAPI_KEY) {
     try {
-      return await searchFlightsWithRapidAPI(params, RAPIDAPI_KEY);
+      const flights = await searchFlightsWithRapidAPI(params, RAPIDAPI_KEY);
+      return { flights, provider: 'rapidapi' };
     } catch (error) {
       console.error('RapidAPI failed, trying Amadeus:', error);
     }
@@ -179,7 +186,8 @@ async function searchFlightsWithAmadeus(params: {
   
   if (!AMADEUS_CLIENT_ID || !AMADEUS_CLIENT_SECRET) {
     console.log('No flight API credentials found, using enhanced mock data');
-    return generateEnhancedMockFlights(params);
+    const flights = generateEnhancedMockFlights(params);
+    return { flights, provider: 'mock' };
   }
 
   try {
@@ -232,13 +240,15 @@ async function searchFlightsWithAmadeus(params: {
     }
 
     const flightData = await flightResponse.json();
-    return processAmadeusFlights(flightData.data || [], flightData.dictionaries || {});
+    const flights = processAmadeusFlights(flightData.data || [], flightData.dictionaries || {});
+    return { flights, provider: 'amadeus' };
     
   } catch (error) {
     console.error('Amadeus API error:', error);
     // Fallback to enhanced mock data on API failure
     console.log('Falling back to mock data due to API error');
-    return generateEnhancedMockFlights(params);
+    const flights = generateEnhancedMockFlights(params);
+    return { flights, provider: 'mock' };
   }
 }
 
@@ -370,8 +380,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const searchParams = flightSearchSchema.parse(body);
 
+    // Check cache first
+    const cacheAvailable = await isFlightCacheAvailable();
+    if (cacheAvailable) {
+      const cachedResults = await getCachedFlightResults(searchParams);
+      if (cachedResults) {
+        return NextResponse.json({
+          success: true,
+          flights: cachedResults.flights,
+          searchParams: cachedResults.searchParams,
+          resultsCount: cachedResults.resultsCount,
+          cached: true,
+          provider: cachedResults.provider,
+          cachedAt: new Date(cachedResults.cachedAt).toISOString(),
+        });
+      }
+    }
+
     // Search for flights
-    const flights = await searchFlightsWithAmadeus(searchParams);
+    const { flights, provider } = await searchFlightsWithAmadeus(searchParams);
+
+    // Cache results if cache is available
+    if (cacheAvailable && flights.length > 0) {
+      await cacheFlightResults(searchParams, flights, provider);
+    }
 
     return NextResponse.json({
       success: true,
@@ -385,6 +417,8 @@ export async function POST(request: NextRequest) {
         currency: searchParams.currency,
       },
       resultsCount: flights.length,
+      cached: false,
+      provider: provider,
     });
 
   } catch (error) {
