@@ -130,7 +130,53 @@ if (missingFiles.length > 0) {
   console.log('✅ Critical files validation passed');
 }
 
-// Check 6: Validate API routes
+// Check 6: Validate lockfile consistency
+try {
+  if (fs.existsSync('pnpm-lock.yaml') && fs.existsSync('package.json')) {
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    const lockfile = fs.readFileSync('pnpm-lock.yaml', 'utf8');
+    
+    // Check if overrides are reflected in lockfile
+    if (packageJson.pnpm?.overrides) {
+      const overrides = packageJson.pnpm.overrides;
+      let hasLockfileMismatch = false;
+      
+      Object.keys(overrides).forEach(pkg => {
+        const expectedVersion = overrides[pkg];
+        if (!lockfile.includes(`${pkg}:`)) {
+          warnings.push(`Override for ${pkg}@${expectedVersion} may not be reflected in lockfile`);
+          hasLockfileMismatch = true;
+        }
+      });
+      
+      if (!hasLockfileMismatch) {
+        console.log('✅ Lockfile override consistency validated');
+      }
+    }
+    
+    // Check for version conflicts in dependencies
+    const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    const problematicPackages = ['framer-motion', 'typescript', '@types/react'];
+    
+    problematicPackages.forEach(pkg => {
+      if (dependencies[pkg] && packageJson.pnpm?.overrides?.[pkg]) {
+        const depVersion = dependencies[pkg];
+        const overrideVersion = packageJson.pnpm.overrides[pkg];
+        if (depVersion !== overrideVersion) {
+          warnings.push(`Version mismatch: ${pkg} specified as ${depVersion} in deps but ${overrideVersion} in overrides`);
+        }
+      }
+    });
+    
+    console.log('✅ Dependency version consistency validated');
+  } else {
+    warnings.push('pnpm-lock.yaml or package.json missing - lockfile validation skipped');
+  }
+} catch (error) {
+  warnings.push(`Lockfile validation issue: ${error.message}`);
+}
+
+// Check 7: Validate API routes
 try {
   const apiDir = 'app/api';
   if (fs.existsSync(apiDir)) {

@@ -26,7 +26,7 @@ const nextConfig = {
   },
   
   // Build output configuration
-  output: 'standalone',
+  // output: 'standalone', // Disabled due to Windows symlink permissions
   
   // Enhanced error handling during build
   onDemandEntries: {

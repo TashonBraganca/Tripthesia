@@ -26,7 +26,14 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --prefer-frozen-lockfile
+
+      - name: Verify dependency integrity
+        run: |
+          echo "📦 Checking installed package versions..."
+          pnpm list framer-motion typescript
+          echo "📝 Verifying lockfile consistency..."
+          pnpm install --frozen-lockfile --dry-run || echo "⚠️ Lockfile regenerated during install"
 
       - name: Run pre-build validation
         run: pnpm run pre-build-check

@@ -16,7 +16,10 @@
       "Bash(node:*)",
       "WebSearch",
       "Bash(gh run list:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm lint:*)"
     ],
     "deny": [],
     "ask": []
