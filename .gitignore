@@ -33,3 +33,6 @@ Thumbs.db
 .turbo/
 .eslintcache
 .vercel
+
+# Build artifacts and temp directories
+tripthesia-live/

@@ -14,7 +14,9 @@
       "Bash(git push:*)",
       "Bash(git commit:*)",
       "Bash(node:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []
