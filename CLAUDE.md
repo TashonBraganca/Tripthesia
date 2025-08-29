@@ -33,20 +33,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 app/
 ├── api/                    # API routes
+│   ├── ai/                # AI-powered endpoints
+│   │   ├── generate-trip/ # Complete trip generation
+│   │   ├── suggestions/   # Personalized recommendations
+│   │   ├── budget-optimizer/ # Cost optimization
+│   │   └── local-insights/   # Hidden gems & culture
 │   ├── trips/             # Trip CRUD operations
+│   ├── transport/search/  # Multi-modal transport
 │   ├── flights/search/    # Flight search with real pricing
 │   ├── health/            # Health check endpoint
 │   └── subscription/      # Payment processing
 ├── (pages)/               # App pages with layouts
+│   ├── planner/          # Interactive drag-and-drop planner
+│   └── ai-assistant/     # AI-powered planning interface
 └── globals.css           # Global styles
 
 components/
 ├── ui/                   # shadcn/ui base components
+├── ai/                   # AI-powered components
+│   ├── AITripGenerator.tsx      # Complete trip generation
+│   ├── PersonalizedSuggestions.tsx # Smart recommendations
+│   └── BudgetOptimizer.tsx      # Cost optimization
+├── planning/             # Interactive planning components
+│   ├── TimelineBuilder.tsx      # Drag-and-drop timeline
+│   ├── RouteOptimizer.tsx       # Route optimization
+│   └── TripSharing.tsx          # Collaboration features
 ├── marketing/            # Landing page components
 ├── layout/              # Navigation and footer
 └── providers/           # React context providers
 
 lib/
+├── planning/            # Planning utilities
+│   └── route-optimizer.ts  # TSP algorithms & travel calculations
 ├── database/schema.ts   # Drizzle database schema
 ├── auth/profile.ts     # User profile management
 ├── subscription/       # Payment and tier logic
@@ -67,7 +85,10 @@ lib/
 - User profiles track usage limits and subscription status
 
 ### API Integration Pattern
-- Flight search: Amadeus API → RapidAPI → Enhanced mock data fallback
+- **AI Services**: OpenAI GPT-4o-mini with structured JSON responses and error handling
+- **Flight search**: Amadeus API → RapidAPI → Enhanced mock data fallback
+- **Transport search**: Multi-modal integration (flights, trains, buses) with price tracking
+- **Planning**: Advanced algorithms including TSP route optimization and conflict detection
 - All external APIs have graceful degradation and caching
 - Database operations use safe wrappers with availability checks
 
@@ -100,3 +121,15 @@ FOURSQUARE_API_KEY=       # Places data
 - User subscription limits checked before paid features
 - External API calls have timeout and retry logic
 - All dates stored as timestamps, currency as enum (INR/USD)
+- AI endpoints use structured JSON responses with comprehensive error handling
+- Interactive components use Framer Motion for animations and drag-and-drop
+- Route optimization uses Traveling Salesman Problem algorithms
+- Real-time conflict detection for overlapping activities and travel time
+
+### AI Integration Guidelines
+- All AI endpoints require authentication and validate inputs with Zod
+- Use GPT-4o-mini model with structured JSON response format
+- Implement graceful degradation when AI service is unavailable
+- Validate AI responses before returning to client
+- Include user preferences and context for personalized results
+- Handle rate limiting and API quotas appropriately
