@@ -19,7 +19,11 @@
       "Bash(gh run view:*)",
       "Bash(pnpm list:*)",
       "Bash(pnpm run:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(npm run:*)",
+      "Bash(pnpm db:generate:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(pnpm drizzle-kit generate:*)"
     ],
     "deny": [],
     "ask": []

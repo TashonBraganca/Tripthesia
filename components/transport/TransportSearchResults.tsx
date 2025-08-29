@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Train, Car, Clock, MapPin, Star, ArrowRight, Filter, SlidersHorizontal, ExternalLink } from 'lucide-react';
 
@@ -68,7 +68,7 @@ export default function TransportSearchResults({
   const [showFilters, setShowFilters] = useState(false);
 
   // Search for all transport options
-  const searchAllTransport = async () => {
+  const searchAllTransport = useCallback(async () => {
     setLoading(true);
     try {
       const results = await Promise.allSettled([
@@ -93,7 +93,7 @@ export default function TransportSearchResults({
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams]);
 
   // Flight search using existing API
   const searchFlights = async (): Promise<TransportOption[]> => {
@@ -295,7 +295,7 @@ export default function TransportSearchResults({
     if (searchParams.from && searchParams.to) {
       searchAllTransport();
     }
-  }, [searchParams]);
+  }, [searchParams, searchAllTransport]);
 
   const getTransportIcon = (type: string) => {
     switch (type) {

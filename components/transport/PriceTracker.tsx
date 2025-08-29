@@ -42,7 +42,7 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
 
   useEffect(() => {
     loadPriceHistory();
-  }, [transportOption.id]);
+  }, [transportOption.id, transportOption.currentPrice]);
 
   const loadPriceHistory = async () => {
     // Simulate loading price history - replace with real API

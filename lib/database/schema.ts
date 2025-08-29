@@ -120,7 +120,20 @@ export const itineraries = pgTable("itineraries", {
   aiModel: varchar("ai_model", { length: 32 }), // gpt-4o-mini, etc.
   generationTime: integer("generation_time"), // Time taken in seconds
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign key to trips table
+  tripIdFk: foreignKey({
+    columns: [table.tripId],
+    foreignColumns: [trips.id],
+    name: "itineraries_trip_id_fk"
+  }),
+  // Check constraints
+  versionCheck: check("version_check", sql`version >= 1`),
+  generationTimeCheck: check("generation_time_check", sql`generation_time IS NULL OR generation_time >= 0`),
+  // Indexes for performance
+  tripIdIdx: index("itineraries_trip_id_idx").on(table.tripId),
+  createdAtIdx: index("itineraries_created_at_idx").on(table.createdAt),
+}));
 
 // Places cache for fast lookups
 export const places = pgTable("places", {
@@ -170,7 +183,21 @@ export const priceQuotes = pgTable("price_quotes", {
   deepLink: text("deep_link"),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign key to trips table
+  tripIdFk: foreignKey({
+    columns: [table.tripId],
+    foreignColumns: [trips.id],
+    name: "price_quotes_trip_id_fk"
+  }),
+  // Check constraints
+  amountCheck: check("amount_check", sql`amount IS NULL OR amount >= 0`),
+  itemTypeCheck: check("item_type_check", sql`item_type IN ('flight', 'hotel', 'activity', 'transport')`),
+  // Indexes for performance
+  tripIdIdx: index("price_quotes_trip_id_idx").on(table.tripId),
+  itemTypeIdx: index("price_quotes_item_type_idx").on(table.itemType),
+  expiresAtIdx: index("price_quotes_expires_at_idx").on(table.expiresAt),
+}));
 
 // Shared trips
 export const sharedTrips = pgTable("shared_trips", {
@@ -182,7 +209,23 @@ export const sharedTrips = pgTable("shared_trips", {
   permissions: jsonb("permissions").notNull().default(['view']),
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign keys
+  tripIdFk: foreignKey({
+    columns: [table.tripId],
+    foreignColumns: [trips.id],
+    name: "shared_trips_trip_id_fk"
+  }),
+  createdByFk: foreignKey({
+    columns: [table.createdBy],
+    foreignColumns: [users.id],
+    name: "shared_trips_created_by_fk"
+  }),
+  // Indexes for performance
+  tripIdIdx: index("shared_trips_trip_id_idx").on(table.tripId),
+  createdByIdx: index("shared_trips_created_by_idx").on(table.createdBy),
+  expiresAtIdx: index("shared_trips_expires_at_idx").on(table.expiresAt),
+}));
 
 // Webhooks log
 export const webhooks = pgTable("webhooks", {
@@ -201,7 +244,20 @@ export const usageEvents = pgTable("usage_events", {
   eventType: varchar("event_type", { length: 32 }).notNull(), // trip_created/ai_generated/etc
   eventData: jsonb("event_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign key to users table (nullable for anonymous events)
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "usage_events_user_id_fk"
+  }),
+  // Check constraints
+  eventTypeCheck: check("event_type_check", sql`LENGTH(event_type) > 0`),
+  // Indexes for performance
+  userIdIdx: index("usage_events_user_id_idx").on(table.userId),
+  eventTypeIdx: index("usage_events_event_type_idx").on(table.eventType),
+  createdAtIdx: index("usage_events_created_at_idx").on(table.createdAt),
+}));
 
 // Type exports
 export type User = typeof users.$inferSelect;
