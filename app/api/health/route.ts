@@ -1,113 +1,48 @@
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { healthMonitor } from '@/lib/monitoring/health-check';
+import { performanceTracker } from '@/lib/monitoring/performance';
+import { createSuccessResponse, createErrorResponse, ErrorCodes } from '@/lib/api/error-handler';
+import { withPerformanceTracking } from '@/lib/monitoring/performance';
 
-export async function GET() {
-  const healthStatus = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    services: {
-      database: 'checking...',
-      redis: 'checking...',
-      auth: 'checking...',
-      ai: 'checking...',
-      places: 'checking...',
-      maps: 'checking...',
-      payments: 'checking...',
-    },
+async function healthHandler(request: NextRequest) {
+  const url = new URL(request.url);
+  const detailed = url.searchParams.get('detailed') === 'true';
+  const includePerf = url.searchParams.get('performance') === 'true';
+
+  // Run comprehensive health checks
+  const healthResult = await healthMonitor.runHealthChecks();
+
+  // Add performance data if requested
+  let performanceData = undefined;
+  if (includePerf) {
+    performanceData = performanceTracker.getSummary();
+  }
+
+  const response = {
+    ...healthResult,
+    performance: performanceData,
   };
 
-  try {
-    // Check database connection
-    try {
-      const { isDatabaseAvailable, testConnection } = await import('@/lib/db');
-      if (isDatabaseAvailable()) {
-        const connected = await testConnection();
-        healthStatus.services.database = connected ? 'healthy' : 'error';
-      } else {
-        healthStatus.services.database = 'not_configured';
-      }
-    } catch (error) {
-      healthStatus.services.database = 'error';
-    }
+  // Return appropriate status based on health
+  const statusCode = healthResult.overall === 'healthy' ? 200 : 
+                    healthResult.overall === 'degraded' ? 200 : 503;
 
-    // Check Redis connection
-    try {
-      const { redis } = await import('@/lib/redis');
-      await redis.ping();
-      healthStatus.services.redis = 'healthy';
-    } catch (error) {
-      healthStatus.services.redis = 'error';
-    }
-
-    // Check Auth (Clerk)
-    try {
-      // Just check if auth function exists and is callable
-      if (typeof auth === 'function') {
-        healthStatus.services.auth = 'healthy';
-      } else {
-        healthStatus.services.auth = 'error';
-      }
-    } catch (error) {
-      healthStatus.services.auth = 'error';
-    }
-
-    // Check OpenAI
-    const openaiKey = process.env.OPENAI_API_KEY;
-    if (openaiKey && !openaiKey.includes('your_') && openaiKey.length > 20) {
-      healthStatus.services.ai = 'configured';
-    } else {
-      healthStatus.services.ai = 'missing_key';
-    }
-
-    // Check Foursquare
-    const foursquareKey = process.env.FOURSQUARE_API_KEY;
-    if (foursquareKey && !foursquareKey.includes('your_') && foursquareKey.length > 10) {
-      healthStatus.services.places = 'configured';
-    } else {
-      healthStatus.services.places = 'missing_key';
-    }
-
-    // Check Mapbox
-    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (mapboxToken && !mapboxToken.includes('your_') && mapboxToken.length > 10) {
-      healthStatus.services.maps = 'configured';
-    } else {
-      healthStatus.services.maps = 'missing_key';
-    }
-
-    // Check Razorpay
-    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
-    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (
-      razorpayKeyId && !razorpayKeyId.includes('your_') &&
-      razorpayKeySecret && !razorpayKeySecret.includes('your_')
-    ) {
-      healthStatus.services.payments = 'configured';
-    } else {
-      healthStatus.services.payments = 'missing_keys';
-    }
-
-    // Overall status
-    const hasErrors = Object.values(healthStatus.services).some(status => status === 'error');
-    const hasMissingKeys = Object.values(healthStatus.services).some(status => 
-      status.includes('missing') || status === 'not_configured'
-    );
-    
-    if (hasErrors) {
-      healthStatus.status = 'unhealthy';
-    } else if (hasMissingKeys) {
-      healthStatus.status = 'degraded';
-    } else {
-      healthStatus.status = 'healthy';
-    }
-
-    return NextResponse.json(healthStatus);
-  } catch (error) {
-    return NextResponse.json({
-      status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString(),
-    }, { status: 500 });
+  // If not detailed, return minimal response
+  if (!detailed && !includePerf) {
+    return createSuccessResponse({
+      status: healthResult.overall,
+      uptime: healthResult.uptime,
+      timestamp: healthResult.timestamp,
+    }, statusCode);
   }
+
+  return createSuccessResponse(response, statusCode);
+}
+
+// Wrap with performance tracking
+export const GET = withPerformanceTracking(healthHandler, '/api/health');
+
+// Simple HEAD request for basic availability check
+export async function HEAD() {
+  return new NextResponse(null, { status: 200 });
 }
