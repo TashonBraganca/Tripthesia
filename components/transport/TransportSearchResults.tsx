@@ -67,34 +67,6 @@ export default function TransportSearchResults({
   const [sortBy, setSortBy] = useState('price'); // 'price', 'duration', 'departure', 'rating'
   const [showFilters, setShowFilters] = useState(false);
 
-  // Search for all transport options
-  const searchAllTransport = useCallback(async () => {
-    setLoading(true);
-    try {
-      const results = await Promise.allSettled([
-        searchFlights(),
-        searchTrains(),
-        searchBuses(),
-      ]);
-
-      const allOptions: TransportOption[] = [];
-      
-      results.forEach((result) => {
-        if (result.status === 'fulfilled' && result.value) {
-          allOptions.push(...result.value);
-        }
-      });
-
-      // Sort by score initially (best overall options)
-      allOptions.sort((a, b) => b.score - a.score);
-      setTransportOptions(allOptions);
-    } catch (error) {
-      console.error('Transport search error:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchFlights, searchTrains, searchBuses]);
-
   // Flight search using existing API
   const searchFlights = useCallback(async (): Promise<TransportOption[]> => {
     try {
@@ -247,6 +219,34 @@ export default function TransportSearchResults({
 
     return busOptions;
   }, [searchParams]);
+
+  // Search for all transport options
+  const searchAllTransport = useCallback(async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.allSettled([
+        searchFlights(),
+        searchTrains(),
+        searchBuses(),
+      ]);
+
+      const allOptions: TransportOption[] = [];
+      
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          allOptions.push(...result.value);
+        }
+      });
+
+      // Sort by score initially (best overall options)
+      allOptions.sort((a, b) => b.score - a.score);
+      setTransportOptions(allOptions);
+    } catch (error) {
+      console.error('Transport search error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchFlights, searchTrains, searchBuses]);
 
   // Helper function to calculate approximate distance
   const calculateDistance = (from: string, to: string): number => {

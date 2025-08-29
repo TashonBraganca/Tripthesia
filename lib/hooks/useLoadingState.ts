@@ -70,6 +70,30 @@ export function useLoadingState(
     }));
   }, []);
 
+  const retry = useCallback(() => {
+    if ((state.retryCount || 0) >= maxRetries) {
+      // Create a temporary setError function to avoid circular dependency
+      setState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: `Maximum retry attempts (${maxRetries}) exceeded`,
+        retryCount: prev.retryCount || 0,
+      }));
+      return;
+    }
+
+    setState(prev => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+      retryCount: (prev.retryCount || 0) + 1,
+    }));
+
+    if (lastOperationRef.current) {
+      lastOperationRef.current();
+    }
+  }, [state.retryCount, maxRetries]);
+
   const setError = useCallback((error: string) => {
     setState(prev => ({
       ...prev,
@@ -110,24 +134,6 @@ export function useLoadingState(
       retryTimeoutRef.current = undefined;
     }
   }, []);
-
-  const retry = useCallback(() => {
-    if ((state.retryCount || 0) >= maxRetries) {
-      setError(`Maximum retry attempts (${maxRetries}) exceeded`);
-      return;
-    }
-
-    setState(prev => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-      retryCount: (prev.retryCount || 0) + 1,
-    }));
-
-    if (lastOperationRef.current) {
-      lastOperationRef.current();
-    }
-  }, [state.retryCount, maxRetries, setError]);
 
   // Store the last operation for retry functionality
   const wrappedStartLoading = useCallback((stage?: string, progress?: number) => {

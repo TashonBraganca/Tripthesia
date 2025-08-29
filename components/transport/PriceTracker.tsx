@@ -40,10 +40,6 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
   const [notificationEmail, setNotificationEmail] = useState('');
   const [tracking, setTracking] = useState(false);
 
-  useEffect(() => {
-    loadPriceHistory();
-  }, [transportOption.id, transportOption.currentPrice, loadPriceHistory]);
-
   const loadPriceHistory = useCallback(async () => {
     // Simulate loading price history - replace with real API
     const mockHistory: PriceHistory[] = [];
@@ -70,6 +66,10 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
     
     setPriceHistory(mockHistory);
   }, [transportOption.currentPrice]);
+
+  useEffect(() => {
+    loadPriceHistory();
+  }, [transportOption.id, transportOption.currentPrice, loadPriceHistory]);
 
   const createPriceAlert = () => {
     const newAlert: PriceAlert = {
