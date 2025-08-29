@@ -111,7 +111,7 @@ export function handleValidationError(error: ZodError, path?: string): NextRespo
     field: err.path.join('.'),
     message: err.message,
     code: err.code,
-    value: err.received || undefined,
+    value: 'received' in err ? err.received : undefined,
   }));
 
   return createErrorResponse(

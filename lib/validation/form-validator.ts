@@ -15,7 +15,7 @@ export interface FormStep {
   id: string;
   name: string;
   required: boolean;
-  schema: z.ZodSchema;
+  schema: z.ZodSchema<any>;
   dependencies?: string[]; // Steps that must be completed first
 }
 
@@ -33,23 +33,36 @@ export const destinationSchema = z.object({
   })).min(1, 'At least one destination is required').max(10, 'Maximum 10 destinations allowed'),
 });
 
-// Date validation
-export const dateSchema = z.object({
-  startDate: z.string().refine((date) => {
-    const startDate = new Date(date);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return startDate >= tomorrow;
-  }, 'Start date must be at least tomorrow'),
-  
-  endDate: z.string(),
-}).refine((data) => {
+// Date validation (using base object for compatibility)
+const baseDateSchema = z.object({
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().min(1, 'End date is required'),
+});
+
+// Enhanced date validation with custom logic
+export const dateSchema = baseDateSchema.superRefine((data, ctx) => {
   const startDate = new Date(data.startDate);
   const endDate = new Date(data.endDate);
-  return endDate > startDate;
-}, {
-  message: 'End date must be after start date',
-  path: ['endDate'],
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Validate start date is at least tomorrow
+  if (startDate < tomorrow) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Start date must be at least tomorrow',
+      path: ['startDate'],
+    });
+  }
+
+  // Validate end date is after start date
+  if (endDate <= startDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'End date must be after start date',
+      path: ['endDate'],
+    });
+  }
 });
 
 // Trip preferences validation
@@ -89,9 +102,9 @@ export const advancedPreferencesSchema = z.object({
   }).optional(),
 });
 
-// Complete trip validation
+// Complete trip validation (using base schemas for merging)
 export const completeTripSchema = destinationSchema
-  .merge(dateSchema)
+  .merge(baseDateSchema)
   .merge(preferencesSchema)
   .merge(advancedPreferencesSchema)
   .extend({
@@ -99,6 +112,29 @@ export const completeTripSchema = destinationSchema
       .min(3, 'Trip title must be at least 3 characters')
       .max(160, 'Trip title cannot exceed 160 characters')
       .refine((title) => title.trim().length > 0, 'Trip title cannot be empty'),
+  })
+  .superRefine((data, ctx) => {
+    // Apply enhanced date validation
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    if (startDate < tomorrow) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Start date must be at least tomorrow',
+        path: ['startDate'],
+      });
+    }
+
+    if (endDate <= startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'End date must be after start date',
+        path: ['endDate'],
+      });
+    }
   });
 
 /**
@@ -115,7 +151,7 @@ export const tripPlanningSteps: FormStep[] = [
     id: 'dates',
     name: 'Travel Dates',
     required: true,
-    schema: dateSchema,
+    schema: baseDateSchema, // Use base schema for step validation
     dependencies: ['destination'],
   },
   {

@@ -79,10 +79,10 @@ export function useLoadingState(
     }));
 
     // Auto-retry logic
-    if (autoRetry && state.retryCount < maxRetries && lastOperationRef.current) {
+    if (autoRetry && (state.retryCount || 0) < maxRetries && lastOperationRef.current) {
       retryTimeoutRef.current = setTimeout(() => {
         retry();
-      }, retryDelay * Math.pow(2, state.retryCount)); // Exponential backoff
+      }, retryDelay * Math.pow(2, state.retryCount || 0)); // Exponential backoff
     }
   }, [autoRetry, maxRetries, retryDelay, state.retryCount]);
 
@@ -112,7 +112,7 @@ export function useLoadingState(
   }, []);
 
   const retry = useCallback(() => {
-    if (state.retryCount >= maxRetries) {
+    if ((state.retryCount || 0) >= maxRetries) {
       setError(`Maximum retry attempts (${maxRetries}) exceeded`);
       return;
     }
