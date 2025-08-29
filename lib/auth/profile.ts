@@ -9,7 +9,7 @@ export interface UserProfile {
   displayName?: string;
   email?: string;
   subscriptionTier: SubscriptionTier;
-  subscriptionStatus?: string;
+  subscriptionStatus?: 'active' | 'cancelled' | 'expired' | 'paused' | null;
   tripsUsedThisMonth: number;
   subscriptionCurrentPeriodEnd?: Date;
   createdAt: Date;
@@ -121,7 +121,7 @@ export async function updateUserSubscription(
   userId: string,
   updates: {
     tier?: SubscriptionTier;
-    status?: string;
+    status?: 'active' | 'cancelled' | 'expired' | 'paused';
     subscriptionId?: string;
     customerId?: string;
     currentPeriodEnd?: Date;

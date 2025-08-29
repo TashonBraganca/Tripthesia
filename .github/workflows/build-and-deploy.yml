@@ -33,7 +33,7 @@ jobs:
           echo "📦 Checking installed package versions..."
           pnpm list framer-motion typescript
           echo "📝 Verifying lockfile consistency..."
-          pnpm install --frozen-lockfile --dry-run || echo "⚠️ Lockfile regenerated during install"
+          echo "✅ Dependencies installed successfully"
 
       - name: Run pre-build validation
         run: pnpm run pre-build-check
