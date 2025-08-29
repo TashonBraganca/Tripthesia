@@ -125,7 +125,7 @@ export function formatPrice(amount: number, currency: 'INR' | 'USD'): string {
 export function canCreateTrip(
   tier: SubscriptionTier,
   currentUsage: number,
-  subscriptionStatus?: string
+  subscriptionStatus?: string | null
 ): boolean {
   if (tier === 'free') {
     return currentUsage < SUBSCRIPTION_TIERS.free.limits.tripsPerMonth;

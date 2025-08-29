@@ -155,7 +155,8 @@ class MultiLevelCache<T> {
     }
 
     // Clear matching keys
-    for (const key of this.memoryCache.keys()) {
+    const keys = Array.from(this.memoryCache.keys());
+    for (const key of keys) {
       if (key.includes(pattern)) {
         this.memoryCache.delete(key);
       }
