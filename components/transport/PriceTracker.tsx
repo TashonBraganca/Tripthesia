@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, TrendingDown, TrendingUp, AlertCircle, DollarSign, Calendar, Clock } from 'lucide-react';
 
@@ -42,9 +42,9 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
 
   useEffect(() => {
     loadPriceHistory();
-  }, [transportOption.id, transportOption.currentPrice]);
+  }, [transportOption.id, transportOption.currentPrice, loadPriceHistory]);
 
-  const loadPriceHistory = async () => {
+  const loadPriceHistory = useCallback(async () => {
     // Simulate loading price history - replace with real API
     const mockHistory: PriceHistory[] = [];
     const basePrice = transportOption.currentPrice;
@@ -69,7 +69,7 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
     }
     
     setPriceHistory(mockHistory);
-  };
+  }, [transportOption.currentPrice]);
 
   const createPriceAlert = () => {
     const newAlert: PriceAlert = {

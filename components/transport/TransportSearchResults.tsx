@@ -93,10 +93,10 @@ export default function TransportSearchResults({
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchFlights, searchTrains, searchBuses]);
 
   // Flight search using existing API
-  const searchFlights = async (): Promise<TransportOption[]> => {
+  const searchFlights = useCallback(async (): Promise<TransportOption[]> => {
     try {
       const response = await fetch('/api/flights/search', {
         method: 'POST',
@@ -116,10 +116,10 @@ export default function TransportSearchResults({
       console.error('Flight search error:', error);
       return [];
     }
-  };
+  }, [searchParams]);
 
   // Mock train search (can be replaced with real API)
-  const searchTrains = async (): Promise<TransportOption[]> => {
+  const searchTrains = useCallback(async (): Promise<TransportOption[]> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 800));
     
@@ -186,10 +186,10 @@ export default function TransportSearchResults({
     ];
 
     return trainOptions;
-  };
+  }, [searchParams]);
 
   // Mock bus search
-  const searchBuses = async (): Promise<TransportOption[]> => {
+  const searchBuses = useCallback(async (): Promise<TransportOption[]> => {
     await new Promise(resolve => setTimeout(resolve, 600));
 
     const busOptions: TransportOption[] = [
@@ -246,7 +246,7 @@ export default function TransportSearchResults({
     ];
 
     return busOptions;
-  };
+  }, [searchParams]);
 
   // Helper function to calculate approximate distance
   const calculateDistance = (from: string, to: string): number => {

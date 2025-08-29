@@ -84,7 +84,7 @@ export function useLoadingState(
         retry();
       }, retryDelay * Math.pow(2, state.retryCount || 0)); // Exponential backoff
     }
-  }, [autoRetry, maxRetries, retryDelay, state.retryCount]);
+  }, [autoRetry, maxRetries, retryDelay, state.retryCount, retry]);
 
   const clearError = useCallback(() => {
     setState(prev => ({
@@ -153,16 +153,64 @@ export function useLoadingState(
 export function useMultiLoadingState() {
   const [states, setStates] = useState<Record<string, LoadingState>>({});
 
-  const createLoader = useCallback((key: string, options?: UseLoadingStateOptions) => {
-    const [state, actions] = useLoadingState(options);
-    
-    // Update the states record when this specific loader changes
+  const updateState = useCallback((key: string, state: LoadingState) => {
     setStates(prev => ({
       ...prev,
       [key]: state,
     }));
+  }, []);
 
-    return [state, actions] as const;
+  const startLoading = useCallback((key: string, stage?: string, progress: number = 0) => {
+    updateState(key, {
+      isLoading: true,
+      error: null,
+      stage,
+      progress,
+      retryCount: 0,
+    });
+  }, [updateState]);
+
+  const updateProgress = useCallback((key: string, progress: number, stage?: string) => {
+    setStates(prev => {
+      const currentState = prev[key] || { isLoading: false, error: null, progress: 0, retryCount: 0 };
+      return {
+        ...prev,
+        [key]: {
+          ...currentState,
+          progress: Math.max(0, Math.min(100, progress)),
+          stage: stage || currentState.stage,
+        },
+      };
+    });
+  }, []);
+
+  const setError = useCallback((key: string, error: string) => {
+    setStates(prev => {
+      const currentState = prev[key] || { isLoading: false, error: null, progress: 0, retryCount: 0 };
+      return {
+        ...prev,
+        [key]: {
+          ...currentState,
+          isLoading: false,
+          error,
+          retryCount: (currentState.retryCount || 0) + 1,
+        },
+      };
+    });
+  }, []);
+
+  const stopLoading = useCallback((key: string) => {
+    setStates(prev => {
+      const currentState = prev[key] || { isLoading: false, error: null, progress: 0, retryCount: 0 };
+      return {
+        ...prev,
+        [key]: {
+          ...currentState,
+          isLoading: false,
+          progress: 100,
+        },
+      };
+    });
   }, []);
 
   const getState = useCallback((key: string): LoadingState => {
@@ -189,7 +237,10 @@ export function useMultiLoadingState() {
   }, [states]);
 
   return {
-    createLoader,
+    startLoading,
+    updateProgress,
+    setError,
+    stopLoading,
     getState,
     isAnyLoading,
     hasAnyError,
