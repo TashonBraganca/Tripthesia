@@ -9,7 +9,23 @@ import {
   boolean,
   numeric,
   uuid,
+  check,
+  foreignKey,
+  index,
+  pgEnum,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+
+// Enum definitions for better type safety and constraints
+export const subscriptionTierEnum = pgEnum('subscription_tier', ['free', 'starter', 'pro']);
+export const subscriptionStatusEnum = pgEnum('subscription_status', ['active', 'cancelled', 'expired', 'paused']);
+export const tripTypeEnum = pgEnum('trip_type', ['leisure', 'business', 'adventure', 'cultural']);
+export const budgetCurrencyEnum = pgEnum('budget_currency', ['INR', 'USD', 'EUR', 'GBP']);
+export const tripStatusEnum = pgEnum('trip_status', ['draft', 'generated', 'shared', 'archived']);
+export const generationStatusEnum = pgEnum('generation_status', ['pending', 'generating', 'completed', 'failed']);
+export const budgetBandEnum = pgEnum('budget_band', ['low', 'med', 'high']);
+export const paceEnum = pgEnum('pace', ['chill', 'standard', 'packed']);
+export const mobilityEnum = pgEnum('mobility', ['walk', 'public', 'car']);
 
 // Users table (managed by Clerk)
 export const users = pgTable("users", {
@@ -23,45 +39,75 @@ export const profiles = pgTable("profiles", {
   userId: varchar("user_id", { length: 64 }).primaryKey(),
   displayName: varchar("display_name", { length: 120 }),
   homeAirport: varchar("home_airport", { length: 8 }),
-  budgetBand: varchar("budget_band", { length: 16 }), // low/med/high
-  pace: varchar("pace", { length: 16 }), // chill/standard/packed
-  mobility: varchar("mobility", { length: 16 }), // walk/public/car
+  budgetBand: budgetBandEnum("budget_band"),
+  pace: paceEnum("pace"),
+  mobility: mobilityEnum("mobility"),
   preferences: jsonb("preferences"), // cuisine, dietary, must/avoid
   
   // Subscription fields (Razorpay)
-  subscriptionTier: varchar("subscription_tier", { length: 16 }).default("free"), // free/starter/pro
-  subscriptionStatus: varchar("subscription_status", { length: 24 }), // active/cancelled/expired/paused
+  subscriptionTier: subscriptionTierEnum("subscription_tier").default("free"),
+  subscriptionStatus: subscriptionStatusEnum("subscription_status"),
   subscriptionId: varchar("subscription_id", { length: 64 }), // Razorpay subscription ID
   razorpayCustomerId: varchar("razorpay_customer_id", { length: 64 }),
   subscriptionCurrentPeriodEnd: timestamp("subscription_current_period_end"),
   
   // Usage tracking
-  tripsUsedThisMonth: integer("trips_used_this_month").default(0),
+  tripsUsedThisMonth: integer("trips_used_this_month").default(0).notNull(),
   lastTripCreated: timestamp("last_trip_created"),
   
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "profiles_user_id_fk"
+  }),
+  // Check constraints
+  tripsUsedCheck: check("trips_used_check", sql`trips_used_this_month >= 0`),
+  // Indexes for performance
+  userIdIdx: index("profiles_user_id_idx").on(table.userId),
+  subscriptionTierIdx: index("profiles_subscription_tier_idx").on(table.subscriptionTier),
+  updatedAtIdx: index("profiles_updated_at_idx").on(table.updatedAt),
+}));
 
 // Trips table
 export const trips = pgTable("trips", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: varchar("user_id", { length: 64 }).notNull(),
-  title: varchar("title", { length: 160 }),
+  title: varchar("title", { length: 160 }).notNull(),
   destinations: jsonb("destinations").notNull(), // [{city, country, lat, lng}]
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
-  tripType: varchar("trip_type", { length: 24 }).notNull(), // leisure/business/adventure/cultural
-  budgetTotal: integer("budget_total"), // in rupees/dollars
-  budgetCurrency: varchar("budget_currency", { length: 3 }).default("INR"),
+  tripType: tripTypeEnum("trip_type").notNull(),
+  budgetTotal: integer("budget_total"),
+  budgetCurrency: budgetCurrencyEnum("budget_currency").default("INR").notNull(),
   budgetSplit: jsonb("budget_split"), // {transport, lodging, food, activities}
-  status: varchar("status", { length: 24 }).default("draft"), // draft/generated/shared
+  status: tripStatusEnum("status").default("draft").notNull(),
   sharedToken: varchar("shared_token", { length: 64 }),
-  generationStatus: varchar("generation_status", { length: 24 }).default("pending"), // pending/generating/completed/failed
+  generationStatus: generationStatusEnum("generation_status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "trips_user_id_fk"
+  }),
+  // Check constraints
+  budgetCheck: check("budget_check", sql`budget_total IS NULL OR budget_total > 0`),
+  dateCheck: check("date_check", sql`end_date > start_date`),
+  titleCheck: check("title_check", sql`LENGTH(title) > 0`),
+  // Indexes for performance
+  userIdIdx: index("trips_user_id_idx").on(table.userId),
+  statusIdx: index("trips_status_idx").on(table.status),
+  createdAtIdx: index("trips_created_at_idx").on(table.createdAt),
+  startDateIdx: index("trips_start_date_idx").on(table.startDate),
+  sharedTokenIdx: index("trips_shared_token_idx").on(table.sharedToken),
+}));
 
 // Generated itineraries
 export const itineraries = pgTable("itineraries", {
@@ -94,10 +140,23 @@ export const places = pgTable("places", {
   website: text("website"),
   hours: jsonb("hours"), // Opening hours
   tags: jsonb("tags").$type<string[]>().default([]),
-  verified: boolean("verified").default(false),
+  verified: boolean("verified").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Check constraints
+  priceLevelCheck: check("price_level_check", sql`price_level IS NULL OR (price_level >= 1 AND price_level <= 4)`),
+  ratingCheck: check("rating_check", sql`rating IS NULL OR (rating >= 0 AND rating <= 5)`),
+  latitudeCheck: check("latitude_check", sql`latitude IS NULL OR (latitude >= -90 AND latitude <= 90)`),
+  longitudeCheck: check("longitude_check", sql`longitude IS NULL OR (longitude >= -180 AND longitude <= 180)`),
+  nameCheck: check("name_check", sql`LENGTH(name) > 0`),
+  // Indexes for performance
+  cityCountryIdx: index("places_city_country_idx").on(table.city, table.country),
+  categoryIdx: index("places_category_idx").on(table.category),
+  locationIdx: index("places_location_idx").on(table.latitude, table.longitude),
+  verifiedIdx: index("places_verified_idx").on(table.verified),
+  sourceIdx: index("places_source_idx").on(table.source),
+}));
 
 // Price quotes cache
 export const priceQuotes = pgTable("price_quotes", {

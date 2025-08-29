@@ -62,6 +62,13 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  other: {
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://checkout.razorpay.com;",
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  },
 };
 
 export default function RootLayout({
@@ -83,24 +90,6 @@ export default function RootLayout({
       >
         <head>
           <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
-          <script dangerouslySetInnerHTML={{
-            __html: `
-              // Suppress Clerk warnings in production
-              if (typeof window !== 'undefined') {
-                const originalWarn = console.warn;
-                console.warn = function(...args) {
-                  const message = args[0] && typeof args[0] === 'string' ? args[0] : '';
-                  if (message.includes('Clerk has been loaded with development keys') ||
-                      message.includes('afterSignInUrl') ||
-                      message.includes('afterSignUpUrl') ||
-                      message.includes('deprecated')) {
-                    return;
-                  }
-                  originalWarn.apply(console, args);
-                };
-              }
-            `
-          }} />
         </head>
         <body className="min-h-screen bg-background font-sans antialiased">
           <ThemeProvider

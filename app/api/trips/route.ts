@@ -6,6 +6,8 @@ import { trips } from "@/lib/database/schema";
 import { getCurrentUserProfile, incrementTripUsage } from "@/lib/auth/profile";
 import { canCreateTrip } from "@/lib/subscription/config";
 import { eq, desc } from "drizzle-orm";
+import { apiRateLimit, tripCreationRateLimit } from "@/lib/security/rate-limit";
+import { sanitizeTripData } from "@/lib/security/sanitize";
 
 const createTripSchema = z.object({
   title: z.string().min(1).max(160),
@@ -23,6 +25,12 @@ const createTripSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResponse = await tripCreationRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { userId } = auth();
     
@@ -34,7 +42,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const tripData = createTripSchema.parse(body);
+    
+    // Sanitize input data first
+    const sanitizedData = sanitizeTripData(body);
+    
+    // Then validate with Zod schema
+    const tripData = createTripSchema.parse(sanitizedData);
 
     // Get user profile and check limits
     const profile = await getCurrentUserProfile();
@@ -148,6 +161,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting
+  const rateLimitResponse = await apiRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const { userId } = auth();
     

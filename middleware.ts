@@ -36,10 +36,13 @@ export default clerkMiddleware((auth, req) => {
     return NextResponse.next();
   }
 
-  // For protected routes, let client-side handle auth redirects
-  // We'll let the trips page handle its own authentication
-  if (path === '/trips') {
-    return NextResponse.next();
+  // Protected routes require authentication
+  const protectedRoutes = ['/trips', '/new', '/upgrade', '/dashboard'];
+  if (protectedRoutes.some(route => path.startsWith(route))) {
+    const { userId } = auth();
+    if (!userId) {
+      return NextResponse.redirect(new URL('/sign-in', req.url));
+    }
   }
 
   // Only check auth for truly protected routes (future admin/API routes)
