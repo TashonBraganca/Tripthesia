@@ -6,10 +6,14 @@ import { MapPin, Calendar, Users, Plane, Car, Hotel, MapIcon, Clock, ChevronRigh
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
+import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
+import { LocationData } from '@/lib/data/locations';
+
+// LocationData interface is imported from lib/data/locations
 
 interface TripData {
-  from: string;
-  to: string;
+  from: LocationData | null;
+  to: LocationData | null;
   startDate: string;
   endDate: string;
   travelers: number;
@@ -28,8 +32,8 @@ export default function NewTripPage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [currentStep, setCurrentStep] = useState(1);
   const [tripData, setTripData] = useState<TripData>({
-    from: '',
-    to: '',
+    from: null,
+    to: null,
     startDate: '',
     endDate: '',
     travelers: 1,
@@ -338,17 +342,9 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
   const [touched, setTouched] = useState<any>({});
   
   // Autocomplete states
-  const [fromSuggestions, setFromSuggestions] = useState<Location[]>([]);
-  const [toSuggestions, setToSuggestions] = useState<Location[]>([]);
-  const [fromQuery, setFromQuery] = useState('');
-  const [toQuery, setToQuery] = useState('');
-  const [showFromSuggestions, setShowFromSuggestions] = useState(false);
-  const [showToSuggestions, setShowToSuggestions] = useState(false);
-  const [loadingFrom, setLoadingFrom] = useState(false);
-  const [loadingTo, setLoadingTo] = useState(false);
+  // Location autocomplete state is now handled by LocationAutocomplete component
   
-  const fromInputRef = useRef<HTMLInputElement>(null);
-  const toInputRef = useRef<HTMLInputElement>(null);
+  // Input refs removed - LocationAutocomplete components handle their own refs
 
   // Popular destinations database
   const popularLocations: Location[] = [
@@ -408,82 +404,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     { id: 'foodie', name: 'Food & Wine', icon: '🍷' }
   ];
 
-  // Location search functionality
-  const searchLocations = (query: string, type: 'from' | 'to') => {
-    if (query.length < 2) {
-      if (type === 'from') {
-        setFromSuggestions([]);
-        setShowFromSuggestions(false);
-      } else {
-        setToSuggestions([]);
-        setShowToSuggestions(false);
-      }
-      return;
-    }
-
-    const filtered = popularLocations.filter(location => 
-      location.name.toLowerCase().includes(query.toLowerCase()) ||
-      location.city.toLowerCase().includes(query.toLowerCase()) ||
-      location.country.toLowerCase().includes(query.toLowerCase()) ||
-      (location.state && location.state.toLowerCase().includes(query.toLowerCase())) ||
-      location.formatted.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 5); // Limit to 5 suggestions
-
-    if (type === 'from') {
-      setFromSuggestions(filtered);
-      setShowFromSuggestions(true);
-      setLoadingFrom(false);
-    } else {
-      setToSuggestions(filtered);
-      setShowToSuggestions(true);
-      setLoadingTo(false);
-    }
-  };
-
-  const handleLocationSearch = (query: string, type: 'from' | 'to') => {
-    if (type === 'from') {
-      setFromQuery(query);
-      setLoadingFrom(query.length >= 2);
-    } else {
-      setToQuery(query);
-      setLoadingTo(query.length >= 2);
-    }
-
-    // Debounce search
-    const timeoutId = setTimeout(() => {
-      searchLocations(query, type);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  };
-
-  const selectLocation = (location: Location, type: 'from' | 'to') => {
-    if (type === 'from') {
-      setFromQuery(location.formatted);
-      setTripData({ ...tripData, from: location.formatted });
-      setShowFromSuggestions(false);
-      handleFieldChange('from', location.formatted);
-    } else {
-      setToQuery(location.formatted);
-      setTripData({ ...tripData, to: location.formatted });
-      setShowToSuggestions(false);
-      handleFieldChange('to', location.formatted);
-    }
-  };
-
-  const clearLocation = (type: 'from' | 'to') => {
-    if (type === 'from') {
-      setFromQuery('');
-      setTripData({ ...tripData, from: '' });
-      setShowFromSuggestions(false);
-      fromInputRef.current?.focus();
-    } else {
-      setToQuery('');
-      setTripData({ ...tripData, to: '' });
-      setShowToSuggestions(false);
-      toInputRef.current?.focus();
-    }
-  };
+  // Location handling is now managed by LocationAutocomplete components
 
   // Enhanced validation with real-time feedback
   const validateField = (name: string, value: string) => {
@@ -491,18 +412,14 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     
     switch (name) {
       case 'from':
-        if (!value.trim()) {
+        if (!tripData.from) {
           errors.from = 'Departure location is required';
-        } else if (value.length < 2) {
-          errors.from = 'Please enter a valid city name';
         }
         break;
       case 'to':
-        if (!value.trim()) {
+        if (!tripData.to) {
           errors.to = 'Destination is required';
-        } else if (value.length < 2) {
-          errors.to = 'Please enter a valid destination';
-        } else if (value === tripData.from) {
+        } else if (tripData.to?.id === tripData.from?.id) {
           errors.to = 'Destination must be different from departure';
         }
         break;
@@ -531,20 +448,9 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     if (touched[name]) {
       validateField(name, value);
     }
-    
-    // Handle location search
-    if (name === 'from') {
-      handleLocationSearch(value, 'from');
-    } else if (name === 'to') {
-      handleLocationSearch(value, 'to');
-    }
   };
 
-  // Initialize query states with existing trip data
-  useEffect(() => {
-    setFromQuery(tripData.from || '');
-    setToQuery(tripData.to || '');
-  }, []);
+  // Location state initialization removed - LocationAutocomplete components handle their own state
 
   const handleFieldBlur = (name: string) => {
     setTouched((prev: any) => ({ ...prev, [name]: true }));
@@ -609,125 +515,19 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
         variants={staggerContainer}
       >
         <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            From <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-navy-100 mb-2">
+            From <span className="text-teal-400">*</span>
           </label>
-          <div className="relative">
-            <motion.input
-              ref={fromInputRef}
-              type="text"
-              placeholder="Search cities (e.g. New York, Paris)"
-              value={fromQuery}
-              onChange={(e) => handleFieldChange('from', e.target.value)}
-              onBlur={() => {
-                handleFieldBlur('from');
-                // Hide suggestions after a delay to allow selection
-                setTimeout(() => setShowFromSuggestions(false), 200);
-              }}
-              onFocus={() => {
-                if (fromQuery.length >= 2) setShowFromSuggestions(true);
-              }}
-              className={`w-full pl-10 pr-10 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
-                validationErrors.from && touched.from
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50'
-                  : tripData.from && !validationErrors.from
-                  ? 'border-green-500 focus:ring-green-500 bg-green-50'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              }`}
-              whileFocus={{ 
-                scale: 1.01,
-                boxShadow: validationErrors.from && touched.from 
-                  ? "0 0 0 3px rgba(239, 68, 68, 0.1)"
-                  : "0 0 0 3px rgba(99, 102, 241, 0.1)"
-              }}
-              whileTap={{ scale: 0.99 }}
-            />
-            
-            {/* Search Icon */}
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-              {loadingFrom ? (
-                <motion.div
-                  className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-              ) : (
-                <Search className="w-4 h-4 text-gray-400" />
-              )}
-            </div>
-
-            {/* Clear Button */}
-            {fromQuery && (
-              <motion.button
-                type="button"
-                onClick={() => clearLocation('from')}
-                className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <X className="w-3 h-3 text-gray-400" />
-              </motion.button>
-            )}
-
-            {/* Success/Error Icon */}
-            <motion.div 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ 
-                opacity: touched.from && (tripData.from || validationErrors.from) ? 1 : 0,
-                scale: touched.from && (tripData.from || validationErrors.from) ? 1 : 0.5
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              {validationErrors.from && touched.from ? (
-                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : tripData.from && !validationErrors.from ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : null}
-            </motion.div>
-
-            {/* Suggestions Dropdown */}
-            <AnimatePresence>
-              {showFromSuggestions && fromSuggestions.length > 0 && (
-                <motion.div
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {fromSuggestions.map((location, index) => (
-                    <motion.div
-                      key={location.id}
-                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                      onClick={() => selectLocation(location, 'from')}
-                      whileHover={{ backgroundColor: "#f9fafb" }}
-                    >
-                      <MapPin className="w-4 h-4 text-indigo-500 mr-3 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">{location.city}</div>
-                        <div className="text-sm text-gray-500">{location.formatted}</div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          
+          <LocationAutocomplete
+            variant="departure"
+            value={tripData.from}
+            onChange={(location) => {
+              setTripData({ ...tripData, from: location });
+              handleFieldChange('from', location?.name || '');
+            }}
+            className="mb-1"
+            required
+          />
           {/* Error Message */}
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -739,7 +539,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
             className="overflow-hidden"
           >
             {validationErrors.from && touched.from && (
-              <p className="text-red-500 text-sm mt-1 flex items-center">
+              <p className="text-red-400 text-sm mt-1 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
@@ -750,125 +550,19 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
         </motion.div>
         
         <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            To <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-navy-100 mb-2">
+            To <span className="text-teal-400">*</span>
           </label>
-          <div className="relative">
-            <motion.input
-              ref={toInputRef}
-              type="text"
-              placeholder="Search destination (e.g. Paris, Tokyo)"
-              value={toQuery}
-              onChange={(e) => handleFieldChange('to', e.target.value)}
-              onBlur={() => {
-                handleFieldBlur('to');
-                // Hide suggestions after a delay to allow selection
-                setTimeout(() => setShowToSuggestions(false), 200);
-              }}
-              onFocus={() => {
-                if (toQuery.length >= 2) setShowToSuggestions(true);
-              }}
-              className={`w-full pl-10 pr-10 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
-                validationErrors.to && touched.to
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50'
-                  : tripData.to && !validationErrors.to
-                  ? 'border-green-500 focus:ring-green-500 bg-green-50'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              }`}
-              whileFocus={{ 
-                scale: 1.01,
-                boxShadow: validationErrors.to && touched.to 
-                  ? "0 0 0 3px rgba(239, 68, 68, 0.1)"
-                  : "0 0 0 3px rgba(99, 102, 241, 0.1)"
-              }}
-              whileTap={{ scale: 0.99 }}
-            />
-            
-            {/* Search Icon */}
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-              {loadingTo ? (
-                <motion.div
-                  className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                />
-              ) : (
-                <Search className="w-4 h-4 text-gray-400" />
-              )}
-            </div>
-
-            {/* Clear Button */}
-            {toQuery && (
-              <motion.button
-                type="button"
-                onClick={() => clearLocation('to')}
-                className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 transition-colors"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <X className="w-3 h-3 text-gray-400" />
-              </motion.button>
-            )}
-
-            {/* Success/Error Icon */}
-            <motion.div 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ 
-                opacity: touched.to && (tripData.to || validationErrors.to) ? 1 : 0,
-                scale: touched.to && (tripData.to || validationErrors.to) ? 1 : 0.5
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              {validationErrors.to && touched.to ? (
-                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : tripData.to && !validationErrors.to ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : null}
-            </motion.div>
-
-            {/* Suggestions Dropdown */}
-            <AnimatePresence>
-              {showToSuggestions && toSuggestions.length > 0 && (
-                <motion.div
-                  className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {toSuggestions.map((location, index) => (
-                    <motion.div
-                      key={location.id}
-                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.2, delay: index * 0.05 }}
-                      onClick={() => selectLocation(location, 'to')}
-                      whileHover={{ backgroundColor: "#f9fafb" }}
-                    >
-                      <MapPin className="w-4 h-4 text-indigo-500 mr-3 flex-shrink-0" />
-                      <div>
-                        <div className="font-medium text-gray-900">{location.city}</div>
-                        <div className="text-sm text-gray-500">{location.formatted}</div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          
+          <LocationAutocomplete
+            variant="destination"
+            value={tripData.to}
+            onChange={(location) => {
+              setTripData({ ...tripData, to: location });
+              handleFieldChange('to', location?.name || '');
+            }}
+            className="mb-1"
+            required
+          />
           {/* Error Message */}
           <motion.div
             initial={{ opacity: 0, height: 0 }}
@@ -880,7 +574,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
             className="overflow-hidden"
           >
             {validationErrors.to && touched.to && (
-              <p className="text-red-500 text-sm mt-1 flex items-center">
+              <p className="text-red-400 text-sm mt-1 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
