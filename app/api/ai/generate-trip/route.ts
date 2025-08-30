@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { withAISubscriptionCheck, getAIAccess } from '@/lib/subscription/ai-restrictions';
 
 // Input validation schema
 const generateTripSchema = z.object({
@@ -151,77 +152,79 @@ Ensure all costs are realistic for ${input.destination} and align with the ${inp
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    // Check authentication
-    const { userId } = auth();
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Check if OpenAI is available
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'AI service not configured' },
-        { status: 503 }
-      );
-    }
-
-    // Parse and validate request body
-    const body = await request.json();
-    const input = generateTripSchema.parse(body);
-
-    // Generate trip using OpenAI
-    const prompt = createTripGenerationPrompt(input);
-    
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert travel planner with deep knowledge of destinations worldwide. 
-          Create detailed, realistic, and personalized travel itineraries that provide excellent value 
-          within the specified budget. Focus on authentic local experiences alongside must-see attractions.
-          Always respond with valid JSON that matches the requested structure exactly.`
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' }
-    });
-
-    const generatedContent = completion.choices[0]?.message?.content;
-    if (!generatedContent) {
-      throw new Error('No content generated from AI');
-    }
-
-    // Parse and validate AI response
-    let generatedTrip: GeneratedTrip;
+  return withAISubscriptionCheck('canUseAIGenerator', async (userInfo) => {
     try {
-      generatedTrip = JSON.parse(generatedContent);
-    } catch (error) {
-      console.error('Failed to parse AI response:', error);
-      throw new Error('Invalid AI response format');
-    }
-
-    // Add metadata
-    const response = {
-      ...generatedTrip,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        model: 'gpt-4o-mini',
-        userId,
-        inputParams: input,
+      // Check if OpenAI is available
+      if (!process.env.OPENAI_API_KEY) {
+        return NextResponse.json(
+          { error: 'AI service not configured' },
+          { status: 503 }
+        );
       }
-    };
 
-    return NextResponse.json(response);
+      // Parse and validate request body
+      const body = await request.json();
+      const input = generateTripSchema.parse(body);
+
+      // Get user's AI access settings
+      const aiAccess = userInfo.aiAccess;
+      
+      // Generate trip using OpenAI with appropriate model for user tier
+      const prompt = createTripGenerationPrompt(input);
+      
+      const completion = await openai.chat.completions.create({
+        model: aiAccess.aiModel, // Use tier-appropriate model
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert travel planner with deep knowledge of destinations worldwide. 
+            Create detailed, realistic, and personalized travel itineraries that provide excellent value 
+            within the specified budget. Focus on authentic local experiences alongside must-see attractions.
+            Always respond with valid JSON that matches the requested structure exactly.
+            
+            User tier: ${userInfo.tier} - Adjust response complexity accordingly.
+            ${userInfo.tier === 'pro' ? 'Provide premium insights and advanced recommendations.' : ''}
+            ${userInfo.tier === 'free' ? 'Keep recommendations concise but helpful.' : ''}`
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: userInfo.tier === 'pro' ? 0.8 : 0.7, // More creative for Pro users
+        max_tokens: userInfo.tier === 'pro' ? 5000 : userInfo.tier === 'starter' ? 4000 : 3000,
+        response_format: { type: 'json_object' }
+      });
+
+      const generatedContent = completion.choices[0]?.message?.content;
+      if (!generatedContent) {
+        throw new Error('No content generated from AI');
+      }
+
+      // Parse and validate AI response
+      let generatedTrip: GeneratedTrip;
+      try {
+        generatedTrip = JSON.parse(generatedContent);
+      } catch (error) {
+        console.error('Failed to parse AI response:', error);
+        throw new Error('Invalid AI response format');
+      }
+
+      // Add metadata
+      const response = {
+        ...generatedTrip,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          model: aiAccess.aiModel,
+          userId: userInfo.tier, // Don't expose actual userId
+          inputParams: input,
+          tier: userInfo.tier,
+          remainingGenerations: userInfo.limits.aiGenerationsPerTrip - 1,
+          upgradeAvailable: userInfo.tier !== 'pro',
+        }
+      };
+
+      return NextResponse.json(response);
 
   } catch (error) {
     console.error('AI trip generation error:', error);
@@ -251,7 +254,8 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to generate trip itinerary' },
       { status: 500 }
     );
-  }
+    }
+  });
 }
 
 // GET endpoint for testing AI service health
