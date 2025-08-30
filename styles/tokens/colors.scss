@@ -1,0 +1,205 @@
+/* 
+ * Tripthesia React Bits Inspired Color System
+ * Navy-Teal Theme with Dark-First Approach
+ */
+
+:root {
+  /* Navy Scale - Primary Dark Colors */
+  --navy-950: #030B14;  /* Deepest navy for backgrounds */
+  --navy-900: #061A2C;  /* Primary navy */
+  --navy-800: #0A2540;  /* Secondary navy */
+  --navy-700: #0F2B54;  /* Tertiary navy */
+  --navy-600: #1B3B6F;  /* Lighter navy */
+  --navy-500: #2D4F85;  /* Mid navy */
+  --navy-400: #4268A3;  /* Light navy */
+  --navy-300: #5D7FB8;  /* Very light navy */
+  --navy-200: #8DA6CE;  /* Muted navy */
+  --navy-100: #B8C7D3;  /* Subtle navy text */
+  --navy-50:  #E6F0F8;  /* Nearly white navy */
+
+  /* Teal Scale - Primary Accent Colors */
+  --teal-900: #0A3B2E;  /* Deepest teal */
+  --teal-800: #0F4C3A;  /* Dark teal */
+  --teal-700: #135D46;  /* Deep teal */
+  --teal-600: #177052;  /* Medium dark teal */
+  --teal-500: #15B37D;  /* Primary teal */
+  --teal-400: #22C692;  /* Light teal */
+  --teal-300: #4DD4A4;  /* Very light teal */
+  --teal-200: #7DE2B8;  /* Muted teal */
+  --teal-100: #B8F0D1;  /* Subtle teal */
+  --teal-50:  #E8FCEF;  /* Nearly white teal */
+
+  /* Sky Scale - Secondary Accent Colors */
+  --sky-900: #0B2A3D;   /* Deep sky */
+  --sky-800: #10384F;   /* Dark sky */
+  --sky-700: #154761;   /* Medium sky */
+  --sky-600: #1A5573;   /* Light dark sky */
+  --sky-500: #2196C7;   /* Primary sky */
+  --sky-400: #18BDD6;   /* Light sky */
+  --sky-300: #38CAE3;   /* Very light sky */
+  --sky-200: #68D9ED;   /* Muted sky */
+  --sky-100: #98E8F7;   /* Subtle sky */
+  --sky-50:  #E0F7FF;   /* Nearly white sky */
+
+  /* Neutral Scale - Text and UI Elements */
+  --neutral-900: #0F172A; /* Deepest neutral */
+  --neutral-800: #1E293B; /* Dark neutral */
+  --neutral-700: #334155; /* Medium dark neutral */
+  --neutral-600: #475569; /* Medium neutral */
+  --neutral-500: #64748B; /* Mid neutral */
+  --neutral-400: #94A3B8; /* Light neutral */
+  --neutral-300: #CBD5E1; /* Very light neutral */
+  --neutral-200: #E2E8F0; /* Muted neutral */
+  --neutral-100: #F1F5F9; /* Subtle neutral */
+  --neutral-50:  #F8FAFC; /* Nearly white neutral */
+
+  /* Semantic Colors */
+  --success: #15B37D;     /* Success (using teal-500) */
+  --warning: #F59E0B;     /* Warning (amber) */
+  --error: #FF6B6B;       /* Error (coral red) */
+  --info: #18BDD6;        /* Info (using sky-400) */
+
+  /* Text Colors - Dark Theme First */
+  --text-primary: #E6F0F8;     /* Primary text on dark */
+  --text-secondary: #A8C0CF;   /* Secondary text on dark */
+  --text-tertiary: #6B7B8C;    /* Tertiary text on dark */
+  --text-inverse: #0F172A;     /* Inverse text for light backgrounds */
+
+  /* Background Colors - Dark Theme First */
+  --bg-primary: #061A2C;       /* Primary background (navy-900) */
+  --bg-secondary: #0A2540;     /* Secondary background (navy-800) */
+  --bg-tertiary: #0F2B54;      /* Tertiary background (navy-700) */
+  --bg-accent: #15B37D;        /* Accent background (teal-500) */
+  --bg-muted: #1B3B6F;         /* Muted background (navy-600) */
+
+  /* Border Colors */
+  --border-primary: rgba(184, 199, 211, 0.2);   /* Primary borders */
+  --border-secondary: rgba(168, 192, 207, 0.15); /* Secondary borders */
+  --border-accent: rgba(21, 179, 125, 0.3);      /* Accent borders */
+  --border-muted: rgba(107, 123, 140, 0.1);      /* Muted borders */
+
+  /* Shadow Colors */
+  --shadow-sm: rgba(6, 26, 44, 0.05);
+  --shadow-md: rgba(6, 26, 44, 0.1);
+  --shadow-lg: rgba(6, 26, 44, 0.15);
+  --shadow-xl: rgba(6, 26, 44, 0.25);
+
+  /* Gradient Definitions */
+  --gradient-primary: linear-gradient(135deg, var(--navy-900) 0%, var(--teal-500) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--navy-800) 0%, var(--sky-400) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--teal-600) 0%, var(--teal-400) 100%);
+  --gradient-muted: linear-gradient(135deg, var(--navy-700) 0%, var(--navy-600) 100%);
+
+  /* Mesh Gradients for Topographical Background */
+  --mesh-gradient-1: radial-gradient(circle at 20% 80%, var(--navy-900) 0%, var(--navy-700) 25%, rgba(21, 179, 125, 0.3) 50%, rgba(24, 189, 214, 0.2) 75%, var(--navy-900) 100%);
+  --mesh-gradient-2: radial-gradient(circle at 80% 20%, var(--teal-500) 0%, var(--navy-800) 25%, var(--sky-400) 50%, var(--navy-900) 75%, var(--navy-950) 100%);
+  --mesh-gradient-3: radial-gradient(circle at 40% 40%, var(--sky-400) 0%, var(--navy-700) 25%, var(--teal-400) 50%, var(--navy-800) 75%, var(--navy-900) 100%);
+
+  /* Interactive States */
+  --hover-overlay: rgba(21, 179, 125, 0.1);
+  --active-overlay: rgba(21, 179, 125, 0.2);
+  --focus-ring: rgba(21, 179, 125, 0.3);
+  --selection-bg: rgba(21, 179, 125, 0.2);
+
+  /* Glass Morphism */
+  --glass-bg: rgba(6, 26, 44, 0.8);
+  --glass-border: rgba(184, 199, 211, 0.2);
+  --glass-shadow: 0 8px 32px rgba(6, 26, 44, 0.4);
+
+  /* Animation Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* Light Theme Overrides (when .light class is applied) */
+.light {
+  /* Text Colors - Light Theme */
+  --text-primary: #0F172A;     /* Primary text on light */
+  --text-secondary: #475569;   /* Secondary text on light */
+  --text-tertiary: #94A3B8;    /* Tertiary text on light */
+  --text-inverse: #E6F0F8;     /* Inverse text for dark backgrounds */
+
+  /* Background Colors - Light Theme */
+  --bg-primary: #F8FAFC;       /* Primary background (neutral-50) */
+  --bg-secondary: #F1F5F9;     /* Secondary background (neutral-100) */
+  --bg-tertiary: #E2E8F0;      /* Tertiary background (neutral-200) */
+  --bg-accent: #15B37D;        /* Accent background (teal-500) - unchanged */
+  --bg-muted: #CBD5E1;         /* Muted background (neutral-300) */
+
+  /* Border Colors - Light Theme */
+  --border-primary: rgba(15, 23, 42, 0.15);      /* Primary borders */
+  --border-secondary: rgba(71, 85, 105, 0.1);    /* Secondary borders */
+  --border-accent: rgba(21, 179, 125, 0.3);      /* Accent borders - unchanged */
+  --border-muted: rgba(148, 163, 184, 0.2);      /* Muted borders */
+
+  /* Shadow Colors - Light Theme */
+  --shadow-sm: rgba(15, 23, 42, 0.05);
+  --shadow-md: rgba(15, 23, 42, 0.1);
+  --shadow-lg: rgba(15, 23, 42, 0.15);
+  --shadow-xl: rgba(15, 23, 42, 0.25);
+
+  /* Glass Morphism - Light Theme */
+  --glass-bg: rgba(248, 250, 252, 0.8);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
+
+  /* Light Theme Mesh Gradients */
+  --mesh-gradient-1: radial-gradient(circle at 20% 80%, rgba(241, 245, 249, 0.9) 0%, rgba(226, 232, 240, 0.8) 25%, rgba(21, 179, 125, 0.15) 50%, rgba(24, 189, 214, 0.1) 75%, rgba(248, 250, 252, 0.9) 100%);
+  --mesh-gradient-2: radial-gradient(circle at 80% 20%, rgba(21, 179, 125, 0.2) 0%, rgba(226, 232, 240, 0.8) 25%, rgba(24, 189, 214, 0.15) 50%, rgba(241, 245, 249, 0.9) 75%, rgba(248, 250, 252, 0.95) 100%);
+}
+
+/* CSS Custom Properties Utilities */
+.bg-navy-900 { background-color: var(--navy-900); }
+.bg-navy-800 { background-color: var(--navy-800); }
+.bg-navy-700 { background-color: var(--navy-700); }
+.bg-teal-500 { background-color: var(--teal-500); }
+.bg-teal-400 { background-color: var(--teal-400); }
+.bg-sky-400 { background-color: var(--sky-400); }
+
+.text-navy-100 { color: var(--navy-100); }
+.text-navy-200 { color: var(--navy-200); }
+.text-teal-400 { color: var(--teal-400); }
+.text-teal-500 { color: var(--teal-500); }
+.text-sky-400 { color: var(--sky-400); }
+
+.border-navy-600 { border-color: var(--navy-600); }
+.border-teal-400 { border-color: var(--teal-400); }
+
+/* Gradient Utilities */
+.bg-gradient-primary { background: var(--gradient-primary); }
+.bg-gradient-secondary { background: var(--gradient-secondary); }
+.bg-gradient-accent { background: var(--gradient-accent); }
+.bg-gradient-muted { background: var(--gradient-muted); }
+
+/* Glass Morphism Utilities */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Interactive States */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s var(--ease-out-expo);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px var(--focus-ring);
+  transition: box-shadow 0.2s var(--ease-out-expo);
+}
+
+/* Focus States */
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus-ring);
+}
+
+/* Selection Styles */
+::selection {
+  background: var(--selection-bg);
+  color: var(--text-primary);
+}

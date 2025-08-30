@@ -1,0 +1,213 @@
+/* Topographical Grid Base Styles */
+.topo-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+  will-change: transform;
+}
+
+/* Gradient backgrounds */
+.topo-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.8;
+}
+
+.topo-gradient-dark {
+  background: radial-gradient(
+    circle at 20% 80%, 
+    rgba(6, 26, 44, 0.9) 0%, 
+    rgba(15, 35, 84, 0.8) 25%, 
+    rgba(21, 179, 125, 0.3) 50%, 
+    rgba(24, 189, 214, 0.2) 75%, 
+    rgba(6, 26, 44, 0.9) 100%
+  );
+  animation: gradientShift 20s ease-in-out infinite;
+}
+
+.topo-gradient-light {
+  background: radial-gradient(
+    circle at 20% 80%, 
+    rgba(184, 199, 211, 0.3) 0%, 
+    rgba(56, 202, 227, 0.2) 25%, 
+    rgba(21, 179, 125, 0.15) 50%, 
+    rgba(15, 35, 84, 0.1) 75%, 
+    rgba(184, 199, 211, 0.3) 100%
+  );
+  animation: gradientShiftLight 20s ease-in-out infinite;
+}
+
+/* Dots container */
+.topo-dots-container {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  width: calc(100% + 100px);
+  height: calc(100% + 100px);
+}
+
+/* Individual dots */
+.topo-dot {
+  position: absolute;
+  border-radius: 50%;
+  will-change: opacity, transform;
+}
+
+.topo-dot-dark {
+  background: radial-gradient(circle, #15B37D 0%, #22C692 100%);
+  box-shadow: 0 0 2px rgba(21, 179, 125, 0.5);
+}
+
+.topo-dot-light {
+  background: radial-gradient(circle, #0A2540 0%, #1B3B6F 100%);
+  box-shadow: 0 0 2px rgba(10, 37, 64, 0.3);
+}
+
+/* SVG elevation lines */
+.topo-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Edge fade overlay */
+.topo-fade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.topo-fade-dark {
+  background: 
+    linear-gradient(to right, rgba(6, 26, 44, 0.8) 0%, transparent 10%, transparent 90%, rgba(6, 26, 44, 0.8) 100%),
+    linear-gradient(to bottom, rgba(6, 26, 44, 0.6) 0%, transparent 15%, transparent 85%, rgba(6, 26, 44, 0.6) 100%);
+}
+
+.topo-fade-light {
+  background: 
+    linear-gradient(to right, rgba(230, 240, 248, 0.8) 0%, transparent 10%, transparent 90%, rgba(230, 240, 248, 0.8) 100%),
+    linear-gradient(to bottom, rgba(230, 240, 248, 0.6) 0%, transparent 15%, transparent 85%, rgba(230, 240, 248, 0.6) 100%);
+}
+
+/* Animations */
+@keyframes gradientShift {
+  0%, 100% {
+    background: radial-gradient(
+      circle at 20% 80%, 
+      rgba(6, 26, 44, 0.9) 0%, 
+      rgba(15, 35, 84, 0.8) 25%, 
+      rgba(21, 179, 125, 0.3) 50%, 
+      rgba(24, 189, 214, 0.2) 75%, 
+      rgba(6, 26, 44, 0.9) 100%
+    );
+  }
+  25% {
+    background: radial-gradient(
+      circle at 80% 20%, 
+      rgba(6, 26, 44, 0.9) 0%, 
+      rgba(21, 179, 125, 0.4) 25%, 
+      rgba(15, 35, 84, 0.8) 50%, 
+      rgba(24, 189, 214, 0.3) 75%, 
+      rgba(6, 26, 44, 0.9) 100%
+    );
+  }
+  50% {
+    background: radial-gradient(
+      circle at 60% 60%, 
+      rgba(15, 35, 84, 0.8) 0%, 
+      rgba(24, 189, 214, 0.4) 25%, 
+      rgba(6, 26, 44, 0.9) 50%, 
+      rgba(21, 179, 125, 0.3) 75%, 
+      rgba(15, 35, 84, 0.8) 100%
+    );
+  }
+  75% {
+    background: radial-gradient(
+      circle at 40% 20%, 
+      rgba(21, 179, 125, 0.4) 0%, 
+      rgba(6, 26, 44, 0.9) 25%, 
+      rgba(24, 189, 214, 0.3) 50%, 
+      rgba(15, 35, 84, 0.8) 75%, 
+      rgba(6, 26, 44, 0.9) 100%
+    );
+  }
+}
+
+@keyframes gradientShiftLight {
+  0%, 100% {
+    background: radial-gradient(
+      circle at 20% 80%, 
+      rgba(184, 199, 211, 0.3) 0%, 
+      rgba(56, 202, 227, 0.2) 25%, 
+      rgba(21, 179, 125, 0.15) 50%, 
+      rgba(15, 35, 84, 0.1) 75%, 
+      rgba(184, 199, 211, 0.3) 100%
+    );
+  }
+  50% {
+    background: radial-gradient(
+      circle at 80% 20%, 
+      rgba(56, 202, 227, 0.2) 0%, 
+      rgba(15, 35, 84, 0.1) 25%, 
+      rgba(184, 199, 211, 0.3) 50%, 
+      rgba(21, 179, 125, 0.15) 75%, 
+      rgba(56, 202, 227, 0.2) 100%
+    );
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .topo-dots-container {
+    top: -25px;
+    left: -25px;
+    width: calc(100% + 50px);
+    height: calc(100% + 50px);
+  }
+  
+  .topo-dot {
+    transform: scale(0.8);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .topo-grid,
+  .topo-gradient,
+  .topo-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .topo-grid {
+    transform: none !important;
+  }
+}
+
+/* Performance optimizations */
+.topo-grid * {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* GPU acceleration hints */
+.topo-dots-container,
+.topo-lines,
+.topo-gradient {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}

@@ -2,50 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import React Bits inspired color system */
+@import '../styles/tokens/colors.scss';
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
+    /* Updated to use navy-teal color system - Dark first approach */
+    --background: 213 84% 8.5%; /* navy-900 */
+    --foreground: 213 40% 93%;  /* navy-50 */
+    --card: 213 76% 11%;        /* navy-800 */
+    --card-foreground: 213 40% 93%;
+    --popover: 213 76% 11%;     /* navy-800 */
+    --popover-foreground: 213 40% 93%;
+    --primary: 158 76% 40%;     /* teal-500 */
+    --primary-foreground: 158 80% 10%;
+    --secondary: 213 58% 22%;   /* navy-600 */
+    --secondary-foreground: 213 40% 93%;
+    --muted: 213 58% 22%;       /* navy-600 */
+    --muted-foreground: 213 20% 65%;
+    --accent: 213 58% 22%;      /* navy-600 */
+    --accent-foreground: 213 40% 93%;
+    --destructive: 0 84% 70%;   /* error color */
+    --destructive-foreground: 213 40% 93%;
+    --border: 213 20% 25%;      /* navy-600 with opacity */
+    --input: 213 32% 17.5%;     /* navy-700 */
+    --ring: 158 71% 45%;        /* teal-400 */
     --radius: 0.75rem;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142.4 71.8% 29.2%;
+  .light {
+    /* Light theme with navy-teal system */
+    --background: 213 10% 98%;  /* neutral-50 */
+    --foreground: 213 84% 8.5%; /* navy-900 */
+    --card: 213 10% 96%;        /* neutral-100 */
+    --card-foreground: 213 84% 8.5%;
+    --popover: 213 10% 96%;
+    --popover-foreground: 213 84% 8.5%;
+    --primary: 158 76% 40%;     /* teal-500 - unchanged */
+    --primary-foreground: 213 10% 98%;
+    --secondary: 213 10% 88%;   /* neutral-200 */
+    --secondary-foreground: 213 84% 8.5%;
+    --muted: 213 10% 88%;
+    --muted-foreground: 213 16% 46%;
+    --accent: 213 10% 88%;
+    --accent-foreground: 213 84% 8.5%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 213 10% 98%;
+    --border: 213 31% 91%;
+    --input: 213 31% 91%;
+    --ring: 158 71% 45%;        /* teal-400 */
   }
 }
 
@@ -96,6 +101,66 @@
 
 .mapboxgl-popup-tip {
   @apply border-card;
+}
+
+/* Typography utilities */
+.heading {
+  @apply font-serif font-semibold tracking-tight;
+}
+
+.heading-xl {
+  @apply font-serif text-5xl font-bold tracking-tight;
+}
+
+.heading-lg {
+  @apply font-serif text-4xl font-semibold tracking-tight;
+}
+
+.heading-md {
+  @apply font-serif text-3xl font-semibold tracking-tight;
+}
+
+.heading-sm {
+  @apply font-serif text-2xl font-medium tracking-tight;
+}
+
+.body-lg {
+  @apply font-sans text-lg leading-relaxed;
+}
+
+.body-md {
+  @apply font-sans text-base leading-normal;
+}
+
+.body-sm {
+  @apply font-sans text-sm leading-normal;
+}
+
+/* Responsive typography scale */
+.display-text {
+  @apply font-serif font-bold tracking-tight;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: clamp(2.75rem, 5.5vw, 4.5rem);
+}
+
+.hero-text {
+  @apply font-serif font-semibold tracking-tight;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  line-height: clamp(2rem, 4.5vw, 3.5rem);
+}
+
+/* Enhanced text contrast for accessibility */
+.text-contrast-high {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.text-contrast-medium {
+  color: var(--text-secondary);
+}
+
+.text-contrast-low {
+  color: var(--text-tertiary);
 }
 
 /* Print styles */
