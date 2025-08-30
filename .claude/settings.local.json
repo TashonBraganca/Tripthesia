@@ -24,7 +24,8 @@
       "Bash(pnpm db:generate:*)",
       "Bash(npx drizzle-kit:*)",
       "Bash(pnpm drizzle-kit generate:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

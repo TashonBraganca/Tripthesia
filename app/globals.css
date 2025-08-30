@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* Import React Bits inspired color system */
-@import '../styles/tokens/colors.scss';
+@import '../styles/tokens/colors.css';
 
 @layer base {
   :root {

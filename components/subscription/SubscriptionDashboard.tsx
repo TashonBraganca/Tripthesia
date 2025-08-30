@@ -361,7 +361,7 @@ export default function SubscriptionDashboard({
                 <div className="bg-blue-50 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">Usage Insights</h4>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• You've used {Math.round((usage.tripsThisMonth / (currentTier === 'free' ? 2 : currentTier === 'starter' ? 10 : 30)) * 100)}% of your monthly trip allowance</li>
+                    <li>• You&apos;ve used {Math.round((usage.tripsThisMonth / (currentTier === 'free' ? 2 : currentTier === 'starter' ? 10 : 30)) * 100)}% of your monthly trip allowance</li>
                     <li>• AI generations reset daily at midnight UTC</li>
                     {currentTier === 'free' && usage.tripsThisMonth >= 1 && (
                       <li>• Consider upgrading for more trips and advanced AI features</li>
@@ -539,7 +539,7 @@ export default function SubscriptionDashboard({
                   <div className="text-center py-12">
                     <Crown className="h-16 w-16 text-purple-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      You're on the Pro Plan!
+                      You&apos;re on the Pro Plan!
                     </h3>
                     <p className="text-gray-600">
                       You have access to all premium features and capabilities.
