@@ -11,6 +11,12 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "pre-build-check": "node scripts/pre-build-check.js",
+    "load-test": "node scripts/load-testing/load-test.js",
+    "load-test:full": "node scripts/load-testing/load-test.js --full",
+    "security-audit": "node scripts/security/security-audit.js",
+    "backup:create": "node scripts/backup/backup-system.js create",
+    "backup:list": "node scripts/backup/backup-system.js list",
+    "backup:restore": "node scripts/backup/backup-system.js restore",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"

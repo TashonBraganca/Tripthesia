@@ -4,6 +4,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/toaster";
+import { ErrorBoundary } from "@/components/error-boundary/ErrorBoundary";
+import { ErrorTrackingInit } from "@/components/monitoring/ErrorTrackingInit";
+import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
 
 import "./globals.css";
 
@@ -108,9 +111,13 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <QueryProvider>
-              <div className="relative flex min-h-screen flex-col">
-                {children}
-              </div>
+              <ErrorBoundary>
+                <ErrorTrackingInit />
+                <PerformanceMonitor />
+                <div className="relative flex min-h-screen flex-col">
+                  {children}
+                </div>
+              </ErrorBoundary>
               <Toaster />
             </QueryProvider>
           </ThemeProvider>
