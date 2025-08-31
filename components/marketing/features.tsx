@@ -16,9 +16,9 @@ import { fadeInUp, staggerContainer, cardHover, scaleIn } from "@/lib/motion-var
 
 const features = [
   {
-    name: 'AI-Powered Planning',
+    name: 'Smart Planning',
     description:
-      'Advanced GPT-4o-mini AI creates personalized itineraries that understand your unique preferences, budget, and travel style.',
+      'Advanced algorithms create personalized itineraries that understand your unique preferences, budget, and travel style.',
     icon: SparklesIcon,
     gradient: 'from-purple-500 to-pink-500',
     delay: '0ms'
@@ -106,7 +106,7 @@ export function Features() {
           >
             <SparklesIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2" />
             <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-              Powered by Advanced AI
+              Powered by Smart Technology
             </span>
           </motion.div>
           
@@ -122,7 +122,7 @@ export function Features() {
             className="mt-6 text-xl leading-8 text-gray-600 dark:text-gray-300 max-w-2xl mx-auto"
             variants={fadeInUp}
           >
-            From AI-powered itineraries to real-time pricing, we&apos;ve revolutionized travel planning with cutting-edge technology and global partnerships.
+            From intelligent itineraries to real-time pricing, we&apos;ve revolutionized travel planning with cutting-edge technology and global partnerships.
           </motion.p>
         </motion.div>
 

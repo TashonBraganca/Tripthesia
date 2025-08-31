@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Hero } from "@/components/marketing/hero";
-import { Features } from "@/components/marketing/features";
+import { BentoFeatures } from "@/components/marketing/bento-features";
 import { Pricing } from "@/components/marketing/pricing";
 import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Testimonials } from "@/components/marketing/testimonials";
@@ -9,8 +9,8 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 
 export const metadata: Metadata = {
-  title: "AI Travel Planner - Create Perfect Itineraries in Seconds",
-  description: "Generate personalized travel itineraries with AI. Real prices, availability, and booking links. Plan your perfect trip in seconds.",
+  title: "Tripthesia - Create Perfect Travel Itineraries in Seconds",
+  description: "Generate personalized travel itineraries instantly. Real prices, availability, and booking links. Plan your perfect trip in seconds.",
 };
 
 export default function HomePage() {
@@ -20,7 +20,7 @@ export default function HomePage() {
         <Navbar />
         <main>
           <Hero />
-          <Features />
+          <BentoFeatures />
           <HowItWorks />
           <Testimonials />
           <Pricing />

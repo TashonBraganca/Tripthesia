@@ -219,7 +219,7 @@ export const getCityState = (location: LocationData): string => {
   return `${location.state ? `${location.state}, ` : ''}${location.country}`;
 };
 
-export default {
+const locationUtils = {
   getAllLocations,
   fuzzySearch,
   groupLocationResults,
@@ -232,3 +232,5 @@ export default {
   railwayStations,
   countries
 };
+
+export default locationUtils;

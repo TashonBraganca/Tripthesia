@@ -355,7 +355,7 @@ export const glassCardVariants: Variants = {
   }
 };
 
-export default {
+const animationVariants = {
   cardVariants,
   buttonVariants,
   floatingIcons,
@@ -374,3 +374,5 @@ export default {
   glassCardVariants,
   easings
 };
+
+export default animationVariants;
