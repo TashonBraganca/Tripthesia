@@ -8,6 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
 import { LocationData } from '@/lib/data/locations';
+import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
+import { DateRangePicker } from '@/components/forms/DateRangePicker';
+import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
+import { AnimatedButton } from '@/components/effects/AnimatedButton';
 
 // LocationData interface is imported from lib/data/locations
 
@@ -26,6 +30,11 @@ interface TripData {
   accommodation: any;
   activities: any[];
   food: any[];
+}
+
+interface DateRange {
+  startDate: string;
+  endDate: string;
 }
 
 export default function NewTripPage() {
@@ -335,532 +344,192 @@ interface Location {
   formatted: string;
 }
 
-// Enhanced Step Components
+// Enhanced Step Components with React Bits Design
 function LocationStep({ tripData, setTripData, onNext }: any) {
-  const [tripType, setTripType] = useState('');
   const [validationErrors, setValidationErrors] = useState<any>({});
-  const [touched, setTouched] = useState<any>({});
-  
-  // Autocomplete states
-  // Location autocomplete state is now handled by LocationAutocomplete component
-  
-  // Input refs removed - LocationAutocomplete components handle their own refs
 
-  // Popular destinations database
-  const popularLocations: Location[] = [
-    // United States
-    { id: '1', name: 'New York', city: 'New York', state: 'New York', country: 'United States', formatted: 'New York, New York, United States' },
-    { id: '2', name: 'Los Angeles', city: 'Los Angeles', state: 'California', country: 'United States', formatted: 'Los Angeles, California, United States' },
-    { id: '3', name: 'Chicago', city: 'Chicago', state: 'Illinois', country: 'United States', formatted: 'Chicago, Illinois, United States' },
-    { id: '4', name: 'Miami', city: 'Miami', state: 'Florida', country: 'United States', formatted: 'Miami, Florida, United States' },
-    { id: '5', name: 'San Francisco', city: 'San Francisco', state: 'California', country: 'United States', formatted: 'San Francisco, California, United States' },
-    { id: '6', name: 'Las Vegas', city: 'Las Vegas', state: 'Nevada', country: 'United States', formatted: 'Las Vegas, Nevada, United States' },
-    { id: '7', name: 'Seattle', city: 'Seattle', state: 'Washington', country: 'United States', formatted: 'Seattle, Washington, United States' },
-    { id: '8', name: 'Boston', city: 'Boston', state: 'Massachusetts', country: 'United States', formatted: 'Boston, Massachusetts, United States' },
-    
-    // Europe
-    { id: '9', name: 'London', city: 'London', country: 'United Kingdom', formatted: 'London, United Kingdom' },
-    { id: '10', name: 'Paris', city: 'Paris', country: 'France', formatted: 'Paris, France' },
-    { id: '11', name: 'Rome', city: 'Rome', country: 'Italy', formatted: 'Rome, Italy' },
-    { id: '12', name: 'Barcelona', city: 'Barcelona', country: 'Spain', formatted: 'Barcelona, Spain' },
-    { id: '13', name: 'Amsterdam', city: 'Amsterdam', country: 'Netherlands', formatted: 'Amsterdam, Netherlands' },
-    { id: '14', name: 'Berlin', city: 'Berlin', country: 'Germany', formatted: 'Berlin, Germany' },
-    { id: '15', name: 'Prague', city: 'Prague', country: 'Czech Republic', formatted: 'Prague, Czech Republic' },
-    { id: '16', name: 'Vienna', city: 'Vienna', country: 'Austria', formatted: 'Vienna, Austria' },
-    
-    // Asia
-    { id: '17', name: 'Tokyo', city: 'Tokyo', country: 'Japan', formatted: 'Tokyo, Japan' },
-    { id: '18', name: 'Bangkok', city: 'Bangkok', country: 'Thailand', formatted: 'Bangkok, Thailand' },
-    { id: '19', name: 'Singapore', city: 'Singapore', country: 'Singapore', formatted: 'Singapore, Singapore' },
-    { id: '20', name: 'Hong Kong', city: 'Hong Kong', country: 'Hong Kong', formatted: 'Hong Kong, Hong Kong' },
-    { id: '21', name: 'Seoul', city: 'Seoul', country: 'South Korea', formatted: 'Seoul, South Korea' },
-    { id: '22', name: 'Mumbai', city: 'Mumbai', state: 'Maharashtra', country: 'India', formatted: 'Mumbai, Maharashtra, India' },
-    { id: '23', name: 'Dubai', city: 'Dubai', country: 'United Arab Emirates', formatted: 'Dubai, United Arab Emirates' },
-    
-    // Australia & New Zealand
-    { id: '24', name: 'Sydney', city: 'Sydney', state: 'New South Wales', country: 'Australia', formatted: 'Sydney, New South Wales, Australia' },
-    { id: '25', name: 'Melbourne', city: 'Melbourne', state: 'Victoria', country: 'Australia', formatted: 'Melbourne, Victoria, Australia' },
-    { id: '26', name: 'Auckland', city: 'Auckland', country: 'New Zealand', formatted: 'Auckland, New Zealand' },
-    
-    // Canada
-    { id: '27', name: 'Toronto', city: 'Toronto', state: 'Ontario', country: 'Canada', formatted: 'Toronto, Ontario, Canada' },
-    { id: '28', name: 'Vancouver', city: 'Vancouver', state: 'British Columbia', country: 'Canada', formatted: 'Vancouver, British Columbia, Canada' },
-    
-    // South America
-    { id: '29', name: 'Rio de Janeiro', city: 'Rio de Janeiro', country: 'Brazil', formatted: 'Rio de Janeiro, Brazil' },
-    { id: '30', name: 'Buenos Aires', city: 'Buenos Aires', country: 'Argentina', formatted: 'Buenos Aires, Argentina' },
-    
-    // Africa
-    { id: '31', name: 'Cape Town', city: 'Cape Town', country: 'South Africa', formatted: 'Cape Town, South Africa' },
-    { id: '32', name: 'Cairo', city: 'Cairo', country: 'Egypt', formatted: 'Cairo, Egypt' }
-  ];
-
-  const tripTypes = [
-    { id: 'adventure', name: 'Adventure & Trekking', icon: '🏔️' },
-    { id: 'culture', name: 'Culture & History', icon: '🏛️' },
-    { id: 'relaxation', name: 'Beach & Relaxation', icon: '🏖️' },
-    { id: 'business', name: 'Business Travel', icon: '💼' },
-    { id: 'family', name: 'Family Vacation', icon: '👨‍👩‍👧‍👦' },
-    { id: 'foodie', name: 'Food & Wine', icon: '🍷' }
-  ];
-
-  // Location handling is now managed by LocationAutocomplete components
-
-  // Enhanced validation with real-time feedback
-  const validateField = (name: string, value: string) => {
+  const validateForm = () => {
     const errors: any = {};
     
-    switch (name) {
-      case 'from':
-        if (!tripData.from) {
-          errors.from = 'Departure location is required';
-        }
-        break;
-      case 'to':
-        if (!tripData.to) {
-          errors.to = 'Destination is required';
-        } else if (tripData.to?.id === tripData.from?.id) {
-          errors.to = 'Destination must be different from departure';
-        }
-        break;
-      case 'startDate':
-        if (!value) {
-          errors.startDate = 'Start date is required';
-        } else if (new Date(value) < new Date()) {
-          errors.startDate = 'Start date cannot be in the past';
-        }
-        break;
-      case 'endDate':
-        if (!value) {
-          errors.endDate = 'End date is required';
-        } else if (tripData.startDate && new Date(value) <= new Date(tripData.startDate)) {
-          errors.endDate = 'End date must be after start date';
-        }
-        break;
+    if (!tripData.from) {
+      errors.from = 'Departure location is required';
+    }
+    if (!tripData.to) {
+      errors.to = 'Destination is required';
+    } else if (tripData.to?.id === tripData.from?.id) {
+      errors.to = 'Destination must be different from departure';
+    }
+    if (!tripData.startDate) {
+      errors.dates = 'Travel dates are required';
+    }
+    if (!tripData.endDate) {
+      errors.dates = 'Travel dates are required';
+    }
+    if (!tripData.tripType) {
+      errors.tripType = 'Please select a trip type';
     }
     
-    setValidationErrors((prev: any) => ({ ...prev, ...errors }));
+    setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleFieldChange = (name: string, value: string) => {
-    setTripData({ ...tripData, [name]: value });
-    if (touched[name]) {
-      validateField(name, value);
-    }
-  };
-
-  // Location state initialization removed - LocationAutocomplete components handle their own state
-
-  const handleFieldBlur = (name: string) => {
-    setTouched((prev: any) => ({ ...prev, [name]: true }));
-    validateField(name, tripData[name] || '');
-  };
-
   const handleNext = () => {
-    // Validate all fields on submit
-    const allFields = ['from', 'to', 'startDate', 'endDate'];
-    const allTouched = allFields.reduce((acc, field) => ({ ...acc, [field]: true }), {});
-    setTouched(allTouched);
-    
-    let hasErrors = false;
-    allFields.forEach(field => {
-      if (!validateField(field, tripData[field] || '')) {
-        hasErrors = true;
-      }
-    });
-    
-    if (!tripType) {
-      setValidationErrors((prev: any) => ({ ...prev, tripType: 'Please select a trip type' }));
-      hasErrors = true;
-    }
-
-    if (!hasErrors) {
-      setTripData({ ...tripData, tripType });
+    if (validateForm()) {
       onNext();
     }
   };
 
+  const handleDateRangeChange = (range: DateRange) => {
+    setTripData({
+      ...tripData,
+      startDate: range.startDate,
+      endDate: range.endDate
+    });
+    // Clear date validation errors
+    if (validationErrors.dates) {
+      setValidationErrors({ ...validationErrors, dates: undefined });
+    }
+  };
+
+  const handleTripTypeChange = (typeId: string) => {
+    setTripData({ ...tripData, tripType: typeId });
+    // Clear trip type validation error
+    if (validationErrors.tripType) {
+      setValidationErrors({ ...validationErrors, tripType: undefined });
+    }
+  };
+
+  const isFormValid = tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripData.tripType;
+
   return (
-    <motion.div 
-      className="space-y-8"
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.div 
-        className="text-center"
-        variants={fadeInUp}
-      >
-        <motion.h2 
-          className="text-3xl font-bold text-gray-900 mb-2"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          Where do you want to go?
-        </motion.h2>
-        <motion.p 
-          className="text-gray-600"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          Tell us your travel plans and preferences
-        </motion.p>
-      </motion.div>
+    <div className="min-h-screen bg-navy-900 relative">
+      {/* Topographical Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900" />
+        {/* Add TopographicalGrid here if available */}
+      </div>
 
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6"
-        variants={staggerContainer}
-      >
-        <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-navy-100 mb-2">
-            From <span className="text-teal-400">*</span>
-          </label>
-          <LocationAutocomplete
-            variant="departure"
-            value={tripData.from}
-            onChange={(location) => {
-              setTripData({ ...tripData, from: location });
-              handleFieldChange('from', location?.name || '');
-            }}
-            className="mb-1"
-            required
-          />
-          {/* Error Message */}
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: validationErrors.from && touched.from ? 1 : 0,
-              height: validationErrors.from && touched.from ? 'auto' : 0
-            }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {validationErrors.from && touched.from && (
-              <p className="text-red-400 text-sm mt-1 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {validationErrors.from}
-              </p>
-            )}
-          </motion.div>
-        </motion.div>
-        
-        <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-navy-100 mb-2">
-            To <span className="text-teal-400">*</span>
-          </label>
-          <LocationAutocomplete
-            variant="destination"
-            value={tripData.to}
-            onChange={(location) => {
-              setTripData({ ...tripData, to: location });
-              handleFieldChange('to', location?.name || '');
-            }}
-            className="mb-1"
-            required
-          />
-          {/* Error Message */}
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: validationErrors.to && touched.to ? 1 : 0,
-              height: validationErrors.to && touched.to ? 'auto' : 0
-            }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {validationErrors.to && touched.to && (
-              <p className="text-red-400 text-sm mt-1 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {validationErrors.to}
-              </p>
-            )}
-          </motion.div>
-        </motion.div>
-        
-        <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Start Date <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <motion.input
-              type="date"
-              value={tripData.startDate || ''}
-              onChange={(e) => handleFieldChange('startDate', e.target.value)}
-              onBlur={() => handleFieldBlur('startDate')}
-              className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
-                validationErrors.startDate && touched.startDate
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50'
-                  : tripData.startDate && !validationErrors.startDate
-                  ? 'border-green-500 focus:ring-green-500 bg-green-50'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              }`}
-              whileFocus={{ 
-                scale: 1.01,
-                boxShadow: validationErrors.startDate && touched.startDate 
-                  ? "0 0 0 3px rgba(239, 68, 68, 0.1)"
-                  : "0 0 0 3px rgba(99, 102, 241, 0.1)"
-              }}
-              whileTap={{ scale: 0.99 }}
-            />
-            <motion.div 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ 
-                opacity: touched.startDate && (tripData.startDate || validationErrors.startDate) ? 1 : 0,
-                scale: touched.startDate && (tripData.startDate || validationErrors.startDate) ? 1 : 0.5
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              {validationErrors.startDate && touched.startDate ? (
-                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : tripData.startDate && !validationErrors.startDate ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : null}
-            </motion.div>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: validationErrors.startDate && touched.startDate ? 1 : 0,
-              height: validationErrors.startDate && touched.startDate ? 'auto' : 0
-            }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {validationErrors.startDate && touched.startDate && (
-              <p className="text-red-500 text-sm mt-1 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {validationErrors.startDate}
-              </p>
-            )}
-          </motion.div>
-        </motion.div>
-        
-        <motion.div variants={fadeInUp}>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            End Date <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <motion.input
-              type="date"
-              value={tripData.endDate || ''}
-              onChange={(e) => handleFieldChange('endDate', e.target.value)}
-              onBlur={() => handleFieldBlur('endDate')}
-              className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:border-transparent transition-all duration-300 touch-manipulation ${
-                validationErrors.endDate && touched.endDate
-                  ? 'border-red-500 focus:ring-red-500 bg-red-50'
-                  : tripData.endDate && !validationErrors.endDate
-                  ? 'border-green-500 focus:ring-green-500 bg-green-50'
-                  : 'border-gray-300 focus:ring-indigo-500'
-              }`}
-              whileFocus={{ 
-                scale: 1.01,
-                boxShadow: validationErrors.endDate && touched.endDate 
-                  ? "0 0 0 3px rgba(239, 68, 68, 0.1)"
-                  : "0 0 0 3px rgba(99, 102, 241, 0.1)"
-              }}
-              whileTap={{ scale: 0.99 }}
-            />
-            <motion.div 
-              className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ 
-                opacity: touched.endDate && (tripData.endDate || validationErrors.endDate) ? 1 : 0,
-                scale: touched.endDate && (tripData.endDate || validationErrors.endDate) ? 1 : 0.5
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              {validationErrors.endDate && touched.endDate ? (
-                <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : tripData.endDate && !validationErrors.endDate ? (
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ) : null}
-            </motion.div>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: validationErrors.endDate && touched.endDate ? 1 : 0,
-              height: validationErrors.endDate && touched.endDate ? 'auto' : 0
-            }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            {validationErrors.endDate && touched.endDate && (
-              <p className="text-red-500 text-sm mt-1 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                {validationErrors.endDate}
-              </p>
-            )}
-          </motion.div>
-        </motion.div>
-      </motion.div>
-
-      <motion.div variants={fadeInUp}>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          What type of trip is this? <span className="text-red-500">*</span>
-        </label>
-        <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4"
-          variants={staggerContainer}
-        >
-          {tripTypes.map((type, index) => (
-            <motion.button
-              key={type.id}
-              onClick={() => {
-                setTripType(type.id);
-                // Clear trip type validation error when user selects
-                if (validationErrors.tripType) {
-                  setValidationErrors((prev: any) => ({ ...prev, tripType: undefined }));
-                }
-              }}
-              className={`p-4 border-2 rounded-lg text-left transition-all duration-300 relative touch-manipulation ${
-                tripType === type.id 
-                  ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 shadow-lg' 
-                  : validationErrors.tripType
-                  ? 'border-red-300 hover:border-red-400 bg-red-50'
-                  : 'border-gray-200 hover:border-indigo-300 hover:shadow-md active:bg-gray-50'
-              }`}
-              variants={{
-                hidden: { opacity: 0, scale: 0.8 },
-                visible: { 
-                  opacity: 1, 
-                  scale: 1,
-                  transition: { 
-                    duration: 0.4,
-                    delay: index * 0.1 
-                  }
-                }
-              }}
-              whileHover={{ 
-                scale: 1.05,
-                y: -2
-              }}
-              whileTap={{ scale: 0.95 }}
-              animate={tripType === type.id ? {
-                scale: [1, 1.05, 1],
-                borderColor: ["#6366f1", "#8b5cf6", "#6366f1"]
-              } : {}}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Selection indicator */}
-              {tripType === type.id && (
-                <motion.div
-                  className="absolute top-2 right-2 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-                >
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </motion.div>
-              )}
-              
-              <motion.div 
-                className="text-2xl mb-2"
-                animate={tripType === type.id ? { 
-                  rotate: [0, 10, -10, 0],
-                  scale: [1, 1.2, 1]
-                } : {}}
-                transition={{ duration: 0.5 }}
-              >
-                {type.icon}
-              </motion.div>
-              <div className="font-medium text-gray-900">{type.name}</div>
-            </motion.button>
-          ))}
-        </motion.div>
-        
-        {/* Trip Type Validation Error */}
+      {/* Content */}
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{
-            opacity: validationErrors.tripType ? 1 : 0,
-            height: validationErrors.tripType ? 'auto' : 0
-          }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          {validationErrors.tripType && (
-            <p className="text-red-500 text-sm mt-2 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {validationErrors.tripType}
-            </p>
-          )}
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-navy-100 mb-4">
+            Plan Your Perfect Journey
+          </h1>
+          <p className="text-xl text-navy-300 max-w-2xl mx-auto">
+            Tell us where you want to go and we'll create a personalized travel experience just for you
+          </p>
         </motion.div>
-      </motion.div>
 
-      <motion.div 
-        className="flex justify-end"
-        variants={fadeInUp}
-      >
-        <motion.button
-          onClick={handleNext}
-          className={`flex items-center space-x-2 px-8 py-3 rounded-lg transition-all duration-300 font-semibold touch-manipulation min-h-[44px] ${
-            tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripType &&
-            !validationErrors.from && !validationErrors.to && !validationErrors.startDate && !validationErrors.endDate
-              ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg hover:shadow-xl' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          whileHover={(tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripType &&
-            !validationErrors.from && !validationErrors.to && !validationErrors.startDate && !validationErrors.endDate) ? { 
-            scale: 1.05,
-            x: 2,
-            boxShadow: "0 10px 25px -5px rgba(99, 102, 241, 0.4)"
-          } : {}}
-          whileTap={(tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripType &&
-            !validationErrors.from && !validationErrors.to && !validationErrors.startDate && !validationErrors.endDate) ? { scale: 0.95 } : {}}
-          animate={(tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripType &&
-            !validationErrors.from && !validationErrors.to && !validationErrors.startDate && !validationErrors.endDate) ? {
-            boxShadow: [
-              "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-              "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-              "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
-            ]
-          } : {}}
-          transition={{ duration: 2, repeat: (tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripType &&
-            !validationErrors.from && !validationErrors.to && !validationErrors.startDate && !validationErrors.endDate) ? Infinity : 0 }}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="space-y-8"
         >
-          <span>Next: Choose Transport</span>
-          <motion.div
-            animate={{ x: [0, 5, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </motion.div>
-        </motion.button>
-      </motion.div>
-    </motion.div>
+          {/* Location Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <LocationAutocomplete
+                variant="departure"
+                value={tripData.from}
+                onChange={(location) => {
+                  setTripData({ ...tripData, from: location });
+                  if (validationErrors.from) {
+                    setValidationErrors({ ...validationErrors, from: undefined });
+                  }
+                }}
+                required
+              />
+              {validationErrors.from && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {validationErrors.from}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <LocationAutocomplete
+                variant="destination"
+                value={tripData.to}
+                onChange={(location) => {
+                  setTripData({ ...tripData, to: location });
+                  if (validationErrors.to) {
+                    setValidationErrors({ ...validationErrors, to: undefined });
+                  }
+                }}
+                required
+              />
+              {validationErrors.to && (
+                <p className="text-red-400 text-sm mt-2 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {validationErrors.to}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Date Range Selection */}
+          <div>
+            <DateRangePicker
+              value={{
+                startDate: tripData.startDate || '',
+                endDate: tripData.endDate || ''
+              }}
+              onChange={handleDateRangeChange}
+              minDate={new Date().toISOString().split('T')[0]}
+            />
+            {validationErrors.dates && (
+              <p className="text-red-400 text-sm mt-2 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {validationErrors.dates}
+              </p>
+            )}
+          </div>
+
+          {/* Trip Type Selection */}
+          <div>
+            <TripTypeSelector
+              value={tripData.tripType || 'adventure'}
+              onChange={handleTripTypeChange}
+            />
+            {validationErrors.tripType && (
+              <p className="text-red-400 text-sm mt-2 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {validationErrors.tripType}
+              </p>
+            )}
+          </div>
+
+          {/* Next Button */}
+          <div className="flex justify-end pt-8">
+            <AnimatedButton
+              variant="primary"
+              size="lg"
+              onClick={handleNext}
+              disabled={!isFormValid}
+              className="px-8 py-4"
+            >
+              <span>Continue to Transport</span>
+              <ChevronRight size={20} className="ml-2" />
+            </AnimatedButton>
+          </div>
+        </motion.div>
+      </div>
+    </div>
   );
 }
 
