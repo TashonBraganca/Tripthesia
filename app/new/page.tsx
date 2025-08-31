@@ -421,7 +421,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
             Plan Your Perfect Journey
           </h1>
           <p className="text-xl text-navy-300 max-w-2xl mx-auto">
-            Tell us where you want to go and we'll create a personalized travel experience just for you
+            Tell us where you want to go and we&apos;ll create a personalized travel experience just for you
           </p>
         </motion.div>
 
