@@ -224,3 +224,184 @@ The Create New Trip page has evolved from a cramped, error-prone interface to a 
 - Delivers professional, contemporary design
 
 **STATUS**: 🚀 **DEPLOYED & LIVE** - All critical issues resolved with bonus enhancements
+
+---
+
+## **🔥 PHASE 6: COMPREHENSIVE UI/UX OVERHAUL**
+
+**Timestamp**: 2025-09-01 - New Critical Issues Identified  
+**Priority**: CRITICAL - Multiple UI/UX issues affecting user experience
+
+### **📋 Issue #7: Dropdown Z-Index & Positioning Problems**
+- **Problem**: Location dropdowns appearing behind other elements, not properly positioned
+- **Root Cause**: Insufficient z-index values and improper stacking context
+- **Files to Update**:
+  - `components/forms/LocationAutocomplete.tsx` - z-index improvements
+  - `components/forms/DateRangePicker.tsx` - dropdown positioning
+  - Global CSS z-index management
+- **Solution**:
+  - [x] Increase dropdown z-index to `z-[99999]` for LocationAutocomplete ✅
+  - [x] Increase dropdown z-index to `z-[99999]` for DateRangePicker ✅
+  - [x] Ensure proper stacking context for all form components ✅
+  - [ ] Test dropdown visibility across all breakpoints
+  - [ ] Fix any overflow hidden issues on parent containers
+
+### **🎨 Issue #8: Skip Button Contrast & Visibility**
+- **Problem**: Skip button has poor contrast and is hard to see against dark background
+- **Files to Update**:
+  - `app/new/page.tsx` - Skip button styling improvements
+  - Button component theming
+- **Solution**:
+  - [x] Improve skip button color contrast (navy-100 text with hover states) ✅
+  - [x] Add proper hover states and focus indicators ✅
+  - [x] Ensure accessibility compliance (WCAG AA) ✅
+  - [x] Test visibility across all screen sizes ✅
+
+### **🧭 Issue #9: Continue Button Arrow Positioning**
+- **Problem**: Arrow in "Continue to Transport" button not properly positioned on the right
+- **Files to Update**:
+  - Button component in trip creation flow
+  - Arrow icon positioning CSS
+- **Solution**:
+  - [x] Move arrow icon to the right side of button text (ml-3 class) ✅
+  - [x] Ensure proper spacing between text and arrow ✅
+  - [x] Test button layout on mobile and desktop ✅
+  - [x] Maintain consistent arrow positioning with flex layout ✅
+
+### **✈️ Issue #10: Transport Page Complete Redesign**
+- **Problem**: Transport page needs complete overhaul with modern flight booking interface
+- **Priority**: HIGH - Core user flow enhancement
+- **Files to Update**:
+  - `app/transport/page.tsx` - Complete page redesign
+  - Transport-related components
+  - Flight booking interface components
+- **Solution**:
+  - [ ] Design modern flight search and booking interface
+  - [ ] Implement flight comparison cards with pricing
+  - [ ] Add filters (price, duration, stops, airlines)
+  - [ ] Create interactive booking flow
+  - [ ] Ensure mobile-first responsive design
+  - [ ] Add loading states and error handling
+
+### **📄 Issue #11: Homepage Header Contrast Problems**
+- **Problem**: Homepage header text has poor contrast and readability issues
+- **Files to Update**:
+  - `components/marketing/hero.tsx` - Header text contrast
+  - `app/page.tsx` - Overall page theming
+- **Solution**:
+  - [ ] Improve hero section text contrast
+  - [ ] Ensure proper color gradients for readability
+  - [ ] Test text visibility across different backgrounds
+  - [ ] Optimize for both light and dark theme support
+
+### **🌍 Issue #12: Geolocation Currency Conversion**
+- **Problem**: Need automatic currency detection based on user location
+- **Files to Update**:
+  - Currency conversion utilities
+  - API integration for exchange rates
+  - Geolocation service implementation
+- **Solution**:
+  - [ ] Implement geolocation API for currency detection
+  - [ ] Add currency conversion API integration
+  - [ ] Create currency preference storage
+  - [ ] Add manual currency override option
+  - [ ] Handle geolocation permission errors gracefully
+
+### **🔌 Issue #13: Flight API Data Retrieval & Formatting**
+- **Problem**: Flight API responses not properly formatted and displayed
+- **Files to Update**:
+  - `app/api/flights/search/route.ts` - API response formatting
+  - `app/api/transport/search/route.ts` - Transport data integration
+  - Flight display components
+- **Solution**:
+  - [ ] Fix Amadeus API response parsing
+  - [ ] Improve RapidAPI integration
+  - [ ] Enhance mock data fallback system
+  - [ ] Add proper error handling for API failures
+  - [ ] Format flight data consistently across all providers
+
+### **🎭 Issue #14: Global Theme Consistency**
+- **Problem**: White boxes and inconsistent theming still present throughout app
+- **Files to Update**:
+  - All component files with white backgrounds
+  - Global CSS theme variables
+  - Component-specific styling
+- **Solution**:
+  - [ ] Audit all components for white backgrounds
+  - [ ] Replace with consistent navy-teal dark theme
+  - [ ] Apply glass morphism effects uniformly
+  - [ ] Ensure proper text contrast throughout
+  - [ ] Test theme consistency across all pages
+
+### **📍 Issue #15: Text Alignment & Icon Positioning**
+- **Problem**: Various text alignment and icon positioning issues throughout the app
+- **Files to Update**:
+  - Multiple component files
+  - CSS utility classes
+  - Icon component implementations
+- **Solution**:
+  - [ ] Fix text alignment in all form components
+  - [ ] Ensure proper icon spacing and positioning
+  - [ ] Implement consistent typography scale
+  - [ ] Test alignment across all breakpoints
+  - [ ] Create reusable alignment utility classes
+
+## **🗂️ PHASE 6 IMPLEMENTATION PLAN**
+
+### **🚨 Priority 1: Critical UI Fixes (2-3 hours)**
+1. [x] **Dropdown Z-Index**: Fix location and date picker dropdown positioning ✅
+2. [x] **Button Contrast**: Improve skip button visibility and contrast ✅
+3. [x] **Arrow Positioning**: Move continue button arrows to the right side ✅
+4. [ ] **Global Theme Audit**: Remove all white boxes, apply consistent dark theme
+
+### **🎯 Priority 2: Core Page Redesigns (4-5 hours)**
+1. [ ] **Transport Page Overhaul**: Complete redesign with modern flight booking interface
+2. [ ] **Homepage Header**: Fix contrast and readability issues
+3. [ ] **Text & Icon Alignment**: Fix positioning issues throughout the app
+
+### **🔧 Priority 3: Advanced Features (3-4 hours)**
+1. [ ] **Geolocation Currency**: Implement automatic currency detection
+2. [ ] **Flight API Enhancement**: Fix data retrieval and formatting
+3. [ ] **Error Handling**: Improve API failure graceful degradation
+
+### **✅ Priority 4: Testing & Validation (2 hours)**
+1. [ ] **Cross-browser Testing**: Ensure compatibility across all browsers
+2. [ ] **Mobile Responsiveness**: Test all fixes on mobile devices
+3. [ ] **Accessibility Audit**: Ensure WCAG AA compliance
+4. [ ] **Performance Testing**: Verify no regression in load times
+
+## **📊 PHASE 6 SUCCESS CRITERIA**
+- [ ] **Dropdown Functionality**: All dropdowns appear above other elements correctly
+- [ ] **Button Visibility**: Skip and continue buttons have proper contrast and positioning
+- [ ] **Transport Interface**: Modern, professional flight booking experience
+- [ ] **Homepage Polish**: Clear, readable header text with proper contrast
+- [ ] **Currency Features**: Automatic currency detection based on location
+- [ ] **API Integration**: Reliable flight data retrieval with proper formatting
+- [ ] **Theme Consistency**: No white boxes, uniform navy-teal dark theme
+- [ ] **Responsive Design**: Perfect alignment and positioning across all devices
+- [ ] **Performance**: No degradation in page load times or interaction responsiveness
+
+## **⏱️ PHASE 6 ESTIMATED TIME**: 10-12 hours total
+## **🎯 PHASE 6 PRIORITY**: CRITICAL - Multiple core user experience issues
+
+---
+
+## **📈 OVERALL PROJECT STATUS**
+
+### **✅ COMPLETED PHASES**
+- [x] **Phase 1**: Critical JavaScript error fix ✅
+- [x] **Phase 2**: UI consistency fixes ✅  
+- [x] **Phase 3**: Button alignment polish ✅
+- [x] **Phase 4**: Testing & validation ✅
+- [x] **Phase 5**: Full-screen bento box redesign ✅
+
+### **🚧 IN PROGRESS**
+- [ ] **Phase 6**: Comprehensive UI/UX overhaul (15 critical issues identified)
+
+### **🎯 NEXT STEPS**
+1. Begin with Priority 1 critical UI fixes (dropdown z-index, button contrast)
+2. Progress through Priority 2 page redesigns (transport page, homepage)
+3. Implement Priority 3 advanced features (currency, API fixes)
+4. Complete Priority 4 testing and validation
+
+**STATUS**: 🚧 **PHASE 6 IN PROGRESS** - Comprehensive UI/UX overhaul with 15 critical issues to resolve

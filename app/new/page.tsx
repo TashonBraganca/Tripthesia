@@ -626,7 +626,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
             variant="outline"
             size="lg"
             onClick={() => onNext()}
-            className="px-8 py-4 text-lg border-navy-400/30 text-navy-300 hover:text-navy-100 hover:border-navy-300/50"
+            className="px-8 py-4 text-lg border-navy-300/60 text-navy-100 hover:text-white hover:border-navy-200/80 hover:bg-navy-700/40 transition-all duration-200"
           >
             <span>Skip for now</span>
           </AnimatedButton>
@@ -635,7 +635,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
             size="lg"
             onClick={handleNext}
             disabled={!isFormValid}
-            className="px-12 py-4 text-lg"
+            className="px-12 py-4 text-lg flex items-center justify-center"
           >
             <span>Continue to Transport</span>
             <ChevronRight size={24} className="ml-3" />
