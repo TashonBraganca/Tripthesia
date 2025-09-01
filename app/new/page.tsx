@@ -799,7 +799,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
         variants={fadeInUp}
       >
         <motion.h2 
-          className="text-3xl font-bold text-gray-900 mb-2"
+          className="text-3xl font-bold text-navy-100 mb-2"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -807,7 +807,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
           How will you get there?
         </motion.h2>
         <motion.p 
-          className="text-gray-600"
+          className="text-navy-300"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
@@ -822,7 +822,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-navy-300">
           <span><strong>From:</strong> {tripData.from?.displayName || tripData.from?.name || 'Not selected'}</span>
           <motion.div
             animate={{ x: [0, 10, 0] }}
@@ -848,7 +848,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
           <motion.p 
-            className="text-gray-600"
+            className="text-navy-300"
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           >
@@ -870,7 +870,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
             variants={fadeInUp}
           >
             <motion.h3 
-              className="text-xl font-semibold text-gray-900"
+              className="text-xl font-semibold text-navy-100"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
@@ -883,7 +883,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <span className="text-sm text-gray-600">Sort by:</span>
+              <span className="text-sm text-navy-300">Sort by:</span>
               <select 
                 value={sortBy} 
                 onChange={(e) => setSortBy(e.target.value)}
@@ -921,8 +921,8 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
                 onClick={() => handleSelectTransport(option)}
                 className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg group touch-manipulation ${
                   selectedTransport?.id === option.id
-                    ? 'border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 shadow-md'
-                    : 'border-gray-200 hover:border-indigo-300 bg-white hover:bg-gray-50 active:bg-gray-100'
+                    ? 'border-teal-400 bg-gradient-to-r from-teal-900/50 to-navy-800/50 shadow-md'
+                    : 'border-navy-600 hover:border-teal-400 bg-navy-800/50 hover:bg-navy-700/50 active:bg-navy-700'
                 }`}
                 whileHover={{ 
                   scale: 1.02,
@@ -971,7 +971,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
                     {/* Transport Details */}
                     <div className="flex-1">
                       <motion.h4 
-                        className="font-semibold text-gray-900 text-lg"
+                        className="font-semibold text-navy-100 text-lg"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.1 + 0.2 }}
@@ -985,11 +985,11 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3, delay: index * 0.1 + 0.3 }}
                       >
-                        <p className="text-sm text-gray-600 font-medium">
+                        <p className="text-sm text-navy-300 font-medium">
                           {option.departure} → {option.arrival}
                         </p>
-                        <span className="text-gray-400">•</span>
-                        <p className="text-sm text-gray-600">{option.duration}</p>
+                        <span className="text-navy-400">•</span>
+                        <p className="text-sm text-navy-300">{option.duration}</p>
                       </motion.div>
                       
                       <motion.div 
@@ -1011,7 +1011,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
                         {option.rating && (
                           <div className="flex items-center space-x-1">
                             <span className="text-yellow-400">★</span>
-                            <span className="text-xs text-gray-600">{option.rating}</span>
+                            <span className="text-xs text-navy-300">{option.rating}</span>
                           </div>
                         )}
                         
@@ -1044,7 +1044,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
                     transition={{ duration: 0.3, delay: index * 0.1 + 0.3 }}
                   >
                     <motion.p 
-                      className="text-3xl font-bold text-gray-900"
+                      className="text-3xl font-bold text-navy-100"
                       whileHover={{ scale: 1.05 }}
                     >
                       ${option.price}
@@ -1321,12 +1321,12 @@ function RentalStep({ tripData, setTripData, onNext, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Need a rental car?</h2>
-        <p className="text-gray-600">Get around your destination with local transportation options</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Need a rental car?</h2>
+        <p className="text-navy-300">Get around your destination with local transportation options</p>
       </div>
 
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-navy-300">
           <span><strong>Destination:</strong> {tripData.to}</span>
           <Car className="h-5 w-5 text-emerald-500" />
           <span><strong>Duration:</strong> {tripData.startDate} to {tripData.endDate}</span>
@@ -1336,14 +1336,14 @@ function RentalStep({ tripData, setTripData, onNext, onBack }: any) {
       {loading && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Finding the best rental car options...</p>
+          <p className="text-navy-300">Finding the best rental car options...</p>
         </div>
       )}
 
       {showOptions && !loading && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Available Rentals</h3>
+            <h3 className="text-lg font-semibold text-navy-100">Available Rentals</h3>
             <button
               onClick={handleSkipRental}
               className="text-sm text-gray-500 hover:text-gray-700 underline"
@@ -1367,37 +1367,37 @@ function RentalStep({ tripData, setTripData, onNext, onBack }: any) {
                   <div className="flex items-center space-x-3">
                     <div className="text-3xl">{getCarIcon(rental.type)}</div>
                     <div>
-                      <h4 className="font-semibold text-gray-900">{rental.company}</h4>
-                      <p className="text-sm text-gray-600">{rental.model}</p>
+                      <h4 className="font-semibold text-navy-100">{rental.company}</h4>
+                      <p className="text-sm text-navy-300">{rental.model}</p>
                       <p className="text-xs text-gray-500 capitalize">{getTypeLabel(rental.type)}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-gray-900">${rental.price}</p>
+                    <p className="text-xl font-bold text-navy-100">${rental.price}</p>
                     <p className="text-xs text-gray-500">per day</p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Transmission:</span>
-                    <span className="text-gray-900">{rental.transmission}</span>
+                    <span className="text-navy-300">Transmission:</span>
+                    <span className="text-navy-100">{rental.transmission}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Fuel:</span>
-                    <span className="text-gray-900">{rental.fuel}</span>
+                    <span className="text-navy-300">Fuel:</span>
+                    <span className="text-navy-100">{rental.fuel}</span>
                   </div>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <div className="flex flex-wrap gap-2">
                     {rental.features.slice(0, 2).map((feature: string, idx: number) => (
-                      <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                      <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                         {feature}
                       </span>
                     ))}
                     {rental.features.length > 2 && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                         +{rental.features.length - 2} more
                       </span>
                     )}
@@ -1626,7 +1626,7 @@ function AccommodationStep({ tripData, setTripData, onNext, onBack }: any) {
           <span key={i} className="text-yellow-400">⭐</span>
         ))}
         {hasHalfStar && <span className="text-yellow-400">⭐</span>}
-        <span className="text-sm text-gray-600 ml-1">({rating})</span>
+        <span className="text-sm text-navy-300 ml-1">({rating})</span>
       </div>
     );
   };
@@ -1634,12 +1634,12 @@ function AccommodationStep({ tripData, setTripData, onNext, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Where will you stay?</h2>
-        <p className="text-gray-600">Find the perfect accommodation for your budget and style</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Where will you stay?</h2>
+        <p className="text-navy-300">Find the perfect accommodation for your budget and style</p>
       </div>
 
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-navy-300">
           <span><strong>Location:</strong> {tripData.to}</span>
           <Hotel className="h-5 w-5 text-purple-500" />
           <span><strong>Check-in:</strong> {tripData.startDate}</span>
@@ -1650,13 +1650,13 @@ function AccommodationStep({ tripData, setTripData, onNext, onBack }: any) {
       {loading && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Searching for the best accommodations...</p>
+          <p className="text-navy-300">Searching for the best accommodations...</p>
         </div>
       )}
 
       {showOptions && !loading && (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-900">Available Accommodations</h3>
+          <h3 className="text-lg font-semibold text-navy-100">Available Accommodations</h3>
           
           <div className="space-y-4">
             {accommodations.map((accommodation) => (
@@ -1676,16 +1676,16 @@ function AccommodationStep({ tripData, setTripData, onNext, onBack }: any) {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-900">{accommodation.name}</h4>
-                          <p className="text-sm text-gray-600 capitalize">{getTypeLabel(accommodation.type)} • {accommodation.location}</p>
+                          <h4 className="text-lg font-semibold text-navy-100">{accommodation.name}</h4>
+                          <p className="text-sm text-navy-300 capitalize">{getTypeLabel(accommodation.type)} • {accommodation.location}</p>
                           <p className="text-xs text-gray-500">{accommodation.distance}</p>
                         </div>
                         <div className="text-right">
                           <div className="flex items-center space-x-2">
                             {accommodation.originalPrice > accommodation.price && (
-                              <span className="text-sm text-gray-400 line-through">${accommodation.originalPrice}</span>
+                              <span className="text-sm text-navy-400 line-through">${accommodation.originalPrice}</span>
                             )}
-                            <span className="text-2xl font-bold text-gray-900">${accommodation.price}</span>
+                            <span className="text-2xl font-bold text-navy-100">${accommodation.price}</span>
                           </div>
                           <p className="text-xs text-gray-500">per night</p>
                         </div>
@@ -1696,11 +1696,11 @@ function AccommodationStep({ tripData, setTripData, onNext, onBack }: any) {
                         <span className="text-sm text-gray-500">{accommodation.reviews} reviews</span>
                       </div>
                       
-                      <p className="text-sm text-gray-600 mb-3">{accommodation.roomType}</p>
+                      <p className="text-sm text-navy-300 mb-3">{accommodation.roomType}</p>
                       
                       <div className="flex flex-wrap gap-2">
                         {accommodation.features.map((feature: string, idx: number) => (
-                          <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                          <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                             {feature}
                           </span>
                         ))}
@@ -1994,15 +1994,15 @@ function ActivitiesStep({ tripData, setTripData, onNext, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Things to Do</h2>
-        <p className="text-gray-600">AI-powered recommendations based on your {tripData.tripType} trip preferences</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Things to Do</h2>
+        <p className="text-navy-300">AI-powered recommendations based on your {tripData.tripType} trip preferences</p>
       </div>
 
       {loading && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <div className="space-y-2">
-            <p className="text-gray-600 font-medium">Analyzing your preferences...</p>
+            <p className="text-navy-300 font-medium">Analyzing your preferences...</p>
             <p className="text-sm text-gray-500">Searching local attractions and activities</p>
             <p className="text-sm text-gray-500">Checking current availability and reviews</p>
             <p className="text-sm text-gray-500">Generating personalized recommendations with GPT-5 Nano</p>
@@ -2024,7 +2024,7 @@ function ActivitiesStep({ tripData, setTripData, onNext, onBack }: any) {
           </div>
 
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recommended Activities</h3>
+            <h3 className="text-lg font-semibold text-navy-100">Recommended Activities</h3>
             <p className="text-sm text-gray-500">Select activities that interest you</p>
           </div>
           
@@ -2037,7 +2037,7 @@ function ActivitiesStep({ tripData, setTripData, onNext, onBack }: any) {
                   onClick={() => toggleActivity(activity)}
                   className={`border-2 rounded-lg p-6 cursor-pointer transition-all hover:shadow-md ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50'
+                      ? 'border-teal-400 bg-teal-400/10'
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}
                 >
@@ -2045,21 +2045,21 @@ function ActivitiesStep({ tripData, setTripData, onNext, onBack }: any) {
                     <div className="flex items-center space-x-3">
                       <div className="text-2xl">{getCategoryIcon(activity.category)}</div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">{activity.name}</h4>
-                        <p className="text-sm text-gray-600">{activity.category}</p>
+                        <h4 className="font-semibold text-navy-100">{activity.name}</h4>
+                        <p className="text-sm text-navy-300">{activity.category}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xl font-bold text-gray-900">${activity.price}</p>
+                      <p className="text-xl font-bold text-navy-100">${activity.price}</p>
                       <p className="text-xs text-gray-500">per person</p>
                     </div>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-4">{activity.description}</p>
+                  <p className="text-navy-300 text-sm mb-4">{activity.description}</p>
 
                   <div className="flex items-center justify-between mb-4 text-sm">
                     <div className="flex items-center space-x-4">
-                      <span className="text-gray-600">⏱️ {activity.duration}</span>
+                      <span className="text-navy-300">⏱️ {activity.duration}</span>
                       <span className="text-yellow-500">⭐ {activity.rating}</span>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs ${getDifficultyColor(activity.difficulty)}`}>
@@ -2071,12 +2071,12 @@ function ActivitiesStep({ tripData, setTripData, onNext, onBack }: any) {
                     <p className="text-xs text-gray-500">{activity.bestTime}</p>
                     <div className="flex flex-wrap gap-1">
                       {activity.features.slice(0, 3).map((feature: string, idx: number) => (
-                        <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                        <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                           {feature}
                         </span>
                       ))}
                       {activity.features.length > 3 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                           +{activity.features.length - 3} more
                         </span>
                       )}
@@ -2370,15 +2370,15 @@ function FoodStep({ tripData, setTripData, onNext, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Local Cuisine & Culture</h2>
-        <p className="text-gray-600">Discover authentic flavors and culinary experiences</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Local Cuisine & Culture</h2>
+        <p className="text-navy-300">Discover authentic flavors and culinary experiences</p>
       </div>
 
       {loading && (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <div className="space-y-2">
-            <p className="text-gray-600 font-medium">Discovering culinary experiences...</p>
+            <p className="text-navy-300 font-medium">Discovering culinary experiences...</p>
             <p className="text-sm text-gray-500">Analyzing local food culture and specialties</p>
             <p className="text-sm text-gray-500">Finding highly-rated restaurants and experiences</p>
             <p className="text-sm text-gray-500">Matching with your travel preferences</p>
@@ -2400,7 +2400,7 @@ function FoodStep({ tripData, setTripData, onNext, onBack }: any) {
           </div>
 
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Recommended Food Experiences</h3>
+            <h3 className="text-lg font-semibold text-navy-100">Recommended Food Experiences</h3>
             <p className="text-sm text-gray-500">Select dining experiences that appeal to you</p>
           </div>
           
@@ -2413,7 +2413,7 @@ function FoodStep({ tripData, setTripData, onNext, onBack }: any) {
                   onClick={() => toggleFood(food)}
                   className={`border-2 rounded-lg p-6 cursor-pointer transition-all hover:shadow-md ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50'
+                      ? 'border-teal-400 bg-teal-400/10'
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}
                 >
@@ -2424,34 +2424,34 @@ function FoodStep({ tripData, setTripData, onNext, onBack }: any) {
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="text-lg font-semibold text-gray-900">{food.name}</h4>
-                            <p className="text-sm text-gray-600">{food.type} • {food.cuisine}</p>
+                            <h4 className="text-lg font-semibold text-navy-100">{food.name}</h4>
+                            <p className="text-sm text-navy-300">{food.type} • {food.cuisine}</p>
                             <p className="text-xs text-gray-500">{food.atmosphere}</p>
                           </div>
                           <div className="text-right">
                             <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-600">{food.priceRange}</span>
+                              <span className="text-sm font-medium text-navy-300">{food.priceRange}</span>
                             </div>
-                            <p className="text-lg font-bold text-gray-900">${food.avgCost}</p>
+                            <p className="text-lg font-bold text-navy-100">${food.avgCost}</p>
                             <p className="text-xs text-gray-500">avg per person</p>
                           </div>
                         </div>
                         
-                        <p className="text-gray-600 text-sm mb-3">{food.description}</p>
+                        <p className="text-navy-300 text-sm mb-3">{food.description}</p>
                         
                         <div className="flex items-center justify-between mb-3 text-sm">
                           <span className="text-yellow-500">⭐ {food.rating}</span>
-                          <span className="text-gray-600">{getPriceRangeLabel(food.priceRange)}</span>
+                          <span className="text-navy-300">{getPriceRangeLabel(food.priceRange)}</span>
                         </div>
                         
                         <div className="space-y-2">
                           <div>
                             <span className="text-xs font-medium text-gray-700">Specialties: </span>
-                            <span className="text-xs text-gray-600">{food.specialties.join(' • ')}</span>
+                            <span className="text-xs text-navy-300">{food.specialties.join(' • ')}</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {food.features.map((feature: string, idx: number) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
+                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-navy-300">
                                 {feature}
                               </span>
                             ))}
@@ -2577,8 +2577,8 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Trip Map</h2>
-        <p className="text-gray-600">Visual overview of your complete travel plan</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Your Trip Map</h2>
+        <p className="text-navy-300">Visual overview of your complete travel plan</p>
       </div>
 
       {/* Trip Summary Card */}
@@ -2604,18 +2604,18 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
       </div>
 
       {/* Interactive Map Area */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="glass rounded-xl border border-navy-600/50 overflow-hidden backdrop-blur-sm">
         {/* Map Header */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b">
+        <div className="bg-gradient-to-r from-navy-800/80 to-teal-900/80 p-4 border-b border-navy-600/50">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Interactive Trip Map</h3>
+            <h3 className="font-semibold text-navy-100">Interactive Trip Map</h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => setMapView('overview')}
                 className={`px-3 py-1 rounded-md text-sm ${
                   mapView === 'overview' 
                     ? 'bg-indigo-500 text-white' 
-                    : 'bg-white text-gray-600 border hover:border-indigo-300'
+                    : 'bg-navy-700/50 text-navy-200 border border-navy-600 hover:border-teal-400'
                 }`}
               >
                 Overview
@@ -2625,7 +2625,7 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
                 className={`px-3 py-1 rounded-md text-sm ${
                   mapView === 'detailed' 
                     ? 'bg-indigo-500 text-white' 
-                    : 'bg-white text-gray-600 border hover:border-indigo-300'
+                    : 'bg-navy-700/50 text-navy-200 border border-navy-600 hover:border-teal-400'
                 }`}
               >
                 Detailed
@@ -2677,16 +2677,16 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
                     gridRow: Math.floor(index / 4) + 1
                   }}
                 >
-                  <div className={`bg-white rounded-lg shadow-lg border-2 p-3 text-center ${
+                  <div className={`glass rounded-lg shadow-lg border-2 p-3 text-center ${
                     selectedElement?.id === element.id 
-                      ? 'border-indigo-500 bg-indigo-50' 
+                      ? 'border-teal-400 bg-teal-400/10' 
                       : 'border-gray-200 hover:border-indigo-300'
                   }`}>
                     <div className="text-2xl mb-2">{element.icon}</div>
-                    <h4 className="font-semibold text-xs text-gray-900 mb-1 truncate">
+                    <h4 className="font-semibold text-xs text-navy-100 mb-1 truncate">
                       {element.name}
                     </h4>
-                    <p className="text-xs text-gray-600 truncate">{element.location}</p>
+                    <p className="text-xs text-navy-300 truncate">{element.location}</p>
                     <p className="text-xs font-medium text-indigo-600">${element.cost}</p>
                   </div>
                   
@@ -2714,13 +2714,13 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
             <div className="flex items-center space-x-3">
               <div className="text-3xl">{selectedElement.icon}</div>
               <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{selectedElement.name}</h4>
-                <p className="text-sm text-gray-600">{selectedElement.location}</p>
+                <h4 className="font-semibold text-navy-100">{selectedElement.name}</h4>
+                <p className="text-sm text-navy-300">{selectedElement.location}</p>
                 <p className="text-sm text-indigo-600">{selectedElement.details}</p>
               </div>
               <button
                 onClick={() => setSelectedElement(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-navy-400 hover:text-navy-300"
               >
                 ✕
               </button>
@@ -2731,36 +2731,36 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
 
       {/* Cost Breakdown */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg border">
-          <h3 className="font-semibold text-gray-900 mb-4">Cost Breakdown</h3>
+        <div className="glass p-6 rounded-lg border border-navy-600/50 backdrop-blur-sm">
+          <h3 className="font-semibold text-navy-100 mb-4">Cost Breakdown</h3>
           <div className="space-y-3">
             {transportCost > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Transport</span>
+                <span className="text-navy-300">Transport</span>
                 <span className="font-medium">${transportCost}</span>
               </div>
             )}
             {accommodationCost > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Accommodation</span>
+                <span className="text-navy-300">Accommodation</span>
                 <span className="font-medium">${accommodationCost}</span>
               </div>
             )}
             {rentalCost > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Rental Car</span>
+                <span className="text-navy-300">Rental Car</span>
                 <span className="font-medium">${rentalCost}</span>
               </div>
             )}
             {activityCost > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Activities</span>
+                <span className="text-navy-300">Activities</span>
                 <span className="font-medium">${activityCost}</span>
               </div>
             )}
             {foodCost > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Dining</span>
+                <span className="text-navy-300">Dining</span>
                 <span className="font-medium">${foodCost}</span>
               </div>
             )}
@@ -2771,27 +2771,27 @@ function TimelineStep({ tripData, setTripData, onNext, onBack }: any) {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border">
-          <h3 className="font-semibold text-gray-900 mb-4">Trip Overview</h3>
+        <div className="glass p-6 rounded-lg border border-navy-600/50 backdrop-blur-sm">
+          <h3 className="font-semibold text-navy-100 mb-4">Trip Overview</h3>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Destination</span>
+              <span className="text-navy-300">Destination</span>
               <span className="font-medium">{tripData.to}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Dates</span>
+              <span className="text-navy-300">Dates</span>
               <span className="font-medium">{tripData.startDate} - {tripData.endDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Trip Type</span>
+              <span className="text-navy-300">Trip Type</span>
               <span className="font-medium capitalize">{tripData.tripType}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Activities</span>
+              <span className="text-navy-300">Activities</span>
               <span className="font-medium">{tripData.activities?.length || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Dining Experiences</span>
+              <span className="text-navy-300">Dining Experiences</span>
               <span className="font-medium">{tripData.food?.length || 0}</span>
             </div>
           </div>
@@ -2930,8 +2930,8 @@ function ShareStep({ tripData, onBack }: any) {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Trip Timeline</h2>
-        <p className="text-gray-600">Day-by-day itinerary and sharing options</p>
+        <h2 className="text-3xl font-bold text-navy-100 mb-2">Your Trip Timeline</h2>
+        <p className="text-navy-300">Day-by-day itinerary and sharing options</p>
       </div>
 
       {/* Success Message */}
@@ -2954,9 +2954,9 @@ function ShareStep({ tripData, onBack }: any) {
       )}
 
       {/* Timeline Navigation */}
-      <div className="bg-white rounded-lg border">
+      <div className="glass rounded-lg border border-navy-600/50 backdrop-blur-sm">
         <div className="p-4 border-b">
-          <h3 className="font-semibold text-gray-900 mb-4">Trip Timeline</h3>
+          <h3 className="font-semibold text-navy-100 mb-4">Trip Timeline</h3>
           <div className="flex space-x-2 overflow-x-auto">
             {Array.from({ length: tripDuration }, (_, i) => i + 1).map(day => (
               <button
@@ -2977,11 +2977,11 @@ function ShareStep({ tripData, onBack }: any) {
         {/* Selected Day Timeline */}
         <div className="p-6">
           <div className="mb-6">
-            <h4 className="text-lg font-semibold text-gray-900">
+            <h4 className="text-lg font-semibold text-navy-100">
               Day {selectedDay} - {formatDate(timeline[selectedDay].date)}
             </h4>
             {timeline[selectedDay].accommodation && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-navy-300 mt-1">
                 Staying at: {timeline[selectedDay].accommodation.name}
               </p>
             )}
@@ -2990,7 +2990,7 @@ function ShareStep({ tripData, onBack }: any) {
           <div className="space-y-6">
             {/* Morning */}
             <div>
-              <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+              <h5 className="font-medium text-navy-100 mb-3 flex items-center">
                 <span className="text-yellow-500 mr-2">🌅</span>
                 Morning
               </h5>
@@ -2998,10 +2998,10 @@ function ShareStep({ tripData, onBack }: any) {
                 <div className="space-y-2">
                   {timeline[selectedDay].morning.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">{item.time}</span>
+                      <span className="text-sm font-medium text-navy-300">{item.time}</span>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.category || item.cuisine}</p>
+                        <p className="font-medium text-navy-100">{item.name}</p>
+                        <p className="text-sm text-navy-300">{item.category || item.cuisine}</p>
                       </div>
                       <span className="text-sm text-gray-500">${item.price || item.avgCost}</span>
                     </div>
@@ -3014,7 +3014,7 @@ function ShareStep({ tripData, onBack }: any) {
 
             {/* Afternoon */}
             <div>
-              <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+              <h5 className="font-medium text-navy-100 mb-3 flex items-center">
                 <span className="text-orange-500 mr-2">☀️</span>
                 Afternoon
               </h5>
@@ -3022,10 +3022,10 @@ function ShareStep({ tripData, onBack }: any) {
                 <div className="space-y-2">
                   {timeline[selectedDay].afternoon.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">{item.time}</span>
+                      <span className="text-sm font-medium text-navy-300">{item.time}</span>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.category || item.cuisine}</p>
+                        <p className="font-medium text-navy-100">{item.name}</p>
+                        <p className="text-sm text-navy-300">{item.category || item.cuisine}</p>
                       </div>
                       <span className="text-sm text-gray-500">${item.price || item.avgCost}</span>
                     </div>
@@ -3038,7 +3038,7 @@ function ShareStep({ tripData, onBack }: any) {
 
             {/* Evening */}
             <div>
-              <h5 className="font-medium text-gray-900 mb-3 flex items-center">
+              <h5 className="font-medium text-navy-100 mb-3 flex items-center">
                 <span className="text-purple-500 mr-2">🌙</span>
                 Evening
               </h5>
@@ -3046,10 +3046,10 @@ function ShareStep({ tripData, onBack }: any) {
                 <div className="space-y-2">
                   {timeline[selectedDay].evening.map((item: any, idx: number) => (
                     <div key={idx} className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">{item.time}</span>
+                      <span className="text-sm font-medium text-navy-300">{item.time}</span>
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.type || item.cuisine}</p>
+                        <p className="font-medium text-navy-100">{item.name}</p>
+                        <p className="text-sm text-navy-300">{item.type || item.cuisine}</p>
                       </div>
                       <span className="text-sm text-gray-500">${item.price || item.avgCost}</span>
                     </div>
@@ -3065,7 +3065,7 @@ function ShareStep({ tripData, onBack }: any) {
 
       {/* Sharing Options */}
       <div className="bg-white p-6 rounded-lg border">
-        <h3 className="font-semibold text-gray-900 mb-4">Share Your Trip</h3>
+        <h3 className="font-semibold text-navy-100 mb-4">Share Your Trip</h3>
         
         {/* Share URL */}
         <div className="mb-6">
