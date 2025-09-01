@@ -483,8 +483,6 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               </div>
               <h3 className="text-xl font-semibold text-navy-100">Destination</h3>
             </div>
-            </div>
-
             <LocationAutocomplete
               variant="destination"
               value={tripData.to}
