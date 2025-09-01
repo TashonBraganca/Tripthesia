@@ -190,7 +190,7 @@ export default function NewTripPage() {
             </div>
 
             <motion.div 
-              className="flex items-center space-x-4 overflow-x-auto pb-2 scrollbar-hide"
+              className="flex items-center space-x-6 overflow-x-auto pb-4 scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               variants={staggerContainer}
               initial="hidden"
@@ -207,7 +207,7 @@ export default function NewTripPage() {
                 return (
                   <motion.div 
                     key={step.id} 
-                    className="flex items-center space-x-2 min-w-0 flex-shrink-0"
+                    className="flex items-center space-x-3 min-w-0 flex-shrink-0"
                     variants={{
                       hidden: { opacity: 0, scale: 0.8 },
                       visible: { 
@@ -222,7 +222,7 @@ export default function NewTripPage() {
                   >
                     <motion.button 
                       onClick={() => handleStepClick(step.id)}
-                      className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 cursor-pointer ${
+                      className={`relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-300 cursor-pointer shrink-0 ${
                         isCompleted ? 'bg-green-500 text-white shadow-lg hover:bg-green-600' : 
                         isCurrent ? 'bg-teal-500 text-white shadow-lg' : 
                         'bg-navy-600 text-navy-200 hover:bg-navy-500'
@@ -315,53 +315,26 @@ export default function NewTripPage() {
           )}
         </AnimatePresence>
 
-        {/* Main Content */}
+        {/* Full Screen Bento Box Layout */}
         <motion.div 
-          className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="px-6 py-8 min-h-screen"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <motion.div 
-            className="glass rounded-2xl p-4 sm:p-8 relative overflow-hidden border border-navy-400/20"
-            whileHover={{ 
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
-              y: -2 
-            }}
-            transition={{ duration: 0.3 }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.1}
-            onDragEnd={(event, info) => {
-              // Swipe navigation for mobile
-              const swipeThreshold = 50;
-              if (info.offset.x > swipeThreshold && currentStep > 1) {
-                // Swipe right - go to previous step
-                setCurrentStep(currentStep - 1);
-              } else if (info.offset.x < -swipeThreshold && currentStep < steps.length) {
-                // Swipe left - go to next step (if form is valid)
-                // This could be enhanced with validation checks
-                setCurrentStep(currentStep + 1);
-              }
-            }}
-          >
-            {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/50 pointer-events-none" />
-            
-            {/* Step content with slide animation */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -50 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="relative z-10"
-              >
-                {renderCurrentStep()}
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
+          {/* Step content with full-screen bento layout */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="h-full"
+            >
+              {renderCurrentStep()}
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       </div>
     </div>
@@ -436,84 +409,120 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
   const isFormValid = tripData.from && tripData.to && tripData.startDate && tripData.endDate && tripData.tripType;
 
   return (
-    <div className="min-h-screen bg-navy-900 relative">
-      {/* Topographical Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-800 to-slate-900" />
-        {/* Add TopographicalGrid here if available */}
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+    <div className="h-full">
+      {/* Full-Screen Bento Grid Layout */}
+      <div className="grid grid-cols-12 grid-rows-6 gap-6 h-full min-h-[calc(100vh-12rem)]">
+        {/* Hero Section - Full Width */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="col-span-12 row-span-1 glass rounded-2xl p-8 border border-navy-400/20 flex flex-col justify-center"
         >
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-navy-100 mb-4">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-navy-100 text-center mb-4">
             Plan Your Perfect Journey
           </h1>
-          <p className="text-xl text-navy-300 max-w-2xl mx-auto">
+          <p className="text-xl text-navy-300 text-center max-w-3xl mx-auto">
             Tell us where you want to go and we&apos;ll create a personalized travel experience just for you
           </p>
         </motion.div>
 
+        {/* From Location Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-teal-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-navy-100">Departure</h3>
+            </div>
+            <LocationAutocomplete
+              variant="departure"
+              value={tripData.from}
+              onChange={(location) => {
+                setTripData({ ...tripData, from: location });
+                if (validationErrors.from) {
+                  setValidationErrors({ ...validationErrors, from: undefined });
+                }
+              }}
+              required
+            />
+            {validationErrors.from && (
+              <p className="text-red-400 text-sm mt-2 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {validationErrors.from}
+              </p>
+            )}
+          </div>
+        </motion.div>
+        
+        {/* To Location Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-navy-100">Destination</h3>
+            </div>
+            </div>
+
+            <LocationAutocomplete
+              variant="destination"
+              value={tripData.to}
+              onChange={(location) => {
+                setTripData({ ...tripData, to: location });
+                if (validationErrors.to) {
+                  setValidationErrors({ ...validationErrors, to: undefined });
+                }
+              }}
+              required
+            />
+            {validationErrors.to && (
+              <p className="text-red-400 text-sm mt-2 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                {validationErrors.to}
+              </p>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Travel Dates Bento Box */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="space-y-8"
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="col-span-12 md:col-span-5 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
         >
-          {/* Location Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <LocationAutocomplete
-                variant="departure"
-                value={tripData.from}
-                onChange={(location) => {
-                  setTripData({ ...tripData, from: location });
-                  if (validationErrors.from) {
-                    setValidationErrors({ ...validationErrors, from: undefined });
-                  }
-                }}
-                required
-              />
-              {validationErrors.from && (
-                <p className="text-red-400 text-sm mt-2 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  {validationErrors.from}
-                </p>
-              )}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-navy-100">Travel Dates</h3>
             </div>
-
-            <div>
-              <LocationAutocomplete
-                variant="destination"
-                value={tripData.to}
-                onChange={(location) => {
-                  setTripData({ ...tripData, to: location });
-                  if (validationErrors.to) {
-                    setValidationErrors({ ...validationErrors, to: undefined });
-                  }
-                }}
-                required
-              />
-              {validationErrors.to && (
-                <p className="text-red-400 text-sm mt-2 flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  {validationErrors.to}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Date Range Selection */}
-          <div>
             <DateRangePicker
               value={{
                 startDate: tripData.startDate || '',
@@ -531,36 +540,100 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               </p>
             )}
           </div>
+        </motion.div>
 
-          {/* Trip Type Selection */}
-          <div>
-            <TripTypeSelector
-              value={tripData.tripType || 'adventure'}
-              onChange={handleTripTypeChange}
-            />
-            {validationErrors.tripType && (
-              <p className="text-red-400 text-sm mt-2 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        {/* Trip Summary Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="col-span-12 md:col-span-7 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {validationErrors.tripType}
-              </p>
-            )}
+              </div>
+              <h3 className="text-xl font-semibold text-navy-100">Trip Summary</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm text-navy-300">
+              <div>
+                <span className="text-navy-400">From:</span>
+                <p className="text-navy-100 font-medium">{tripData.from?.displayName || tripData.from?.name || 'Not selected'}</p>
+              </div>
+              <div>
+                <span className="text-navy-400">To:</span>
+                <p className="text-navy-100 font-medium">{tripData.to?.displayName || tripData.to?.name || 'Not selected'}</p>
+              </div>
+              <div>
+                <span className="text-navy-400">Dates:</span>
+                <p className="text-navy-100 font-medium">
+                  {tripData.startDate && tripData.endDate 
+                    ? `${tripData.startDate} → ${tripData.endDate}`
+                    : 'Not selected'
+                  }
+                </p>
+              </div>
+              <div>
+                <span className="text-navy-400">Type:</span>
+                <p className="text-navy-100 font-medium">{tripData.tripType || 'Not selected'}</p>
+              </div>
+            </div>
           </div>
+        </motion.div>
+        
+        {/* Trip Type Selector - Full Width Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+          className="col-span-12 row-span-3 glass rounded-2xl p-6 border border-navy-400/20"
+        >
+          <div className="h-full flex flex-col">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <h3 className="text-2xl font-semibold text-navy-100">Choose Your Adventure</h3>
+            </div>
+            <div className="flex-1">
+              <TripTypeSelector
+                value={tripData.tripType || 'adventure'}
+                onChange={handleTripTypeChange}
+              />
+              {validationErrors.tripType && (
+                <p className="text-red-400 text-sm mt-4 flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {validationErrors.tripType}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
-          {/* Next Button */}
-          <div className="flex justify-center pt-8">
-            <AnimatedButton
-              variant="primary"
-              size="lg"
-              onClick={handleNext}
-              disabled={!isFormValid}
-              className="px-8 py-4"
-            >
-              <span>Continue to Transport</span>
-              <ChevronRight size={20} className="ml-2" />
-            </AnimatedButton>
-          </div>
+        {/* Continue Button Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="col-span-12 row-span-1 flex items-center justify-center"
+        >
+          <AnimatedButton
+            variant="primary"
+            size="lg"
+            onClick={handleNext}
+            disabled={!isFormValid}
+            className="px-12 py-4 text-lg"
+          >
+            <span>Continue to Transport</span>
+            <ChevronRight size={24} className="ml-3" />
+          </AnimatedButton>
         </motion.div>
       </div>
     </div>
