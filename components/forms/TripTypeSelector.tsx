@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mountain, Building2, Landmark, Waves, Users, UtensilsCrossed, Shuffle } from 'lucide-react';
 import { InteractiveCard } from '@/components/effects/InteractiveCard';
 import { staggerContainer, staggerItem } from '@/lib/animations/variants';
+import { trackTripTypeSelected } from '@/lib/analytics/events';
 
 interface TripType {
   id: string;
@@ -130,6 +131,9 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
     setSelectedType(typeId);
     onChange(typeId);
     
+    // Track analytics event
+    trackTripTypeSelected(typeId, showPreview);
+    
     // Delay preview update for smooth animation
     setTimeout(() => {
       setPreviewType(typeId);
@@ -142,9 +146,10 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
   return (
     <div className={`space-y-6 ${className}`}>
       <div>
-        <label className="block text-sm font-medium text-navy-100 mb-3">
-          Trip Type <span className="text-teal-400">*</span>
-        </label>
+        <fieldset>
+          <legend className="block text-sm font-medium text-navy-100 mb-3">
+            Trip Type <span className="text-teal-400">*</span>
+          </legend>
         
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3"
@@ -162,19 +167,25 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                 variants={staggerItem}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
+                className={`
+                  relative p-4 rounded-xl transition-all duration-300 cursor-pointer
+                  ${isSelected 
+                    ? `bg-${type.color}-400/20 border-${type.color}-400 ring-2 ring-${type.color}-400/50` 
+                    : 'bg-navy-800/50 border-navy-600 hover:border-navy-500'
+                  }
+                  focus:outline-none focus:ring-2 focus:ring-teal-400/50
+                `}
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={0}
+                onClick={() => handleTypeSelect(type.id)}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleTypeSelect(type.id);
+                  }
+                }}
               >
-                <InteractiveCard
-                  variant="glass"
-                  particles={false}
-                  onClick={() => handleTypeSelect(type.id)}
-                  className={`
-                    relative p-4 rounded-xl transition-all duration-300 cursor-pointer
-                    ${isSelected 
-                      ? `bg-${type.color}-400/20 border-${type.color}-400 ring-2 ring-${type.color}-400/50` 
-                      : 'bg-navy-800/50 border-navy-600 hover:border-navy-500'
-                    }
-                  `}
-                >
                   <div className="flex flex-col items-center text-center space-y-2">
                     <div className={`
                       p-3 rounded-lg transition-colors duration-300
@@ -222,11 +233,11 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </InteractiveCard>
               </motion.div>
             );
           })}
         </motion.div>
+        </fieldset>
       </div>
 
       {/* Live Preview Card */}

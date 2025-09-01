@@ -6,8 +6,7 @@ import Link from "next/link"
 import { useState } from "react"
 
 const navigation = [
-  { name: "How it works", href: "https://www.youtube.com/watch?v=tutorial-video", target: "_blank" as const },
-  { name: "Features", href: "/#features" },
+  { name: "Trips", href: "/trips" },
   { name: "Pricing", href: "/pricing" },
 ]
 
@@ -15,12 +14,12 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm">
+    <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-navy-900/80 backdrop-blur-md border-b border-gray-200/20 dark:border-navy-400/20">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
         <div className="flex lg:flex-1">
           <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-            <MapPin className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-            <span className="text-xl font-bold text-gray-900 dark:text-white">Tripthesia</span>
+            <MapPin className="h-8 w-8 text-teal-500 dark:text-teal-400" />
+            <span className="text-xl font-bold text-navy-900 dark:text-navy-50">Tripthesia</span>
           </Link>
         </div>
         <div className="flex lg:hidden">
@@ -38,8 +37,7 @@ export function Navbar() {
             <Link
               key={item.name}
               href={item.href}
-              target={item.target}
-              className="text-sm font-semibold leading-6 text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
+              className="text-sm font-semibold leading-6 text-navy-700 dark:text-navy-200 hover:text-teal-500 dark:hover:text-teal-400 transition-colors duration-200"
             >
               {item.name}
             </Link>
@@ -58,11 +56,11 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="lg:hidden">
           <div className="fixed inset-0 z-10" />
-          <div className="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-white dark:bg-gray-900 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
+          <div className="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-white dark:bg-navy-900 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-navy-400/20 backdrop-blur-md">
             <div className="flex items-center justify-between">
               <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
-                <MapPin className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-                <span className="text-xl font-bold text-gray-900 dark:text-white">Tripthesia</span>
+                <MapPin className="h-8 w-8 text-teal-500 dark:text-teal-400" />
+                <span className="text-xl font-bold text-navy-900 dark:text-navy-50">Tripthesia</span>
               </Link>
               <button
                 type="button"
@@ -80,8 +78,7 @@ export function Navbar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      target={item.target}
-                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                      className="-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-navy-900 dark:text-navy-100 hover:bg-navy-50 dark:hover:bg-navy-800/50 hover:text-teal-600 dark:hover:text-teal-400 transition-colors duration-200"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.name}
@@ -91,14 +88,14 @@ export function Navbar() {
                 <div className="py-6 space-y-2">
                   <Link
                     href="/sign-in"
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-navy-900 dark:text-navy-100 hover:bg-navy-50 dark:hover:bg-navy-800/50 transition-colors duration-200"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/sign-up"
-                    className="-mx-3 block rounded-lg bg-indigo-600 px-3 py-2.5 text-base font-semibold leading-7 text-white hover:bg-indigo-500"
+                    className="-mx-3 block rounded-lg bg-teal-500 px-3 py-2.5 text-base font-semibold leading-7 text-white hover:bg-teal-600 transition-colors duration-200"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Start Planning

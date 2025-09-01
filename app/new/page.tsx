@@ -432,7 +432,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -471,7 +471,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -510,7 +510,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="col-span-12 md:col-span-5 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+          className="col-span-12 md:col-span-7 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -545,7 +545,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="col-span-12 md:col-span-7 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+          className="col-span-12 md:col-span-5 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -620,8 +620,16 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="col-span-12 row-span-1 flex items-center justify-center"
+          className="col-span-12 row-span-1 flex items-center justify-center gap-4"
         >
+          <AnimatedButton
+            variant="outline"
+            size="lg"
+            onClick={() => onNext()}
+            className="px-8 py-4 text-lg border-navy-400/30 text-navy-300 hover:text-navy-100 hover:border-navy-300/50"
+          >
+            <span>Skip for now</span>
+          </AnimatedButton>
           <AnimatedButton
             variant="primary"
             size="lg"

@@ -2,10 +2,11 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Navigation, Plane, Train, Map, Search, X } from 'lucide-react';
-import { searchLocations, formatLocationDisplay, getCityState, LocationData } from '@/lib/data/locations';
+import { MapPin, Navigation, Plane, Train, Map, Search, X, Crosshair, AlertCircle } from 'lucide-react';
+import { searchLocations, formatLocationDisplay, getCityState, LocationData, getCurrentLocation, getLocationFromIP } from '@/lib/data/locations';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import { staggerContainer, staggerItem } from '@/lib/animations/variants';
+import { trackFieldSuggest } from '@/lib/analytics/events';
 
 // LocationData interface is imported from lib/data/locations
 
@@ -18,6 +19,8 @@ interface LocationAutocompleteProps {
   required?: boolean;
   disabled?: boolean;
   maxSuggestions?: number;
+  showCurrentLocation?: boolean;
+  showNearbyLocations?: boolean;
 }
 
 const typeIcons = {
@@ -55,13 +58,18 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   variant = 'destination',
   required = false,
   disabled = false,
-  maxSuggestions = 8
+  maxSuggestions = 8,
+  showCurrentLocation = true,
+  showNearbyLocations = true
 }) => {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
+  const [locationError, setLocationError] = useState<string>('');
+  const [showLocationOptions, setShowLocationOptions] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -74,13 +82,24 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   
   const performSearch = useCallback(async (searchQuery: string) => {
     if (searchQuery.length < 2) {
-      setSuggestions([]);
+      // Show popular destinations or nearby locations when no query
+      if (userLocation && showNearbyLocations) {
+        try {
+          const results = await searchLocations('', maxSuggestions, userLocation);
+          setSuggestions(results);
+        } catch (error) {
+          console.error('Nearby locations error:', error);
+          setSuggestions([]);
+        }
+      } else {
+        setSuggestions([]);
+      }
       setLoading(false);
       return;
     }
 
     try {
-      const results = await searchLocations(searchQuery, maxSuggestions);
+      const results = await searchLocations(searchQuery, maxSuggestions, userLocation || undefined);
       setSuggestions(results);
       setSelectedIndex(-1);
     } catch (error) {
@@ -89,13 +108,14 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [maxSuggestions]);
+  }, [maxSuggestions, userLocation, showNearbyLocations]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
     setIsOpen(true);
     setLoading(true);
+    setShowLocationOptions(false);
 
     // Clear previous timeout
     if (searchDebounceRef.current) {
@@ -105,17 +125,42 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     // Debounce search
     searchDebounceRef.current = setTimeout(() => {
       performSearch(newQuery);
-    }, 200);
+    }, 150); // Slightly faster response
   }, [performSearch]);
 
   const handleSuggestionSelect = useCallback((location: LocationData) => {
-    setQuery(formatLocationDisplay(location));
-    onChange(location);
+    // Track analytics for field suggestion usage
+    const fieldType = variant === 'departure' ? 'location_from' : 'location_to';
+    trackFieldSuggest(fieldType, suggestions.length, query.length);
+    
+    // Handle current location selection
+    if (location.id === 'current-location' && userLocation) {
+      const currentLocationData: LocationData = {
+        ...location,
+        coordinates: [userLocation.coords.longitude, userLocation.coords.latitude]
+      };
+      setQuery('Current Location 📍');
+      onChange(currentLocationData);
+    } else {
+      setQuery(formatLocationDisplay(location));
+      onChange(location);
+    }
+    
     setIsOpen(false);
     setSuggestions([]);
     setSelectedIndex(-1);
+    setShowLocationOptions(false);
     inputRef.current?.blur();
-  }, [onChange]);
+  }, [onChange, userLocation, variant, suggestions.length, query.length]);
+
+  const handleLocationOptionsToggle = useCallback(() => {
+    setShowLocationOptions(!showLocationOptions);
+    if (!showLocationOptions) {
+      setIsOpen(true);
+      setLoading(true);
+      performSearch('');
+    }
+  }, [showLocationOptions, performSearch]);
 
   const handleClear = useCallback(() => {
     setQuery('');
@@ -173,6 +218,44 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Get user location on component mount
+  useEffect(() => {
+    if (showCurrentLocation) {
+      getCurrentLocation()
+        .then(position => {
+          setUserLocation(position);
+          setLocationError('');
+        })
+        .catch(async (error) => {
+          console.warn('Geolocation error:', error);
+          setLocationError('Location access denied');
+          
+          // Fallback to IP-based location
+          try {
+            const ipLocation = await getLocationFromIP();
+            if (ipLocation) {
+              // Create a mock GeolocationPosition for IP location
+              const mockPosition = {
+                coords: {
+                  latitude: ipLocation.coordinates[1],
+                  longitude: ipLocation.coordinates[0],
+                  accuracy: 10000,
+                  altitude: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null
+                },
+                timestamp: Date.now()
+              } as GeolocationPosition;
+              setUserLocation(mockPosition);
+            }
+          } catch (ipError) {
+            console.warn('IP location error:', ipError);
+          }
+        });
+    }
+  }, [showCurrentLocation]);
+
   // Update query when value changes externally
   useEffect(() => {
     if (value) {
@@ -214,12 +297,19 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           value={query}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => query.length >= 2 && setIsOpen(true)}
+          onFocus={() => {
+            if (query.length >= 2) {
+              setIsOpen(true);
+            } else if (showNearbyLocations && (userLocation || suggestions.length > 0)) {
+              setIsOpen(true);
+              performSearch('');
+            }
+          }}
           placeholder={placeholder || config.placeholder}
           disabled={disabled}
           required={required}
           className={`
-            w-full pl-10 pr-12 py-3 
+            w-full pl-10 pr-20 py-3 
             bg-navy-800/50 border border-navy-600 rounded-xl
             text-navy-100 placeholder-navy-400
             focus:border-${config.accent}-400 focus:ring-2 focus:ring-${config.accent}-400/20
@@ -229,17 +319,34 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           `}
         />
         
-        {(query || value) && !disabled && (
-          <AnimatedButton
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1.5 h-auto min-h-0"
-            particles={false}
-          >
-            <X size={14} />
-          </AnimatedButton>
-        )}
+        {/* Action Buttons */}
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+          {showCurrentLocation && userLocation && (
+            <div title="Use current location">
+              <AnimatedButton
+                variant="ghost"
+                size="sm"
+                onClick={handleLocationOptionsToggle}
+                className="p-1.5 h-auto min-h-0 text-sky-400 hover:text-sky-300"
+                particles={false}
+              >
+                <Crosshair size={14} />
+              </AnimatedButton>
+            </div>
+          )}
+          
+          {(query || value) && !disabled && (
+            <AnimatedButton
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              className="p-1.5 h-auto min-h-0"
+              particles={false}
+            >
+              <X size={14} />
+            </AnimatedButton>
+          )}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -249,13 +356,13 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 mt-2 z-50"
+            className="absolute top-full left-0 right-0 mt-2 z-[9999]"
           >
             <div className="bg-navy-800/95 backdrop-blur-md border border-navy-600 rounded-xl shadow-2xl overflow-hidden">
               {loading ? (
                 <div className="px-4 py-3 text-center text-navy-400">
                   <Search className="inline-block animate-spin mr-2" size={16} />
-                  Searching locations...
+                  {query.length >= 2 ? 'Searching locations...' : 'Loading nearby places...'}
                 </div>
               ) : (
                 <motion.ul
@@ -319,6 +426,46 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                     );
                   })}
                   
+                  {/* Current Location Option */}
+                  {showCurrentLocation && userLocation && query.toLowerCase().includes('current') && (
+                    <motion.li
+                      variants={staggerItem}
+                      className="px-4 py-3 cursor-pointer transition-all duration-150 flex items-center space-x-3 group bg-sky-400/10 border-l-2 border-sky-400 hover:bg-sky-400/20"
+                      onClick={() => handleSuggestionSelect({
+                        id: 'current-location',
+                        name: 'Current Location',
+                        displayName: 'Use Current Location 📍',
+                        type: 'city',
+                        country: 'Unknown',
+                        countryCode: 'XX',
+                        coordinates: [userLocation.coords.longitude, userLocation.coords.latitude],
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        flagEmoji: '📍',
+                        searchTerms: ['current', 'location'],
+                        popularity: 100
+                      })}
+                    >
+                      <div className="p-2 rounded-lg bg-sky-400/20 text-sky-300">
+                        <Crosshair size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sky-200">Use Current Location</div>
+                        <div className="text-sm text-sky-400">Detected location • GPS</div>
+                      </div>
+                    </motion.li>
+                  )}
+                  
+                  {/* Location Error */}
+                  {locationError && showCurrentLocation && (
+                    <motion.li
+                      variants={staggerItem}
+                      className="px-4 py-3 text-center text-amber-400 bg-amber-400/10 border-l-2 border-amber-400"
+                    >
+                      <AlertCircle size={16} className="inline-block mr-2" />
+                      <span className="text-sm">{locationError}</span>
+                    </motion.li>
+                  )}
+                  
                   {suggestions.length === 0 && query.length >= 2 && (
                     <motion.li
                       variants={staggerItem}
@@ -327,6 +474,27 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                       <Search size={24} className="mx-auto mb-2 opacity-50" />
                       <div>No locations found for &quot;{query}&quot;</div>
                       <div className="text-sm mt-1">Try searching for a city, state, or landmark</div>
+                      {showCurrentLocation && (
+                        <div className="text-xs mt-2 text-sky-400">
+                          Tip: Type "current" to use your location
+                        </div>
+                      )}
+                    </motion.li>
+                  )}
+                  
+                  {/* Show popular/nearby locations when no query */}
+                  {suggestions.length === 0 && query.length < 2 && !loading && (
+                    <motion.li
+                      variants={staggerItem}
+                      className="px-4 py-4 text-center text-navy-400"
+                    >
+                      <MapPin size={20} className="mx-auto mb-2 opacity-50" />
+                      <div className="text-sm">Start typing to search locations</div>
+                      {userLocation && (
+                        <div className="text-xs mt-1 text-sky-400">
+                          Or we can show nearby popular destinations
+                        </div>
+                      )}
                     </motion.li>
                   )}
                 </motion.ul>

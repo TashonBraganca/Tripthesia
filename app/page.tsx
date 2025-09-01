@@ -2,7 +2,6 @@ import { Metadata } from "next";
 import { Hero } from "@/components/marketing/hero";
 import { BentoFeatures } from "@/components/marketing/bento-features";
 import { Pricing } from "@/components/marketing/pricing";
-import { HowItWorks } from "@/components/marketing/how-it-works";
 import { Testimonials } from "@/components/marketing/testimonials";
 import { CTA } from "@/components/marketing/cta";
 import { Navbar } from "@/components/layout/navbar";
@@ -21,7 +20,6 @@ export default function HomePage() {
         <main>
           <Hero />
           <BentoFeatures />
-          <HowItWorks />
           <Testimonials />
           <Pricing />
           <CTA />

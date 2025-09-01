@@ -6,6 +6,8 @@ import { motion, useReducedMotion } from "framer-motion"
 import { fadeInUp, fadeIn, staggerContainer, buttonHover } from "@/lib/motion-variants"
 import { TopographicalGrid } from "@/components/backgrounds/TopographicalGrid"
 import { Plane, MapPin, Navigation, Compass } from "lucide-react"
+import { trackLandingView } from "@/lib/analytics/events"
+import { useEffect } from "react"
 
 const floatingIcons = [
   { icon: Plane, delay: 0, x: "10%", y: "20%" },
@@ -16,6 +18,11 @@ const floatingIcons = [
 
 export function Hero() {
   const shouldReduceMotion = useReducedMotion();
+
+  // Track landing page view
+  useEffect(() => {
+    trackLandingView('hero');
+  }, []);
 
   return (
     <div className="relative isolate overflow-hidden min-h-screen flex items-center">

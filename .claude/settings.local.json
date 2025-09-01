@@ -26,7 +26,8 @@
       "Bash(pnpm drizzle-kit generate:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(cat:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
