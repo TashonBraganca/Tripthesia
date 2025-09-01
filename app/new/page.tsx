@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
+import { CurrencySelector } from '@/components/forms/CurrencySelector';
 import { LocationData } from '@/lib/data/locations';
+import { CurrencyCode } from '@/lib/currency/currency-converter';
 import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
 import { DateRangePicker } from '@/components/forms/DateRangePicker';
 import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
@@ -23,6 +25,7 @@ interface TripData {
   endDate: string;
   travelers: number;
   tripType: string;
+  currency: CurrencyCode;
   transport: {
     mode: string;
     details: any;
@@ -49,6 +52,7 @@ export default function NewTripPage() {
     endDate: '',
     travelers: 1,
     tripType: '',
+    currency: 'USD',
     transport: { mode: '', details: null },
     rental: null,
     accommodation: null,
@@ -540,12 +544,38 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           </div>
         </motion.div>
 
+        {/* Currency Selection Bento Box */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.45 }}
+          className="col-span-12 md:col-span-4 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-navy-100">Currency</h3>
+            </div>
+            <CurrencySelector
+              value={tripData.currency}
+              onChange={(currency) => setTripData({ ...tripData, currency })}
+              showLocationInfo={true}
+              autoDetect={true}
+              className="w-full"
+            />
+          </div>
+        </motion.div>
+
         {/* Trip Summary Bento Box */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="col-span-12 md:col-span-5 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
+          className="col-span-12 md:col-span-8 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -556,7 +586,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               </div>
               <h3 className="text-xl font-semibold text-navy-100">Trip Summary</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-sm text-navy-300">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-navy-300">
               <div>
                 <span className="text-navy-400">From:</span>
                 <p className="text-navy-100 font-medium">{tripData.from?.displayName || tripData.from?.name || 'Not selected'}</p>
@@ -564,6 +594,10 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
               <div>
                 <span className="text-navy-400">To:</span>
                 <p className="text-navy-100 font-medium">{tripData.to?.displayName || tripData.to?.name || 'Not selected'}</p>
+              </div>
+              <div>
+                <span className="text-navy-400">Currency:</span>
+                <p className="text-navy-100 font-medium">{tripData.currency}</p>
               </div>
               <div>
                 <span className="text-navy-400">Dates:</span>

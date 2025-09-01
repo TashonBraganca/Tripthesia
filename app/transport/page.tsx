@@ -9,7 +9,10 @@ import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import { InteractiveCard } from '@/components/effects/InteractiveCard';
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
+import { CurrencySelector } from '@/components/forms/CurrencySelector';
 import { LocationData } from '@/lib/data/locations';
+import { CurrencyCode } from '@/lib/currency/currency-converter';
+import { useGeolocationCurrency } from '@/hooks/useGeolocationCurrency';
 import TransportSearchResults from '@/components/transport/TransportSearchResults';
 import LocalTransportOptions from '@/components/transport/LocalTransportOptions';
 import PriceTracker from '@/components/transport/PriceTracker';
@@ -378,6 +381,18 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
                     </select>
                   </div>
                 </div>
+              </div>
+              
+              {/* Currency Selection */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-navy-200">Currency</label>
+                <CurrencySelector
+                  value={formData.currency as CurrencyCode}
+                  onChange={(currency) => setFormData({ ...formData, currency })}
+                  showLocationInfo={true}
+                  autoDetect={true}
+                  className="max-w-md"
+                />
               </div>
               
               {/* Search Actions */}
