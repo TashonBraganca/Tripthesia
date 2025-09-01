@@ -74,7 +74,7 @@ export function Hero() {
         >
           {/* Main Heading */}
           <motion.h1 
-            className="display-text bg-gradient-to-r from-navy-50 via-teal-300 to-sky-300 bg-clip-text text-transparent mb-6"
+            className="display-text bg-gradient-to-r from-white via-teal-200 to-sky-200 bg-clip-text text-transparent mb-6 drop-shadow-sm"
             variants={fadeInUp}
           >
             Plan Your Perfect Journey
@@ -82,7 +82,7 @@ export function Hero() {
 
           {/* Subheading */}
           <motion.p 
-            className="hero-text text-contrast-medium max-w-2xl mx-auto mb-10"
+            className="hero-text text-navy-100/90 max-w-2xl mx-auto mb-10 text-xl leading-relaxed"
             variants={fadeInUp}
           >
             Create personalized travel itineraries in seconds with real prices and instant booking
@@ -118,7 +118,7 @@ export function Hero() {
                 variant="outline" 
                 asChild 
                 size="lg"
-                className="border-navy-400 text-navy-100 hover:bg-navy-800/50 hover:text-teal-300 px-8 py-6 text-lg backdrop-blur-sm transition-all duration-300"
+                className="border-navy-300/60 text-navy-100 hover:bg-navy-800/50 hover:text-teal-300 hover:border-teal-400/50 px-8 py-6 text-lg backdrop-blur-sm transition-all duration-300"
               >
                 <Link href="/trips">
                   View Examples
@@ -147,7 +147,7 @@ export function Hero() {
                 <div className="text-2xl font-bold text-teal-400 font-serif">
                   {stat.value}
                 </div>
-                <div className="text-sm text-contrast-medium mt-1">
+                <div className="text-sm text-navy-200/80 mt-1 font-medium">
                   {stat.label}
                 </div>
               </motion.div>
