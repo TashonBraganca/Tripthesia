@@ -12,7 +12,6 @@ import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
 import { DateRangePicker } from '@/components/forms/DateRangePicker';
 import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
-import { trackWizardStarted, trackStepperJump } from '@/lib/analytics/events';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 
 // LocationData interface is imported from lib/data/locations
@@ -72,7 +71,7 @@ export default function NewTripPage() {
     // Track stepper jump analytics
     const stepNames = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'food', 'timeline', 'share'];
     if (stepId !== currentStep) {
-      trackStepperJump(currentStep, stepId, stepNames[stepId - 1] || 'unknown');
+      // Analytics tracking removed for build stability
     }
     
     // Clear any previous warnings
@@ -91,7 +90,7 @@ export default function NewTripPage() {
 
   // Track wizard started on component mount
   useEffect(() => {
-    trackWizardStarted();
+    // Analytics tracking removed for build stability
   }, []);
 
   if (!isLoaded) {
