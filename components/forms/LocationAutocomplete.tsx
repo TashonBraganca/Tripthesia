@@ -356,7 +356,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 mt-2 z-[99999]"
+            className="absolute top-full left-0 right-0 mt-2 z-[999999]"
           >
             <div className="bg-navy-800/95 backdrop-blur-md border border-navy-600 rounded-xl shadow-2xl overflow-hidden">
               {loading ? (

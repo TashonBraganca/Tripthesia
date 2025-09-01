@@ -152,7 +152,7 @@ export default function NewTripPage() {
       />
 
       {/* Content */}
-      <div className="relative z-10">
+      <div className="relative">
         {/* Header */}
         <div className="bg-navy-900/90 backdrop-blur-sm shadow-sm border-b border-navy-400/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -432,7 +432,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -471,7 +471,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
+          className="col-span-12 md:col-span-6 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
@@ -510,7 +510,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="col-span-12 md:col-span-7 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative z-10"
+          className="col-span-12 md:col-span-7 row-span-1 glass rounded-2xl p-6 border border-navy-400/20 flex flex-col justify-center relative"
         >
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
