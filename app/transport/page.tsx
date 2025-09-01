@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, MapPin, Calendar, Users, Plane, Train, Car, Filter, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, Users, Plane, Train, Car, Filter, Star, Search, Clock, CreditCard, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
+import { AnimatedButton } from '@/components/effects/AnimatedButton';
+import { InteractiveCard } from '@/components/effects/InteractiveCard';
+import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
+import { LocationData } from '@/lib/data/locations';
 import TransportSearchResults from '@/components/transport/TransportSearchResults';
 import LocalTransportOptions from '@/components/transport/LocalTransportOptions';
 import PriceTracker from '@/components/transport/PriceTracker';
@@ -54,10 +59,17 @@ export default function TransportPage() {
 
   if (!mounted || !isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading transport options...</p>
+      <div className="relative min-h-screen bg-navy-950 flex items-center justify-center overflow-hidden">
+        <TopographicalGrid 
+          density="light" 
+          animation={true} 
+          parallax={false}
+          theme="dark"
+          className="absolute inset-0"
+        />
+        <div className="relative z-10 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400 mx-auto mb-4"></div>
+          <p className="text-lg text-navy-100">Loading transport options...</p>
         </div>
       </div>
     );
@@ -65,27 +77,48 @@ export default function TransportPage() {
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <Plane className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign in to search transport</h1>
-          <p className="text-gray-600 mb-6">Access comprehensive transport search with price tracking and booking.</p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+      <div className="relative min-h-screen bg-navy-950 flex items-center justify-center overflow-hidden">
+        <TopographicalGrid 
+          density="normal" 
+          animation={true} 
+          parallax={true}
+          theme="dark"
+          className="absolute inset-0"
+        />
+        <div className="relative z-10 text-center max-w-md mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            Sign In
-          </Link>
+            <Plane className="h-16 w-16 text-teal-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-navy-100 mb-4">Sign in to search transport</h1>
+            <p className="text-navy-300 mb-6">Access comprehensive transport search with price tracking and booking.</p>
+            <Link href="/sign-in">
+              <AnimatedButton variant="primary" size="lg">
+                Sign In
+              </AnimatedButton>
+            </Link>
+          </motion.div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="relative min-h-screen bg-navy-950 overflow-hidden">
+      {/* Background */}
+      <TopographicalGrid 
+        density="light" 
+        animation={true} 
+        parallax={true}
+        theme="dark"
+        className="absolute inset-0"
+      />
+      
       {/* Header */}
       <motion.div 
-        className="bg-white shadow-sm border-b"
+        className="relative z-10 glass backdrop-blur-md border-b border-navy-700/50"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -93,20 +126,17 @@ export default function TransportPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/trips"
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-200"
-              >
+              <Link href="/trips" className="flex items-center text-navy-300 hover:text-navy-100 transition-colors duration-200">
                 <ArrowLeft className="h-5 w-5 mr-2" />
                 Back to Trips
               </Link>
-              <div className="h-6 w-px bg-gray-300" />
-              <h1 className="text-2xl font-bold text-gray-900">Transport Search</h1>
+              <div className="h-6 w-px bg-navy-600" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-navy-100 to-teal-300 bg-clip-text text-transparent">Transport Booking</h1>
             </div>
             
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="flex items-center space-x-2 text-sm text-navy-300">
               <span>Welcome,</span>
-              <span className="font-medium">{user.firstName}</span>
+              <span className="font-medium text-teal-300">{user.firstName}</span>
             </div>
           </div>
         </div>
@@ -114,7 +144,7 @@ export default function TransportPage() {
 
       {/* Navigation Tabs */}
       <motion.div 
-        className="bg-white border-b"
+        className="relative z-10 glass backdrop-blur-md border-b border-navy-700/50"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
@@ -131,8 +161,8 @@ export default function TransportPage() {
                   onClick={() => setCurrentView(view.id)}
                   className={`flex items-center space-x-2 py-4 px-2 border-b-2 transition-all duration-200 ${
                     isActive
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-teal-400 text-teal-300'
+                      : 'border-transparent text-navy-400 hover:text-navy-200 hover:border-navy-500'
                   }`}
                   whileHover={{ y: -1 }}
                   whileTap={{ y: 0 }}
@@ -150,7 +180,7 @@ export default function TransportPage() {
       </motion.div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <AnimatePresence mode="wait">
           {currentView === 'search' && (
             <motion.div
@@ -204,35 +234,63 @@ export default function TransportPage() {
 // Search Transport View Component
 function SearchTransportView({ searchParams, onSearch, onSelectTransport, selectedTransport }: any) {
   const [showSearchForm, setShowSearchForm] = useState(!searchParams.from || !searchParams.to);
-  const [formData, setFormData] = useState(searchParams);
+  const [formData, setFormData] = useState({
+    from: null as LocationData | null,
+    to: null as LocationData | null,
+    departureDate: '',
+    returnDate: '',
+    adults: 1,
+    currency: 'USD',
+    ...searchParams
+  });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.from && formData.to && formData.departureDate) {
-      onSearch(formData);
-      setShowSearchForm(false);
+      setIsSearching(true);
+      try {
+        await onSearch(formData);
+        setShowSearchForm(false);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setIsSearching(false);
+      }
     }
   };
 
+  const isFormValid = formData.from && formData.to && formData.departureDate;
+
   return (
     <div className="space-y-6">
-      {/* Search Form */}
-      <motion.div 
-        className="bg-white rounded-xl shadow-sm border p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      {/* Modern Search Interface */}
+      <InteractiveCard
+        variant="glass"
+        className="p-8 border-navy-700/50 bg-navy-800/30"
+        particles={false}
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Search All Transport</h2>
-          <motion.button
-            onClick={() => setShowSearchForm(!showSearchForm)}
-            className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {showSearchForm ? 'Hide' : 'Edit'} Search
-          </motion.button>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-teal-400/20">
+              <Search className="w-6 h-6 text-teal-400" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-navy-100">Find Your Perfect Flight</h2>
+              <p className="text-navy-400">Compare flights, trains, and buses in one place</p>
+            </div>
+          </div>
+          {!showSearchForm && (
+            <AnimatedButton
+              onClick={() => setShowSearchForm(true)}
+              variant="outline"
+              size="sm"
+              className="border-teal-400/50 text-teal-300 hover:bg-teal-400/10"
+            >
+              Edit Search
+            </AnimatedButton>
+          )}
         </div>
 
         <AnimatePresence>
@@ -243,88 +301,205 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="space-y-4"
+              className="space-y-6"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
-                  <div className="relative">
-                    <MapPin className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formData.from}
-                      onChange={(e) => setFormData({ ...formData, from: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="Departure city"
-                    />
-                  </div>
+              {/* Location Inputs */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-navy-200">Departure</label>
+                  <LocationAutocomplete
+                    variant="departure"
+                    value={formData.from}
+                    onChange={(location) => setFormData({ ...formData, from: location })}
+                    placeholder="From where?"
+                    className="w-full"
+                    required
+                  />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
-                  <div className="relative">
-                    <MapPin className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formData.to}
-                      onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      placeholder="Destination city"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-navy-200">Destination</label>
+                  <LocationAutocomplete
+                    variant="destination"
+                    value={formData.to}
+                    onChange={(location) => setFormData({ ...formData, to: location })}
+                    placeholder="Where to?"
+                    className="w-full"
+                    required
+                  />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Departure</label>
+              </div>
+              
+              {/* Travel Details */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-navy-200">Departure Date</label>
                   <div className="relative">
-                    <Calendar className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+                    <Calendar className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
                     <input
                       type="date"
                       value={formData.departureDate}
                       onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full pl-10 pr-3 py-3 bg-navy-800/50 border border-navy-600 rounded-xl text-navy-100 placeholder-navy-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 focus:outline-none transition-all duration-200"
                       min={new Date().toISOString().split('T')[0]}
+                      required
                     />
                   </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Travelers</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-navy-200">Return Date (Optional)</label>
                   <div className="relative">
-                    <Users className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+                    <Calendar className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
+                    <input
+                      type="date"
+                      value={formData.returnDate}
+                      onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
+                      className="w-full pl-10 pr-3 py-3 bg-navy-800/50 border border-navy-600 rounded-xl text-navy-100 placeholder-navy-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 focus:outline-none transition-all duration-200"
+                      min={formData.departureDate || new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-navy-200">Travelers</label>
+                  <div className="relative">
+                    <Users className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
                     <select
                       value={formData.adults}
                       onChange={(e) => setFormData({ ...formData, adults: parseInt(e.target.value) })}
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full pl-10 pr-3 py-3 bg-navy-800/50 border border-navy-600 rounded-xl text-navy-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 focus:outline-none transition-all duration-200 appearance-none"
                     >
                       {[1,2,3,4,5,6,7,8,9].map(num => (
-                        <option key={num} value={num}>{num} {num === 1 ? 'Adult' : 'Adults'}</option>
+                        <option key={num} value={num} className="bg-navy-800 text-navy-100">
+                          {num} {num === 1 ? 'Adult' : 'Adults'}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
               </div>
               
-              <motion.button
-                type="submit"
-                className="w-full md:w-auto px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Search All Transport Options
-              </motion.button>
+              {/* Search Actions */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-navy-700/50">
+                <div className="flex items-center space-x-4">
+                  <AnimatedButton
+                    type="button"
+                    onClick={() => setShowFilters(!showFilters)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-navy-300 hover:text-navy-100"
+                  >
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filters
+                  </AnimatedButton>
+                  
+                  <div className="flex items-center space-x-2 text-sm text-navy-400">
+                    <Shield className="w-4 h-4" />
+                    <span>Secure booking guaranteed</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <AnimatedButton
+                    type="button"
+                    onClick={() => setShowSearchForm(false)}
+                    variant="ghost"
+                    size="lg"
+                    className="text-navy-300 hover:text-navy-100"
+                  >
+                    Cancel
+                  </AnimatedButton>
+                  
+                  <AnimatedButton
+                    type="submit"
+                    disabled={!isFormValid || isSearching}
+                    variant="primary"
+                    size="lg"
+                    className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-400 hover:from-teal-400 hover:to-teal-300 text-navy-900 font-semibold min-w-[200px]"
+                  >
+                    {isSearching ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-navy-900 border-t-transparent"></div>
+                        <span>Searching...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <Search className="w-4 h-4" />
+                        <span>Search Flights</span>
+                      </div>
+                    )}
+                  </AnimatedButton>
+                </div>
+              </div>
             </motion.form>
           )}
         </AnimatePresence>
-      </motion.div>
+        
+        {/* Quick Search Summary */}
+        {!showSearchForm && (formData.from || formData.to) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-4 bg-navy-800/20 rounded-xl border border-navy-700/30"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-teal-400" />
+                  <span className="text-navy-200">
+                    {formData.from?.name || 'Select departure'} → {formData.to?.name || 'Select destination'}
+                  </span>
+                </div>
+                
+                {formData.departureDate && (
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4 text-teal-400" />
+                    <span className="text-navy-200">
+                      {new Date(formData.departureDate).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex items-center space-x-2">
+                  <Users className="w-4 h-4 text-teal-400" />
+                  <span className="text-navy-200">{formData.adults} {formData.adults === 1 ? 'Adult' : 'Adults'}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2 text-xs text-navy-400">
+                <Clock className="w-3 h-3" />
+                <span>Last searched: Just now</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </InteractiveCard>
 
       {/* Search Results */}
-      {searchParams.from && searchParams.to && !showSearchForm && (
-        <TransportSearchResults
-          searchParams={searchParams}
-          onSelectTransport={onSelectTransport}
-          selectedTransport={selectedTransport}
-        />
+      {formData.from && formData.to && formData.departureDate && !showSearchForm && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <TransportSearchResults
+            searchParams={{
+              from: formData.from.name,
+              to: formData.to.name,
+              departureDate: formData.departureDate,
+              returnDate: formData.returnDate,
+              adults: formData.adults,
+              currency: formData.currency
+            }}
+            onSelectTransport={onSelectTransport}
+            selectedTransport={selectedTransport}
+          />
+        </motion.div>
       )}
     </div>
   );
@@ -334,17 +509,26 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
 function LocalTransportView({ destination }: { destination: string }) {
   return (
     <div className="space-y-6">
-      <motion.div 
-        className="bg-white rounded-xl shadow-sm border p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <InteractiveCard
+        variant="glass"
+        className="p-8 border-navy-700/50 bg-navy-800/30"
+        particles={false}
       >
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 rounded-lg bg-emerald-400/20">
+            <Car className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-navy-100">Local Transportation</h2>
+            <p className="text-navy-400">Ground transport options in {destination}</p>
+          </div>
+        </div>
+        
         <LocalTransportOptions 
           destination={destination}
           onSelectOption={(option) => console.log('Selected local transport:', option)}
         />
-      </motion.div>
+      </InteractiveCard>
     </div>
   );
 }
@@ -353,42 +537,63 @@ function LocalTransportView({ destination }: { destination: string }) {
 function PriceTrackerView({ selectedTransport, searchParams }: any) {
   if (!selectedTransport) {
     return (
-      <motion.div 
-        className="bg-white rounded-xl shadow-sm border p-12 text-center"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+      <InteractiveCard
+        variant="glass"
+        className="p-12 text-center border-navy-700/50 bg-navy-800/30"
+        particles={true}
       >
-        <Star className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Transport Selected</h3>
-        <p className="text-gray-600 mb-6">
-          Select a transport option from the search results to track its price changes.
-        </p>
-        <motion.button
-          onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'search' }))}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
-          Search Transport Options
-        </motion.button>
-      </motion.div>
+          <Star className="h-16 w-16 text-amber-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-navy-100 mb-2">No Transport Selected</h3>
+          <p className="text-navy-400 mb-6 max-w-md mx-auto">
+            Select a transport option from the search results to track its price changes and get alerts.
+          </p>
+          <AnimatedButton
+            onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'search' }))}
+            variant="primary"
+            size="lg"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Search Transport Options
+          </AnimatedButton>
+        </motion.div>
+      </InteractiveCard>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PriceTracker
-        transportOption={{
-          id: selectedTransport.id,
-          type: selectedTransport.type,
-          provider: selectedTransport.airline || selectedTransport.provider,
-          route: `${searchParams.from} → ${searchParams.to}`,
-          currentPrice: selectedTransport.price,
-          currency: selectedTransport.currency || 'USD',
-        }}
-        onPriceAlert={(alert) => console.log('Price alert created:', alert)}
-      />
+      <InteractiveCard
+        variant="glass"
+        className="p-8 border-navy-700/50 bg-navy-800/30"
+        particles={false}
+      >
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 rounded-lg bg-amber-400/20">
+            <Star className="w-6 h-6 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-navy-100">Price Tracker</h2>
+            <p className="text-navy-400">Monitor price changes and get alerts</p>
+          </div>
+        </div>
+        
+        <PriceTracker
+          transportOption={{
+            id: selectedTransport.id,
+            type: selectedTransport.type,
+            provider: selectedTransport.airline || selectedTransport.provider,
+            route: `${searchParams.from} → ${searchParams.to}`,
+            currentPrice: selectedTransport.price,
+            currency: selectedTransport.currency || 'USD',
+          }}
+          onPriceAlert={(alert) => console.log('Price alert created:', alert)}
+        />
+      </InteractiveCard>
     </div>
   );
 }
