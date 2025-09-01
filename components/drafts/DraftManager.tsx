@@ -232,7 +232,7 @@ export const DraftManager: React.FC<DraftManagerProps> = ({
             <div>
               <div className="text-sm font-medium text-amber-300">Old drafts detected</div>
               <div className="text-xs text-amber-400 mt-1">
-                Some drafts haven't been updated in a while. They'll be automatically cleaned up after 30 days of inactivity.
+                Some drafts haven&apos;t been updated in a while. They&apos;ll be automatically cleaned up after 30 days of inactivity.
               </div>
             </div>
           </div>

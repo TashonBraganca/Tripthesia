@@ -476,7 +476,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
                       <div className="text-sm mt-1">Try searching for a city, state, or landmark</div>
                       {showCurrentLocation && (
                         <div className="text-xs mt-2 text-sky-400">
-                          Tip: Type "current" to use your location
+                          Tip: Type &quot;current&quot; to use your location
                         </div>
                       )}
                     </motion.li>
