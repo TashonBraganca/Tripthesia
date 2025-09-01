@@ -6,8 +6,8 @@ import { MapPin, Calendar, Users, Plane, Car, Hotel, MapIcon, Clock, ChevronRigh
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
-import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
-import { CurrencySelector } from '@/components/forms/CurrencySelector';
+import { LocationAutocompleteLazy as LocationAutocomplete } from '@/components/forms/LocationAutocompleteLazy';
+import { CurrencySelectorLazy as CurrencySelector } from '@/components/forms/CurrencySelectorLazy';
 import { LocationData } from '@/lib/data/locations';
 import { CurrencyCode } from '@/lib/currency/currency-converter';
 import { TripTypeSelector } from '@/components/forms/TripTypeSelector';

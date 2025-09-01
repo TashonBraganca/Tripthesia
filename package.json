@@ -48,6 +48,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.5.2",
     "@types/lodash": "^4.17.20",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",

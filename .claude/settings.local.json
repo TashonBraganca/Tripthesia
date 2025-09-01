@@ -27,7 +27,8 @@
       "Bash(npx shadcn@latest add:*)",
       "Bash(cat:*)",
       "Bash(gh api:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(ANALYZE=true npm run build)"
     ],
     "deny": [],
     "ask": []
