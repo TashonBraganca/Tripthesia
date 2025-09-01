@@ -12,6 +12,8 @@ import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
 import { DateRangePicker } from '@/components/forms/DateRangePicker';
 import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
+import { trackWizardStarted, trackStepperJump } from '@/lib/analytics/events';
+import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 
 // LocationData interface is imported from lib/data/locations
 
@@ -40,6 +42,7 @@ interface DateRange {
 export default function NewTripPage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [currentStep, setCurrentStep] = useState(1);
+  const [stepWarning, setStepWarning] = useState<string | null>(null);
   const [tripData, setTripData] = useState<TripData>({
     from: null,
     to: null,
@@ -65,23 +68,49 @@ export default function NewTripPage() {
     { id: 8, name: 'Share', icon: ChevronRight, description: 'Share with friends' }
   ];
 
+  const handleStepClick = (stepId: number) => {
+    // Track stepper jump analytics
+    const stepNames = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'food', 'timeline', 'share'];
+    if (stepId !== currentStep) {
+      trackStepperJump(currentStep, stepId, stepNames[stepId - 1] || 'unknown');
+    }
+    
+    // Clear any previous warnings
+    setStepWarning(null);
+    
+    // Check for missing required fields when jumping to later steps
+    if (stepId > 1 && (!tripData.from || !tripData.to || !tripData.startDate || !tripData.endDate || !tripData.tripType)) {
+      setStepWarning('Some required information is missing. You can still navigate freely, but complete the basics first for the best experience.');
+      
+      // Auto-clear warning after 4 seconds
+      setTimeout(() => setStepWarning(null), 4000);
+    }
+    
+    setCurrentStep(stepId);
+  };
+
+  // Track wizard started on component mount
+  useEffect(() => {
+    trackWizardStarted();
+  }, []);
+
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-navy-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
       </div>
     );
   }
 
   if (!isSignedIn) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-navy-950 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sign in required</h1>
-          <p className="text-gray-600 mb-6">Please sign in to create and save your trips.</p>
+          <h1 className="text-2xl font-bold text-navy-50 mb-4">Sign in required</h1>
+          <p className="text-navy-200 mb-6">Please sign in to create and save your trips.</p>
           <Link
             href="/sign-in"
-            className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
           >
             Sign In
           </Link>
@@ -114,51 +143,28 @@ export default function NewTripPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Cartoonish Background with Acrylic Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="absolute inset-0 opacity-30">
-          <svg className="w-full h-full" viewBox="0 0 1000 1000" fill="none">
-            {/* Cartoonish clouds */}
-            <ellipse cx="200" cy="150" rx="80" ry="40" fill="#ffffff" opacity="0.6" />
-            <ellipse cx="180" cy="140" rx="60" ry="30" fill="#ffffff" opacity="0.6" />
-            <ellipse cx="220" cy="140" rx="50" ry="25" fill="#ffffff" opacity="0.6" />
-            
-            <ellipse cx="600" cy="100" rx="70" ry="35" fill="#ffffff" opacity="0.5" />
-            <ellipse cx="580" cy="90" rx="50" ry="25" fill="#ffffff" opacity="0.5" />
-            
-            <ellipse cx="800" cy="200" rx="60" ry="30" fill="#ffffff" opacity="0.4" />
-            <ellipse cx="790" cy="190" rx="40" ry="20" fill="#ffffff" opacity="0.4" />
-            
-            {/* Cartoonish mountains */}
-            <path d="M0 600 L100 400 L200 600 Z" fill="#a7f3d0" opacity="0.3" />
-            <path d="M150 600 L250 350 L350 600 Z" fill="#86efac" opacity="0.3" />
-            <path d="M300 600 L400 380 L500 600 Z" fill="#a7f3d0" opacity="0.3" />
-            
-            {/* Travel icons scattered */}
-            <circle cx="700" cy="300" r="15" fill="#3b82f6" opacity="0.2" />
-            <circle cx="300" cy="250" r="12" fill="#ef4444" opacity="0.2" />
-            <circle cx="500" cy="180" r="10" fill="#f59e0b" opacity="0.2" />
-          </svg>
-        </div>
-      </div>
-
-      {/* Acrylic Glass Effect Overlay */}
-      <div className="absolute inset-0 bg-white/20 backdrop-blur-sm"></div>
+    <div className="min-h-screen relative overflow-hidden bg-navy-950">
+      {/* Topographical Background */}
+      <TopographicalGrid 
+        density="light" 
+        animation={true} 
+        theme="dark"
+        className="absolute inset-0"
+      />
 
       {/* Content */}
       <div className="relative z-10">
         {/* Header */}
-        <div className="bg-white/90 backdrop-blur-sm shadow-sm">
+        <div className="bg-navy-900/90 backdrop-blur-sm shadow-sm border-b border-navy-400/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <Link href="/trips" className="text-indigo-600 hover:text-indigo-500">
+                <Link href="/trips" className="text-teal-400 hover:text-teal-300">
                   <ChevronRight className="h-5 w-5 rotate-180" />
                 </Link>
-                <h1 className="text-2xl font-bold text-gray-900">Create New Trip</h1>
+                <h1 className="text-2xl font-bold text-navy-50">Create New Trip</h1>
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-navy-200">
                 Step {currentStep} of {steps.length}
               </div>
             </div>
@@ -167,7 +173,7 @@ export default function NewTripPage() {
 
         {/* Enhanced Progress Bar */}
         <motion.div 
-          className="bg-white/90 backdrop-blur-sm border-b"
+          className="bg-navy-800/90 backdrop-blur-sm border-b border-navy-400/20"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -175,9 +181,9 @@ export default function NewTripPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {/* Progress Line */}
             <div className="relative mb-6">
-              <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200" />
+              <div className="absolute top-4 left-0 right-0 h-0.5 bg-navy-400/30" />
               <motion.div 
-                className="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-600"
+                className="absolute top-4 left-0 h-0.5 bg-gradient-to-r from-teal-500 to-teal-400"
                 initial={{ width: "0%" }}
                 animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
                 transition={{ duration: 0.5, ease: "easeOut" }}
@@ -215,13 +221,15 @@ export default function NewTripPage() {
                       }
                     }}
                   >
-                    <motion.div 
-                      className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
-                        isCompleted ? 'bg-green-500 text-white shadow-lg' : 
-                        isCurrent ? 'bg-indigo-600 text-white shadow-lg' : 
-                        'bg-gray-200 text-gray-500'
+                    <motion.button 
+                      onClick={() => handleStepClick(step.id)}
+                      className={`relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 cursor-pointer ${
+                        isCompleted ? 'bg-green-500 text-white shadow-lg hover:bg-green-600' : 
+                        isCurrent ? 'bg-teal-500 text-white shadow-lg' : 
+                        'bg-navy-600 text-navy-200 hover:bg-navy-500'
                       }`}
                       whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
                       animate={isCurrent ? { 
                         scale: [1, 1.1, 1],
                         boxShadow: [
@@ -241,28 +249,28 @@ export default function NewTripPage() {
                       
                       {/* Step number badge */}
                       <motion.div
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center text-xs font-bold text-gray-600"
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-navy-50 rounded-full flex items-center justify-center text-xs font-bold text-navy-600"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ duration: 0.3, delay: (index * 0.1) + 0.2 }}
                       >
                         {step.id}
                       </motion.div>
-                    </motion.div>
+                    </motion.button>
                     
                     <div className="hidden sm:block">
                       <motion.p 
                         className={`text-sm font-medium transition-colors duration-300 ${
-                          isCurrent ? 'text-indigo-600' : 'text-gray-500'
+                          isCurrent ? 'text-teal-400' : 'text-navy-300'
                         }`}
                         animate={isCurrent ? { 
-                          color: ["#6366f1", "#8b5cf6", "#6366f1"]
+                          color: ["#5eead4", "#2dd4bf", "#5eead4"]
                         } : {}}
                         transition={{ duration: 2, repeat: isCurrent ? Infinity : 0 }}
                       >
                         {step.name}
                       </motion.p>
-                      <p className="text-xs text-gray-400">{step.description}</p>
+                      <p className="text-xs text-navy-400">{step.description}</p>
                     </div>
                     
                     {index < steps.length - 1 && (
@@ -271,7 +279,7 @@ export default function NewTripPage() {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3, delay: (index * 0.1) + 0.3 }}
                       >
-                        <ChevronRight className="h-4 w-4 text-gray-300 ml-2" />
+                        <ChevronRight className="h-4 w-4 text-navy-500 ml-2" />
                       </motion.div>
                     )}
                   </motion.div>
@@ -281,6 +289,33 @@ export default function NewTripPage() {
           </div>
         </motion.div>
 
+        {/* Step Validation Warning */}
+        <AnimatePresence>
+          {stepWarning && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
+            >
+              <div className="bg-amber-900/20 border border-amber-400/30 rounded-lg p-4 mb-6 backdrop-blur-sm">
+                <div className="flex items-center">
+                  <motion.div
+                    animate={{ rotate: [0, -10, 10, -10, 10, 0] }}
+                    transition={{ duration: 0.5 }}
+                    className="flex-shrink-0"
+                  >
+                    <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </motion.div>
+                  <p className="ml-3 text-sm text-amber-100">{stepWarning}</p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Main Content */}
         <motion.div 
           className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
@@ -289,9 +324,9 @@ export default function NewTripPage() {
           transition={{ duration: 0.6, delay: 0.3 }}
         >
           <motion.div 
-            className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 sm:p-8 relative overflow-hidden"
+            className="glass rounded-2xl p-4 sm:p-8 relative overflow-hidden border border-navy-400/20"
             whileHover={{ 
-              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.3)",
               y: -2 
             }}
             transition={{ duration: 0.3 }}
@@ -515,7 +550,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
           </div>
 
           {/* Next Button */}
-          <div className="flex justify-end pt-8">
+          <div className="flex justify-center pt-8">
             <AnimatedButton
               variant="primary"
               size="lg"
@@ -710,14 +745,14 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
         transition={{ duration: 0.2 }}
       >
         <div className="flex items-center justify-between text-sm text-gray-600">
-          <span><strong>From:</strong> {tripData.from}</span>
+          <span><strong>From:</strong> {tripData.from?.displayName || tripData.from?.name || 'Not selected'}</span>
           <motion.div
             animate={{ x: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
             <Plane className="h-5 w-5 text-indigo-500" />
           </motion.div>
-          <span><strong>To:</strong> {tripData.to}</span>
+          <span><strong>To:</strong> {tripData.to?.displayName || tripData.to?.name || 'Not selected'}</span>
           <span><strong>Date:</strong> {tripData.startDate}</span>
         </div>
       </motion.div>
@@ -1048,7 +1083,7 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
       >
         <motion.button 
           onClick={onBack} 
-          className="flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 touch-manipulation min-h-[44px]"
+          className="flex items-center justify-center space-x-2 px-6 py-3 border border-navy-400/30 text-navy-200 bg-navy-800/50 backdrop-blur-sm rounded-lg hover:bg-navy-700/50 hover:text-navy-100 transition-all duration-200 touch-manipulation min-h-[44px]"
           whileHover={{ scale: 1.02, x: -2 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -1059,10 +1094,10 @@ function TransportStep({ tripData, setTripData, onNext, onBack }: any) {
         <motion.button 
           onClick={handleNext}
           disabled={!selectedTransport}
-          className={`flex items-center space-x-2 px-8 py-3 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] ${
+          className={`flex items-center justify-center space-x-2 px-8 py-3 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] ${
             selectedTransport 
-              ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg hover:shadow-xl' 
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-teal-500 text-white hover:bg-teal-600 shadow-lg hover:shadow-xl' 
+              : 'bg-navy-600 text-navy-400 cursor-not-allowed'
           }`}
           whileHover={selectedTransport ? { scale: 1.02, x: 2 } : {}}
           whileTap={selectedTransport ? { scale: 0.98 } : {}}
