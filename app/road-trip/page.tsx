@@ -22,8 +22,10 @@ import {
 } from 'lucide-react';
 import InteractiveMapPlanner from '@/components/planning/InteractiveMapPlanner';
 import POIRecommendations from '@/components/planning/POIRecommendations';
+import AIRoutePlanner from '@/components/ai/AIRoutePlanner';
 import { type RouteResult } from '@/lib/services/google-maps-provider';
 import { type POI, type POICategory, POI_CATEGORIES } from '@/lib/services/poi-detector';
+import { type RouteQuery } from '@/lib/ai/route-planner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -80,7 +82,7 @@ export default function RoadTripPlannerPage() {
   
   const [showPreferences, setShowPreferences] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'map' | 'route' | 'pois'>('map');
+  const [activeTab, setActiveTab] = useState<'map' | 'route' | 'pois' | 'ai'>('map');
 
   // Handle route calculation from map
   const handleRouteCalculated = useCallback((route: RouteResult, routePOIs: POI[]) => {
@@ -424,7 +426,7 @@ export default function RoadTripPlannerPage() {
             {currentRoute && (
               <div className="mt-6 space-y-4">
                 <div className="flex space-x-4">
-                  {(['map', 'route', 'pois'] as const).map((tab) => (
+                  {(['map', 'route', 'pois', 'ai'] as const).map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -434,7 +436,7 @@ export default function RoadTripPlannerPage() {
                           : 'bg-navy-700 text-navy-300 hover:bg-navy-600'
                       }`}
                     >
-                      {tab === 'pois' ? 'Points of Interest' : tab}
+                      {tab === 'pois' ? 'Points of Interest' : tab === 'ai' ? 'AI Planning' : tab}
                     </button>
                   ))}
                 </div>
@@ -485,6 +487,45 @@ export default function RoadTripPlannerPage() {
                       categories: Object.keys(POI_CATEGORIES) as POICategory[],
                       priceLevel: 4,
                       minRating: 3.0
+                    }}
+                    className="space-y-4"
+                  />
+                )}
+
+                {activeTab === 'ai' && (
+                  <AIRoutePlanner
+                    routeQuery={{
+                      startLocation: waypoints.find(w => w.type === 'origin')?.address || '',
+                      endLocation: waypoints.find(w => w.type === 'destination')?.address || '',
+                      vehicleType: tripPreferences.vehicleType === 'truck' ? 'car' : tripPreferences.vehicleType as 'car' | 'motorcycle' | 'rv' | 'electric',
+                      travelDates: {
+                        start: tripPreferences.travelDates.start ? new Date(tripPreferences.travelDates.start).toISOString() : new Date().toISOString(),
+                        end: tripPreferences.travelDates.end ? new Date(tripPreferences.travelDates.end).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                      },
+                      preferences: {
+                        scenic: tripPreferences.interests.includes('scenic'),
+                        fastest: !tripPreferences.interests.includes('scenic'),
+                        budget: tripPreferences.budget,
+                        interests: tripPreferences.interests,
+                        avoidTolls: false,
+                        avoidHighways: false,
+                      },
+                      travelers: {
+                        adults: tripPreferences.travelers.adults,
+                        children: tripPreferences.travelers.children,
+                        pets: tripPreferences.travelers.pets,
+                      },
+                      timeConstraints: {
+                        maxDrivingHoursPerDay: 8,
+                      },
+                    }}
+                    onRouteSelect={(route) => {
+                      console.log('AI route selected:', route);
+                      // TODO: Apply AI route recommendations to map
+                    }}
+                    onAlternativeSelect={(alternative) => {
+                      console.log('Alternative route selected:', alternative);
+                      // TODO: Apply alternative route to map
                     }}
                     className="space-y-4"
                   />
