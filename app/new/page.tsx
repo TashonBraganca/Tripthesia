@@ -1,329 +1,476 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useUser } from '@clerk/nextjs';
-import { MapPin, Calendar, Users, Plane, Car, Hotel, MapIcon, Clock, ChevronRight, ChevronDown, Search, X } from 'lucide-react';
+import { MapPin, Calendar, Users, AlertCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { fadeInUp, slideInRight, slideInLeft, staggerContainer, scaleIn, buttonHover } from '@/lib/motion-variants';
-import { LocationAutocompleteLazy as LocationAutocomplete } from '@/components/forms/LocationAutocompleteLazy';
-import { CurrencySelectorLazy as CurrencySelector } from '@/components/forms/CurrencySelectorLazy';
-import { LocationData } from '@/lib/data/locations';
-import { CurrencyCode } from '@/lib/currency/currency-converter';
-import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
-import { DateRangePicker } from '@/components/forms/DateRangePicker';
-import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
-import { AnimatedButton } from '@/components/effects/AnimatedButton';
 
+// Create a super simple fallback component that will always work
+function EmergencyFallback({ error }: { error?: string }) {
+  return (
+    <div 
+      style={{ 
+        minHeight: '100vh', 
+        backgroundColor: '#030B14', 
+        color: '#E6F0F8', 
+        padding: '2rem',
+        fontFamily: 'system-ui, sans-serif'
+      }}
+    >
+      <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ backgroundColor: '#0A2540', padding: '2rem', borderRadius: '1rem', border: '1px solid #1B3B6F' }}>
+          <XCircle style={{ width: '4rem', height: '4rem', color: '#FF6B6B', margin: '0 auto 1rem' }} />
+          <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#E6F0F8' }}>
+            Trip Planning Temporarily Unavailable
+          </h1>
+          <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: '#B8C7D3' }}>
+            We're experiencing technical difficulties loading the trip planner.
+          </p>
+          {error && (
+            <div style={{ backgroundColor: '#FF6B6B20', padding: '1rem', borderRadius: '0.5rem', marginBottom: '2rem' }}>
+              <p style={{ color: '#FF6B6B', fontSize: '0.9rem', fontFamily: 'monospace' }}>
+                Debug Info: {error}
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a 
+              href="/"
+              style={{ 
+                backgroundColor: '#15B37D', 
+                color: '#030B14', 
+                padding: '1rem 2rem', 
+                borderRadius: '0.5rem', 
+                textDecoration: 'none',
+                fontWeight: 'bold',
+                display: 'inline-block'
+              }}
+            >
+              ← Back to Home
+            </a>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{ 
+                backgroundColor: '#1B3B6F', 
+                color: '#E6F0F8', 
+                padding: '1rem 2rem', 
+                borderRadius: '0.5rem', 
+                border: '1px solid #4268A3',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Debug status component
+function DebugStatus({ status, children }: { status: 'loading' | 'success' | 'error'; children: React.ReactNode }) {
+  const colors = {
+    loading: '#22C692',
+    success: '#15B37D',
+    error: '#FF6B6B'
+  };
+
+  const icons = {
+    loading: <Loader2 className="w-4 h-4 animate-spin" />,
+    success: <CheckCircle className="w-4 h-4" />,
+    error: <XCircle className="w-4 h-4" />
+  };
+
+  return (
+    <div className="flex items-center space-x-2 text-sm" style={{ color: colors[status] }}>
+      {icons[status]}
+      <span>{children}</span>
+    </div>
+  );
+}
+
+// Robust error boundary
+class TripPlannerErrorBoundary extends React.Component {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('TripPlanner Error:', error, errorInfo);
+  }
+
+  render() {
+    if ((this.state as any).hasError) {
+      return <EmergencyFallback error={(this.state as any).error} />;
+    }
+
+    return (this.props as any).children;
+  }
+}
+
+// Core interfaces
 interface TripData {
-  from: LocationData | null;
-  to: LocationData | null;
+  from: any | null;
+  to: any | null;
   startDate: string;
   endDate: string;
   travelers: number;
   tripType: string;
-  currency: CurrencyCode;
-  transport: {
-    mode: string;
-    details: any;
-  };
-  rental: any;
-  accommodation: any;
-  activities: any[];
-  food: any[];
 }
 
-interface DateRange {
-  startDate: string;
-  endDate: string;
+// Minimal form components
+function SimpleLocationInput({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder 
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void; 
+  placeholder: string; 
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" style={{ color: '#B8C7D3' }}>
+        {label}
+      </label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-3 rounded-lg border"
+        style={{
+          backgroundColor: '#0A2540',
+          borderColor: '#1B3B6F',
+          color: '#E6F0F8'
+        }}
+      />
+    </div>
+  );
 }
 
-export default function NewTripPage() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [stepWarning, setStepWarning] = useState<string | null>(null);
+function SimpleDateInput({ 
+  label, 
+  value, 
+  onChange 
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void; 
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" style={{ color: '#B8C7D3' }}>
+        {label}
+      </label>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-3 rounded-lg border"
+        style={{
+          backgroundColor: '#0A2540',
+          borderColor: '#1B3B6F',
+          color: '#E6F0F8'
+        }}
+      />
+    </div>
+  );
+}
+
+function SimpleTripTypeSelector({ 
+  value, 
+  onChange 
+}: { 
+  value: string; 
+  onChange: (value: string) => void; 
+}) {
+  const tripTypes = [
+    { id: 'leisure', name: 'Leisure & Vacation' },
+    { id: 'business', name: 'Business Travel' },
+    { id: 'adventure', name: 'Adventure & Outdoors' },
+    { id: 'family', name: 'Family Trip' },
+    { id: 'romantic', name: 'Romantic Getaway' }
+  ];
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" style={{ color: '#B8C7D3' }}>
+        Trip Type
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-3 rounded-lg border"
+        style={{
+          backgroundColor: '#0A2540',
+          borderColor: '#1B3B6F',
+          color: '#E6F0F8'
+        }}
+      >
+        <option value="">Select trip type...</option>
+        {tripTypes.map((type) => (
+          <option key={type.id} value={type.id}>
+            {type.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// Main trip planning form component
+function TripPlanningForm() {
   const [tripData, setTripData] = useState<TripData>({
     from: null,
     to: null,
     startDate: '',
     endDate: '',
     travelers: 1,
-    tripType: '',
-    currency: 'USD' as CurrencyCode,
-    transport: { mode: '', details: {} },
-    rental: {},
-    accommodation: {},
-    activities: [],
-    food: []
+    tripType: ''
   });
 
-  // Track wizard started on component mount
-  useEffect(() => {
-    // Analytics tracking removed for build stability
-  }, []);
+  const [formValues, setFormValues] = useState({
+    fromText: '',
+    toText: '',
+    startDate: '',
+    endDate: '',
+    tripType: ''
+  });
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-navy-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500"></div>
-        <p className="text-navy-300 mt-4">Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isSignedIn) {
-    return (
-      <div className="min-h-screen bg-navy-950 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <h1 className="text-2xl font-bold text-navy-50 mb-4">Sign in required</h1>
-          <p className="text-navy-200 mb-6">Please sign in to create and save your trips.</p>
-          <Link
-            href="/sign-in"
-            className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-          >
-            Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <LocationStep tripData={tripData} setTripData={setTripData} onNext={() => setCurrentStep(2)} />;
-      case 2:
-        return (
-          <div className="p-8 text-center">
-            <h2 className="text-2xl text-white mb-4">Step 2: Transport</h2>
-            <p className="text-navy-300 mb-6">Transportation options will be available here.</p>
-            <button 
-              onClick={() => setCurrentStep(1)} 
-              className="px-6 py-3 bg-teal-500 text-navy-900 rounded-xl font-semibold hover:bg-teal-400 transition-all duration-300"
-            >
-              Back to Location
-            </button>
-          </div>
-        );
-      default:
-        return <LocationStep tripData={tripData} setTripData={setTripData} onNext={() => setCurrentStep(2)} />;
-    }
+  const handleSubmit = () => {
+    const filledFields = Object.values(formValues).filter(v => v !== '').length;
+    alert(`Form submitted! ${filledFields} fields completed. This would normally proceed to the next step.`);
   };
 
-  // Working version with essential functionality restored
-  return (
-    <div className="min-h-screen bg-navy-950 text-white">
-      {/* Simple gradient background instead of complex TopographicalGrid */}
-      <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-950 to-navy-900"></div>
-      
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="px-6 py-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <Link href="/" className="text-navy-300 hover:text-teal-400 transition-colors duration-200">
-                ← Back to Home
-              </Link>
-              <div className="text-sm text-navy-400">
-                Step {currentStep} of 8
-              </div>
-            </div>
-            
-            {/* Simplified step navigation */}
-            <div className="flex items-center justify-center space-x-4 mb-8 overflow-x-auto">
-              {[1,2,3,4,5,6,7,8].map((step, index) => (
-                <button
-                  key={step}
-                  onClick={() => setCurrentStep(step)}
-                  className={`
-                    w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold
-                    transition-all duration-200
-                    ${currentStep === step 
-                      ? 'bg-teal-500 text-navy-900' 
-                      : currentStep > step 
-                        ? 'bg-teal-600/30 text-teal-400 border border-teal-500' 
-                        : 'bg-navy-700 text-navy-300 hover:bg-navy-600'
-                    }
-                  `}
-                >
-                  {step}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+  const isFormValid = formValues.fromText && formValues.toText && formValues.startDate && formValues.endDate && formValues.tripType;
 
-        {/* Main Content */}
-        <div className="px-6 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-navy-800/50 backdrop-blur-sm border border-navy-600/30 rounded-2xl p-8">
-              {renderCurrentStep()}
-            </div>
-          </div>
-        </div>
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h1 
+          className="text-4xl font-bold mb-4"
+          style={{ color: '#E6F0F8' }}
+        >
+          Plan Your Perfect Journey
+        </h1>
+        <p 
+          className="text-xl"
+          style={{ color: '#B8C7D3' }}
+        >
+          Tell us where you want to go and we&apos;ll create a personalized travel experience just for you
+        </p>
+      </div>
+
+      {/* Form */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <SimpleLocationInput
+          label="From"
+          value={formValues.fromText}
+          onChange={(value) => setFormValues({...formValues, fromText: value})}
+          placeholder="Where are you starting from?"
+        />
+        
+        <SimpleLocationInput
+          label="To"
+          value={formValues.toText}
+          onChange={(value) => setFormValues({...formValues, toText: value})}
+          placeholder="Where do you want to go?"
+        />
+
+        <SimpleDateInput
+          label="Start Date"
+          value={formValues.startDate}
+          onChange={(value) => setFormValues({...formValues, startDate: value})}
+        />
+
+        <SimpleDateInput
+          label="End Date"
+          value={formValues.endDate}
+          onChange={(value) => setFormValues({...formValues, endDate: value})}
+        />
+      </div>
+
+      <SimpleTripTypeSelector
+        value={formValues.tripType}
+        onChange={(value) => setFormValues({...formValues, tripType: value})}
+      />
+
+      {/* Submit Button */}
+      <div className="text-center">
+        <button
+          onClick={handleSubmit}
+          disabled={!isFormValid}
+          className="px-8 py-4 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: isFormValid ? '#15B37D' : '#1B3B6F',
+            color: isFormValid ? '#030B14' : '#B8C7D3'
+          }}
+        >
+          {isFormValid ? 'Continue to Next Step' : 'Please fill all fields'}
+        </button>
       </div>
     </div>
   );
 }
 
-function LocationStep({ tripData, setTripData, onNext }: any) {
-  const [validationErrors, setValidationErrors] = useState<any>({});
+// Main component
+export default function NewTripPage() {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
 
-  const validateForm = () => {
-    const errors: any = {};
-    
-    if (!tripData.from) {
-      errors.from = 'Departure location is required';
-    }
-    if (!tripData.to) {
-      errors.to = 'Destination is required';
-    } else if (tripData.to?.id === tripData.from?.id) {
-      errors.to = 'Destination must be different from departure';
-    }
-    if (!tripData.startDate) {
-      errors.dates = 'Travel dates are required';
-    }
-    if (!tripData.endDate) {
-      errors.dates = 'Travel dates are required';
-    }
-    if (!tripData.tripType) {
-      errors.tripType = 'Please select a trip type';
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  // Debug logging
+  useEffect(() => {
+    const info = [
+      `Page loaded at: ${new Date().toISOString()}`,
+      `Clerk isLoaded: ${isLoaded}`,
+      `Clerk isSignedIn: ${isSignedIn}`,
+      `User ID: ${user?.id || 'None'}`,
+      `Current URL: ${window.location.href}`,
+      `User Agent: ${navigator.userAgent.slice(0, 100)}...`
+    ];
+    setDebugInfo(info);
+    console.log('NewTripPage Debug Info:', info);
+  }, [isLoaded, isSignedIn, user]);
 
-  const handleNext = () => {
-    if (validateForm()) {
-      onNext();
-    }
-  };
-
-  const handleDateRangeChange = (range: DateRange) => {
-    setTripData({
-      ...tripData,
-      startDate: range.startDate,
-      endDate: range.endDate
-    });
-    // Clear date validation errors
-    if (validationErrors.dates) {
-      setValidationErrors({ ...validationErrors, dates: undefined });
-    }
-  };
-
-  const handleTripTypeChange = (typeId: string) => {
-    setTripData({ ...tripData, tripType: typeId });
-    // Clear trip type validation error
-    if (validationErrors.tripType) {
-      setValidationErrors({ ...validationErrors, tripType: undefined });
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-navy-100 mb-2">Plan Your Perfect Journey</h2>
-        <p className="text-navy-300">Tell us where you want to go and we&apos;ll create a personalized travel experience just for you</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* From Location */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-teal-500/20 rounded-full flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-teal-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-navy-100">Departure</h3>
-          </div>
-          <LocationAutocomplete
-            variant="departure"
-            value={tripData.from}
-            onChange={(location) => {
-              setTripData({ ...tripData, from: location });
-              if (validationErrors.from) {
-                setValidationErrors({ ...validationErrors, from: undefined });
-              }
-            }}
-            required
-          />
-          {validationErrors.from && (
-            <p className="text-red-400 text-sm">{validationErrors.from}</p>
-          )}
-        </div>
-
-        {/* To Location */}
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-emerald-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-navy-100">Destination</h3>
-          </div>
-          <LocationAutocomplete
-            variant="destination"
-            value={tripData.to}
-            onChange={(location) => {
-              setTripData({ ...tripData, to: location });
-              if (validationErrors.to) {
-                setValidationErrors({ ...validationErrors, to: undefined });
-              }
-            }}
-            required
-          />
-          {validationErrors.to && (
-            <p className="text-red-400 text-sm">{validationErrors.to}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Travel Dates */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-sky-500/20 rounded-full flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-sky-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-navy-100">Travel Dates</h3>
-        </div>
-        <DateRangePicker
-          value={{
-            startDate: tripData.startDate,
-            endDate: tripData.endDate
+  try {
+    return (
+      <TripPlannerErrorBoundary>
+        <div 
+          className="min-h-screen"
+          style={{ 
+            backgroundColor: '#030B14',
+            backgroundImage: 'linear-gradient(135deg, #030B14 0%, #061A2C 50%, #0A2540 100%)'
           }}
-          onChange={handleDateRangeChange}
-        />
-        {validationErrors.dates && (
-          <p className="text-red-400 text-sm">{validationErrors.dates}</p>
-        )}
-      </div>
-
-      {/* Trip Type */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
-            <MapIcon className="w-5 h-5 text-purple-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-navy-100">Trip Type</h3>
-        </div>
-        <TripTypeSelector
-          value={tripData.tripType}
-          onChange={handleTripTypeChange}
-        />
-        {validationErrors.tripType && (
-          <p className="text-red-400 text-sm">{validationErrors.tripType}</p>
-        )}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleNext}
-          className="px-8 py-3 bg-gradient-to-r from-teal-500 to-teal-400 text-navy-900 font-semibold rounded-xl hover:from-teal-400 hover:to-teal-300 transition-all duration-300"
         >
-          Continue
-        </button>
-      </div>
-    </div>
-  );
+          {/* Debug Toggle */}
+          <div className="fixed top-4 right-4 z-50">
+            <button
+              onClick={() => setShowDebug(!showDebug)}
+              className="px-3 py-1 text-xs rounded"
+              style={{ backgroundColor: '#1B3B6F', color: '#B8C7D3' }}
+            >
+              Debug {showDebug ? '▼' : '▶'}
+            </button>
+          </div>
+
+          {/* Debug Panel */}
+          {showDebug && (
+            <div 
+              className="fixed top-12 right-4 p-4 rounded-lg max-w-sm text-xs z-40"
+              style={{ backgroundColor: '#0A2540', border: '1px solid #1B3B6F', color: '#B8C7D3' }}
+            >
+              <h3 className="font-bold mb-2">Debug Info:</h3>
+              {debugInfo.map((info, i) => (
+                <div key={i} className="mb-1 font-mono text-xs">{info}</div>
+              ))}
+            </div>
+          )}
+
+          {/* Header */}
+          <div className="px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <Link 
+                  href="/" 
+                  className="flex items-center space-x-2 text-lg hover:opacity-80 transition-opacity"
+                  style={{ color: '#22C692' }}
+                >
+                  <span>← Back to Home</span>
+                </Link>
+                <div className="text-sm" style={{ color: '#B8C7D3' }}>
+                  New Trip Planner
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="px-6 pb-8">
+            <div className="max-w-4xl mx-auto">
+              <div 
+                className="p-8 rounded-2xl"
+                style={{ 
+                  backgroundColor: 'rgba(10, 37, 64, 0.8)', 
+                  border: '1px solid #1B3B6F',
+                  backdropFilter: 'blur(10px)'
+                }}
+              >
+                {/* Status Indicators */}
+                <div className="mb-6 space-y-2">
+                  <DebugStatus status={isLoaded ? 'success' : 'loading'}>
+                    Authentication: {isLoaded ? 'Ready' : 'Loading...'}
+                  </DebugStatus>
+                  {isLoaded && (
+                    <DebugStatus status={isSignedIn ? 'success' : 'error'}>
+                      User Status: {isSignedIn ? 'Signed In' : 'Not Signed In'}
+                    </DebugStatus>
+                  )}
+                </div>
+
+                {/* Content based on auth state */}
+                {!isLoaded ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: '#22C692' }} />
+                    <p style={{ color: '#B8C7D3' }}>Loading authentication...</p>
+                  </div>
+                ) : !isSignedIn ? (
+                  <div className="text-center py-12">
+                    <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: '#22C692' }} />
+                    <h2 className="text-2xl font-bold mb-4" style={{ color: '#E6F0F8' }}>
+                      Sign In Required
+                    </h2>
+                    <p className="mb-6" style={{ color: '#B8C7D3' }}>
+                      Please sign in to create and save your trips.
+                    </p>
+                    <div className="flex gap-4 justify-center flex-wrap">
+                      <a
+                        href="/sign-in"
+                        className="px-6 py-3 rounded-lg font-semibold"
+                        style={{ backgroundColor: '#15B37D', color: '#030B14' }}
+                      >
+                        Sign In
+                      </a>
+                      <a
+                        href="/sign-up"
+                        className="px-6 py-3 rounded-lg border font-semibold"
+                        style={{ borderColor: '#1B3B6F', color: '#E6F0F8' }}
+                      >
+                        Create Account
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <Suspense 
+                    fallback={
+                      <div className="text-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: '#22C692' }} />
+                        <p style={{ color: '#B8C7D3' }}>Loading trip planner...</p>
+                      </div>
+                    }
+                  >
+                    <TripPlanningForm />
+                  </Suspense>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </TripPlannerErrorBoundary>
+    );
+  } catch (error) {
+    console.error('NewTripPage render error:', error);
+    return <EmergencyFallback error={error instanceof Error ? error.message : 'Unknown error'} />;
+  }
 }
