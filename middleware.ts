@@ -26,8 +26,10 @@ const isProRoute = createRouteMatcher([
 export default clerkMiddleware((auth, req) => {
   const path = req.nextUrl.pathname;
   
-  // Allow all Clerk-related routes without interference
-  if (path.startsWith('/sign-in') || path.startsWith('/sign-up') || path.startsWith('/_clerk')) {
+  // Allow all Clerk-related routes and static assets without interference
+  if (path.startsWith('/sign-in') || path.startsWith('/sign-up') || 
+      path.startsWith('/_clerk') || path.startsWith('/_next') ||
+      path.startsWith('/api/webhooks/') || path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/)) {
     return NextResponse.next();
   }
   
@@ -36,32 +38,52 @@ export default clerkMiddleware((auth, req) => {
     return NextResponse.next();
   }
 
-  // Protected routes require authentication
-  const protectedRoutes = ['/trips', '/new', '/upgrade', '/dashboard'];
-  if (protectedRoutes.some(route => path.startsWith(route))) {
-    const { userId } = auth();
-    if (!userId) {
-      return NextResponse.redirect(new URL('/sign-in', req.url));
-    }
-  }
-
-  // Only check auth for truly protected routes (future admin/API routes)
+  // Enhanced error handling for protected routes
   try {
-    // Additional Pro subscription check for premium routes
-    if (isProRoute(req)) {
-      const { userId } = auth();
-      if (!userId) {
+    // Protected routes require authentication
+    const protectedRoutes = ['/trips', '/new', '/upgrade', '/dashboard'];
+    if (protectedRoutes.some(route => path.startsWith(route))) {
+      try {
+        const { userId } = auth();
+        if (!userId) {
+          // Create more robust redirect with fallback
+          const redirectUrl = new URL('/sign-in', req.url);
+          redirectUrl.searchParams.set('redirectTo', path);
+          return NextResponse.redirect(redirectUrl);
+        }
+      } catch (authError) {
+        console.error('Authentication error:', authError);
+        // Fallback to sign-in on auth errors
         return NextResponse.redirect(new URL('/sign-in', req.url));
       }
-      const response = NextResponse.next();
-      response.headers.set('x-require-pro', 'true');
-      return response;
+    }
+
+    // Additional Pro subscription check for premium routes
+    if (isProRoute(req)) {
+      try {
+        const { userId } = auth();
+        if (!userId) {
+          return NextResponse.redirect(new URL('/sign-in', req.url));
+        }
+        const response = NextResponse.next();
+        response.headers.set('x-require-pro', 'true');
+        return response;
+      } catch (proError) {
+        console.error('Pro route auth error:', proError);
+        return NextResponse.redirect(new URL('/sign-in', req.url));
+      }
     }
     
     return NextResponse.next();
   } catch (error) {
-    // Only log error, don't redirect
-    console.warn('Auth middleware warning:', error);
+    // Enhanced error logging with path context
+    console.error(`Middleware error for path ${path}:`, error);
+    
+    // For critical paths, redirect to home instead of breaking
+    if (path.startsWith('/new') || path.startsWith('/trips')) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    
     return NextResponse.next();
   }
 });

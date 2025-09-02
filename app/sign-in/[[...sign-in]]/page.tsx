@@ -1,3 +1,5 @@
+"use client"
+
 import { SignIn } from '@clerk/nextjs';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { GPSLoader } from '@/components/loading/GPSLoader';
@@ -5,8 +7,30 @@ import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function SignInPage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Ensure component is ready for client-side rendering
+    setIsLoaded(true);
+  }, []);
+
+  // Show loading state during hydration
+  if (!isLoaded) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
+        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8">
+          <div className="w-8 h-8 mx-auto mb-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <h1 className="text-2xl font-bold text-navy-100 mb-4">Loading Sign In</h1>
+          <p className="text-navy-300">Preparing authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
   try {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
@@ -103,6 +127,7 @@ export default function SignInPage() {
                     borderRadius: '0.75rem'
                   }
                 }}
+                fallbackRedirectUrl="/trips"
                 forceRedirectUrl="/trips"
                 signUpUrl="/sign-up"
                 routing="path"
@@ -126,6 +151,9 @@ export default function SignInPage() {
       </div>
     );
   } catch (error) {
+    console.error('Sign-in page error:', error);
+    setError(error instanceof Error ? error.message : 'Authentication failed');
+    
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
         <TopographicalGrid 
@@ -135,12 +163,16 @@ export default function SignInPage() {
           theme="dark"
           className="absolute inset-0"
         />
-        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8">
+        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8 max-w-lg">
           <MapPin className="w-8 h-8 text-teal-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-100 mb-4">Sign In</h1>
+          <div className="text-red-400 mb-4">
+            <p className="mb-2">Authentication service temporarily unavailable</p>
+            <p className="text-sm opacity-75">Please try again in a moment</p>
+          </div>
           <GPSLoader 
             size="md" 
-            message="Loading sign-in form..."
+            message="Retrying connection..."
             duration={3000}
             className="mb-6"
           />

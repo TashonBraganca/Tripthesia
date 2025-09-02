@@ -1,12 +1,33 @@
+"use client"
+
 import { SignUp } from '@clerk/nextjs';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { GPSLoader } from '@/components/loading/GPSLoader';
 import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
 export default function SignUpPage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  if (!isLoaded) {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
+        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8">
+          <div className="w-8 h-8 mx-auto mb-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <h1 className="text-2xl font-bold text-navy-100 mb-4">Loading Sign Up</h1>
+          <p className="text-navy-300">Preparing registration...</p>
+        </div>
+      </div>
+    );
+  }
+
   try {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
@@ -105,6 +126,7 @@ export default function SignUpPage() {
                     borderRadius: '0.75rem'
                   }
                 }}
+                fallbackRedirectUrl="/trips"
                 forceRedirectUrl="/trips"
                 signInUrl="/sign-in"
                 routing="path"
@@ -128,6 +150,9 @@ export default function SignUpPage() {
       </div>
     );
   } catch (error) {
+    console.error('Sign-up page error:', error);
+    setError(error instanceof Error ? error.message : 'Registration failed');
+    
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-navy-950 overflow-hidden">
         <TopographicalGrid 
@@ -137,12 +162,16 @@ export default function SignUpPage() {
           theme="dark"
           className="absolute inset-0"
         />
-        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8">
+        <div className="relative z-10 text-center bg-navy-800/60 backdrop-blur-md rounded-xl border border-navy-600/50 p-8 max-w-lg">
           <MapPin className="w-8 h-8 text-teal-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-navy-100 mb-4">Sign Up</h1>
+          <div className="text-red-400 mb-4">
+            <p className="mb-2">Registration service temporarily unavailable</p>
+            <p className="text-sm opacity-75">Please try again in a moment</p>
+          </div>
           <GPSLoader 
             size="md" 
-            message="Loading sign-up form..."
+            message="Retrying connection..."
             duration={3000}
             className="mb-6"
           />

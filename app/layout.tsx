@@ -75,11 +75,11 @@ export const metadata: Metadata = {
     },
   },
   other: {
-    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-src 'self' https://checkout.razorpay.com;",
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://js.stripe.com https://*.clerk.accounts.dev https://*.clerk.dev; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https://checkout.razorpay.com https://*.clerk.accounts.dev https://*.clerk.dev;",
     'X-Frame-Options': 'DENY',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'origin-when-cross-origin',
-    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=()'
   },
 };
 
@@ -102,6 +102,9 @@ export default function RootLayout({
       afterSignUpUrl="/trips"
       signInFallbackRedirectUrl="/trips"
       signUpFallbackRedirectUrl="/trips"
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
     >
       <html
         lang="en"
