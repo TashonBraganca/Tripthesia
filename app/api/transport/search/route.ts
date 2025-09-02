@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
+import { TransportSearchManager } from "@/lib/services/transport-providers";
 
 const transportSearchSchema = z.object({
   from: z.string().min(2),
@@ -304,51 +305,80 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const searchParams = transportSearchSchema.parse(body);
 
-    const results = await Promise.allSettled([
-      // Search flights if requested
-      searchParams.transportTypes.includes('flight') 
-        ? getFlights({
-            from: searchParams.from,
-            to: searchParams.to,
-            departureDate: searchParams.departureDate,
-            returnDate: searchParams.returnDate,
-            adults: searchParams.adults,
-            currency: searchParams.currency,
-          })
-        : Promise.resolve([]),
-      
-      // Search trains if requested
-      searchParams.transportTypes.includes('train')
-        ? searchTrains({
-            from: searchParams.from,
-            to: searchParams.to,
-            departureDate: searchParams.departureDate,
-            adults: searchParams.adults,
-            currency: searchParams.currency,
-          })
-        : Promise.resolve([]),
-      
-      // Search buses if requested
-      searchParams.transportTypes.includes('bus')
-        ? searchBuses({
-            from: searchParams.from,
-            to: searchParams.to,
-            departureDate: searchParams.departureDate,
-            adults: searchParams.adults,
-            currency: searchParams.currency,
-          })
-        : Promise.resolve([]),
-    ]);
-
-    const allOptions: TransportOption[] = [];
-    
-    results.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value) {
-        allOptions.push(...result.value);
-      } else if (result.status === 'rejected') {
-        console.error(`Transport search failed for type ${searchParams.transportTypes[index]}:`, result.reason);
-      }
+    // Initialize transport search manager
+    const transportManager = new TransportSearchManager({
+      openRouteServiceKey: process.env.OPENROUTESERVICE_API_KEY,
     });
+
+    let allOptions: TransportOption[] = [];
+    let transportResults: any[] = [];
+
+    // Search flights if requested
+    if (searchParams.transportTypes.includes('flight')) {
+      try {
+        const flights = await getFlights({
+          from: searchParams.from,
+          to: searchParams.to,
+          departureDate: searchParams.departureDate,
+          returnDate: searchParams.returnDate,
+          adults: searchParams.adults,
+          currency: searchParams.currency,
+        });
+        allOptions.push(...flights);
+      } catch (error) {
+        console.error('Flight search failed:', error);
+      }
+    }
+
+    // Search trains and buses using new TransportSearchManager
+    const transportTypes = searchParams.transportTypes.filter(type => ['train', 'bus'].includes(type)) as ('train' | 'bus')[];
+    if (transportTypes.length > 0) {
+      try {
+        const transportSearchResult = await transportManager.searchTransport({
+          from: searchParams.from,
+          to: searchParams.to,
+          departureDate: searchParams.departureDate,
+          returnDate: searchParams.returnDate,
+          adults: searchParams.adults,
+          currency: searchParams.currency,
+          transportTypes,
+        });
+
+        // Convert transport results to TransportOption format
+        transportResults = transportSearchResult.results.map(result => ({
+          id: result.id,
+          type: result.type,
+          provider: result.provider,
+          airline: result.operatorName,
+          flightNumber: result.routeNumber,
+          trainNumber: result.routeNumber,
+          price: result.price,
+          currency: result.currency,
+          duration: result.duration,
+          departure: {
+            time: result.departure.time,
+            airport: result.departure.station,
+            city: result.departure.city,
+          },
+          arrival: {
+            time: result.arrival.time,
+            airport: result.arrival.station,
+            city: result.arrival.city,
+          },
+          stops: result.stops,
+          rating: result.score / 2, // Convert 10-point scale to 5-point
+          bookingLink: result.bookingLink,
+          amenities: result.amenities,
+          score: result.score,
+          co2Emissions: result.co2Emissions,
+          comfort: result.comfort,
+        }));
+
+        allOptions.push(...transportResults);
+      } catch (error) {
+        console.error('Transport search failed:', error);
+      }
+    }
 
     // Sort by score (best overall value)
     allOptions.sort((a, b) => b.score - a.score);

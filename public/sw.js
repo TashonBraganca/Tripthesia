@@ -17,8 +17,19 @@ const STATIC_ASSETS = [
 const CACHEABLE_APIS = [
   '/api/currency/rates',
   '/api/currency/convert',
-  '/api/health'
+  '/api/health',
+  '/api/flights/search',
+  '/api/transport/search'
 ];
+
+// Enhanced API caching with different TTL strategies
+const API_CACHE_CONFIG = {
+  '/api/currency/rates': { ttl: 4 * 60 * 60 * 1000, priority: 'high' }, // 4 hours
+  '/api/currency/convert': { ttl: 4 * 60 * 60 * 1000, priority: 'high' }, // 4 hours
+  '/api/flights/search': { ttl: 2 * 60 * 60 * 1000, priority: 'medium' }, // 2 hours
+  '/api/transport/search': { ttl: 2 * 60 * 60 * 1000, priority: 'medium' }, // 2 hours
+  '/api/health': { ttl: 5 * 60 * 1000, priority: 'low' }, // 5 minutes
+};
 
 // Install event - cache static assets
 self.addEventListener('install', event => {
@@ -72,41 +83,54 @@ self.addEventListener('fetch', event => {
   }
 });
 
-// API request handler - network first with cache fallback
+// Enhanced API request handler with comprehensive caching and error handling
 async function handleAPIRequest(request) {
   const url = new URL(request.url);
   
   // Check if this API should be cached
-  const shouldCache = CACHEABLE_APIS.some(api => url.pathname.startsWith(api));
+  const cacheConfig = getCacheConfig(url.pathname);
   
-  if (!shouldCache) {
-    return fetch(request);
+  if (!cacheConfig) {
+    return handleNonCacheableAPI(request);
   }
   
   try {
-    // Try network first
-    const networkResponse = await fetch(request);
+    // Strategy: Network first with intelligent cache fallback
+    const networkResponse = await fetchWithTimeout(request, 8000); // 8 second timeout
     
     if (networkResponse.ok) {
-      // Cache successful responses
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
+      await cacheResponseWithMetadata(request, networkResponse, cacheConfig);
+      return networkResponse;
+    } else {
+      // Network returned error, try cache as fallback
+      return await handleAPIFallback(request, networkResponse);
     }
     
-    return networkResponse;
   } catch (error) {
-    // Network failed, try cache
-    const cachedResponse = await caches.match(request);
-    
-    if (cachedResponse) {
-      console.log('[SW] Serving API from cache:', request.url);
-      return cachedResponse;
+    console.log('[SW] Network failed for API:', request.url, error.message);
+    return await handleAPIFallback(request, null, error);
+  }
+}
+
+// Get cache configuration for an API endpoint
+function getCacheConfig(pathname) {
+  for (const [pattern, config] of Object.entries(API_CACHE_CONFIG)) {
+    if (pathname.startsWith(pattern)) {
+      return config;
     }
-    
-    // No cache available, return offline response
+  }
+  return null;
+}
+
+// Handle non-cacheable API requests
+async function handleNonCacheableAPI(request) {
+  try {
+    return await fetchWithTimeout(request, 10000);
+  } catch (error) {
     return new Response(
       JSON.stringify({ 
-        error: 'Network unavailable', 
+        error: 'API request failed', 
+        message: error.message,
         offline: true,
         timestamp: Date.now()
       }),
@@ -116,6 +140,128 @@ async function handleAPIRequest(request) {
       }
     );
   }
+}
+
+// Fetch with timeout
+async function fetchWithTimeout(request, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(request, { signal: controller.signal });
+    clearTimeout(timeout);
+    return response;
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
+}
+
+// Cache response with metadata and TTL
+async function cacheResponseWithMetadata(request, response, cacheConfig) {
+  try {
+    const cache = await caches.open(DYNAMIC_CACHE);
+    
+    // Clone the response and add metadata
+    const responseToCache = response.clone();
+    const metadata = {
+      cached_at: Date.now(),
+      expires_at: Date.now() + cacheConfig.ttl,
+      priority: cacheConfig.priority,
+      url: request.url,
+    };
+    
+    // Store metadata separately
+    await cache.put(
+      new Request(request.url + '__metadata'),
+      new Response(JSON.stringify(metadata))
+    );
+    
+    // Store the actual response
+    await cache.put(request, responseToCache);
+    
+    console.log(`[SW] Cached API response: ${request.url} (TTL: ${cacheConfig.ttl}ms)`);
+  } catch (error) {
+    console.error('[SW] Failed to cache API response:', error);
+  }
+}
+
+// Handle API fallback scenarios
+async function handleAPIFallback(request, networkResponse = null, networkError = null) {
+  // Try to get cached response
+  const cachedResponse = await getCachedResponseWithValidation(request);
+  
+  if (cachedResponse) {
+    // Add cache headers to indicate stale data
+    const headers = new Headers(cachedResponse.headers);
+    headers.set('X-Served-By', 'ServiceWorker');
+    headers.set('X-Cache-Status', 'HIT-STALE');
+    
+    const responseBody = await cachedResponse.text();
+    
+    return new Response(responseBody, {
+      status: cachedResponse.status,
+      headers: headers
+    });
+  }
+  
+  // No cache available - return appropriate error response
+  const errorResponse = {
+    error: networkResponse ? `API returned ${networkResponse.status}` : 'Network unavailable',
+    offline: true,
+    cached: false,
+    timestamp: Date.now(),
+    details: networkError ? networkError.message : null
+  };
+  
+  // For critical APIs, provide enhanced fallback data
+  if (request.url.includes('/api/flights/search') || request.url.includes('/api/transport/search')) {
+    errorResponse.fallback_available = true;
+    errorResponse.message = 'Search temporarily unavailable. Please try again or use cached results.';
+  }
+  
+  return new Response(
+    JSON.stringify(errorResponse),
+    { 
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    }
+  );
+}
+
+// Get cached response with TTL validation
+async function getCachedResponseWithValidation(request) {
+  try {
+    const cache = await caches.open(DYNAMIC_CACHE);
+    
+    // Check metadata first
+    const metadataResponse = await cache.match(new Request(request.url + '__metadata'));
+    
+    if (metadataResponse) {
+      const metadata = await metadataResponse.json();
+      
+      // Check if cache has expired
+      if (Date.now() > metadata.expires_at) {
+        console.log('[SW] Cached response expired:', request.url);
+        // Clean up expired cache
+        await cache.delete(request);
+        await cache.delete(new Request(request.url + '__metadata'));
+        return null;
+      }
+    }
+    
+    // Return cached response if valid
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      console.log('[SW] Serving valid cached API response:', request.url);
+      return cachedResponse;
+    }
+    
+  } catch (error) {
+    console.error('[SW] Error validating cached response:', error);
+  }
+  
+  return null;
 }
 
 // Static asset handler - cache first

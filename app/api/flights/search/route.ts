@@ -7,6 +7,7 @@ import {
   isFlightCacheAvailable,
   type FlightSearchParams
 } from "@/lib/cache/flight-cache";
+import { FlightSearchManager } from "@/lib/services/flight-providers";
 
 const flightSearchSchema = z.object({
   from: z.string().min(2),
@@ -17,304 +18,44 @@ const flightSearchSchema = z.object({
   currency: z.enum(['USD', 'EUR', 'GBP']).default('USD'),
 });
 
-// IATA code mapping for popular destinations
-const LOCATION_TO_IATA: Record<string, string[]> = {
-  'New York': ['JFK', 'LGA', 'EWR'],
-  'Los Angeles': ['LAX'],
-  'London': ['LHR', 'LGW', 'STN'],
-  'Paris': ['CDG', 'ORY'],
-  'Tokyo': ['NRT', 'HND'],
-  'Rome': ['FCO', 'CIA'],
-  'Madrid': ['MAD'],
-  'Barcelona': ['BCN'],
-  'Amsterdam': ['AMS'],
-  'Berlin': ['BER'],
-  'Sydney': ['SYD'],
-  'Melbourne': ['MEL'],
-  'Toronto': ['YYZ'],
-  'Vancouver': ['YVR'],
-  'Mumbai': ['BOM'],
-  'Delhi': ['DEL'],
-  'Bangkok': ['BKK'],
-  'Singapore': ['SIN'],
-  'Dubai': ['DXB'],
-  'Istanbul': ['IST'],
-  'Seoul': ['ICN'],
-  'Hong Kong': ['HKG'],
-  'Shanghai': ['PVG', 'SHA'],
-  'Beijing': ['PEK'],
-  'São Paulo': ['GRU'],
-  'Mexico City': ['MEX'],
-  'Cairo': ['CAI'],
-  'Johannesburg': ['JNB'],
-  'Miami': ['MIA'],
-  'San Francisco': ['SFO'],
-  'Chicago': ['ORD', 'MDW'],
-  'Boston': ['BOS'],
-  'Washington': ['DCA', 'IAD', 'BWI'],
-  'Las Vegas': ['LAS'],
-};
+// Flight search implementation using new multi-provider system
 
-function getCityIataCode(cityName: string): string {
-  // Find matching city from our location mapping
-  for (const [city, codes] of Object.entries(LOCATION_TO_IATA)) {
-    if (cityName.toLowerCase().includes(city.toLowerCase()) || 
-        city.toLowerCase().includes(cityName.toLowerCase())) {
-      return codes[0]; // Return primary airport
-    }
-  }
-  
-  // If no match found, return the input (assuming it might be an IATA code)
-  return cityName.substring(0, 3).toUpperCase();
-}
-
-async function searchFlightsWithRapidAPI(params: {
+async function searchFlightsWithProviders(params: {
   from: string;
   to: string;
   departureDate: string;
   returnDate?: string;
   adults: number;
   currency: string;
-}, apiKey: string) {
+}): Promise<{ flights: any[], provider: string }> {
+  const flightManager = new FlightSearchManager({
+    aviationStackKey: process.env.AVIATIONSTACK_API_KEY,
+    rapidApiKey: process.env.RAPIDAPI_KEY,
+  });
+  
   try {
-    const fromIata = getCityIataCode(params.from);
-    const toIata = getCityIataCode(params.to);
-    
-    // Using SkyScanner API via RapidAPI (free tier available)
-    const searchParams = new URLSearchParams({
-      originSkyId: fromIata,
-      destinationSkyId: toIata,
-      departureDate: params.departureDate.split('T')[0],
-      adults: params.adults.toString(),
+    const searchResult = await flightManager.searchFlights({
+      from: params.from,
+      to: params.to,
+      departureDate: params.departureDate,
+      returnDate: params.returnDate,
+      adults: params.adults,
       currency: params.currency,
     });
-    
-    if (params.returnDate) {
-      searchParams.append('returnDate', params.returnDate.split('T')[0]);
-    }
 
-    const response = await fetch(`https://skyscanner80.p.rapidapi.com/api/v1/flights/search-roundtrip?${searchParams}`, {
-      headers: {
-        'X-RapidAPI-Key': apiKey,
-        'X-RapidAPI-Host': 'skyscanner80.p.rapidapi.com',
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`RapidAPI error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return processRapidAPIFlights(data.data?.itineraries || []);
-    
-  } catch (error) {
-    console.error('RapidAPI SkyScanner error:', error);
-    throw error; // Let parent function handle fallback
-  }
-}
-
-function processRapidAPIFlights(rapidFlights: any[]) {
-  return rapidFlights.map((itinerary: any, index: number) => {
-    const leg = itinerary.legs?.[0];
-    const price = itinerary.price;
-    
-    if (!leg) return null;
-    
-    const segment = leg.segments?.[0];
-    const origin = leg.origin;
-    const destination = leg.destination;
-    
     return {
-      id: itinerary.id || `rapid-${index}`,
-      type: 'flight',
-      airline: segment?.marketingCarrier?.name || 'Unknown Airline',
-      flightNumber: segment?.flightNumber || '',
-      price: Math.round(price?.raw || 0),
-      currency: price?.formatted?.split(' ')[0] || 'USD',
-      duration: formatDuration(leg.durationInMinutes * 60),
-      departure: {
-        time: new Date(leg.departure).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        airport: origin?.id || '',
-        city: origin?.name || '',
-      },
-      arrival: {
-        time: new Date(leg.arrival).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        airport: destination?.id || '',
-        city: destination?.name || '',
-      },
-      stops: leg.stopCount || 0,
-      bookingLink: `https://www.skyscanner.com/transport/flights/${origin?.id}/${destination?.id}`,
-      baggage: {
-        carry: true,
-        checked: Math.random() > 0.5, // RapidAPI doesn't always provide this info
-      },
-      score: 6 + Math.random() * 4,
+      flights: searchResult.flights,
+      provider: searchResult.provider
     };
-  }).filter(Boolean);
-}
-
-async function searchFlightsWithAmadeus(params: {
-  from: string;
-  to: string;
-  departureDate: string;
-  returnDate?: string;
-  adults: number;
-  currency: string;
-}): Promise<{ flights: any[], provider: 'amadeus' | 'rapidapi' | 'mock' }> {
-  const AMADEUS_CLIENT_ID = process.env.AMADEUS_CLIENT_ID;
-  const AMADEUS_CLIENT_SECRET = process.env.AMADEUS_CLIENT_SECRET;
-  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-  
-  // Try RapidAPI first (easier to get), then Amadeus
-  if (RAPIDAPI_KEY) {
-    try {
-      const flights = await searchFlightsWithRapidAPI(params, RAPIDAPI_KEY);
-      return { flights, provider: 'rapidapi' };
-    } catch (error) {
-      console.error('RapidAPI failed, trying Amadeus:', error);
-    }
-  }
-  
-  if (!AMADEUS_CLIENT_ID || !AMADEUS_CLIENT_SECRET) {
-    console.log('No flight API credentials found, using enhanced mock data');
-    const flights = generateEnhancedMockFlights(params);
-    return { flights, provider: 'mock' };
-  }
-
-  try {
-    // First, get access token
-    const tokenResponse = await fetch('https://test.api.amadeus.com/v1/security/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: AMADEUS_CLIENT_ID,
-        client_secret: AMADEUS_CLIENT_SECRET,
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error(`Token fetch failed: ${tokenResponse.status}`);
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    const fromIata = getCityIataCode(params.from);
-    const toIata = getCityIataCode(params.to);
-    
-    // Search for flight offers
-    const searchParams = new URLSearchParams({
-      originLocationCode: fromIata,
-      destinationLocationCode: toIata,
-      departureDate: params.departureDate.split('T')[0],
-      adults: params.adults.toString(),
-      currencyCode: params.currency,
-      max: '10',
-    });
-    
-    if (params.returnDate) {
-      searchParams.append('returnDate', params.returnDate.split('T')[0]);
-    }
-
-    const flightResponse = await fetch(`https://test.api.amadeus.com/v2/shopping/flight-offers?${searchParams}`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!flightResponse.ok) {
-      throw new Error(`Flight search failed: ${flightResponse.status}`);
-    }
-
-    const flightData = await flightResponse.json();
-    const flights = processAmadeusFlights(flightData.data || [], flightData.dictionaries || {});
-    return { flights, provider: 'amadeus' };
-    
   } catch (error) {
-    console.error('Amadeus API error:', error);
-    // Fallback to enhanced mock data on API failure
-    console.log('Falling back to mock data due to API error');
+    console.error('Flight search failed with all providers:', error);
+    // Final fallback to enhanced mock data
     const flights = generateEnhancedMockFlights(params);
-    return { flights, provider: 'mock' };
+    return { flights, provider: 'fallback-mock' };
   }
 }
 
-function processAmadeusFlights(amadeusFlights: any[], dictionaries: any) {
-  return amadeusFlights.map((offer: any, index: number) => {
-    const itinerary = offer.itineraries?.[0];
-    const segment = itinerary?.segments?.[0];
-    const price = offer.price;
-    
-    if (!segment) {
-      return null;
-    }
-
-    const departure = segment.departure;
-    const arrival = segment.arrival;
-    const airline = dictionaries.carriers?.[segment.carrierCode] || segment.carrierCode;
-    
-    return {
-      id: offer.id || `amadeus-${index}`,
-      type: 'flight',
-      airline: airline || 'Unknown Airline',
-      flightNumber: `${segment.carrierCode}${segment.number}`,
-      price: Math.round(parseFloat(price.total)),
-      currency: price.currency || 'USD',
-      duration: parseDuration(itinerary.duration),
-      departure: {
-        time: new Date(departure.at).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        airport: departure.iataCode || '',
-        city: dictionaries.locations?.[departure.iataCode]?.cityCode || departure.iataCode,
-      },
-      arrival: {
-        time: new Date(arrival.at).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        airport: arrival.iataCode || '',
-        city: dictionaries.locations?.[arrival.iataCode]?.cityCode || arrival.iataCode,
-      },
-      stops: (itinerary.segments?.length || 1) - 1,
-      bookingLink: `https://www.amadeus.com/booking/${offer.id}`,
-      baggage: {
-        carry: true,
-        checked: offer.travelerPricings?.[0]?.fareDetailsBySegment?.[0]?.includedCheckedBags?.quantity > 0,
-      },
-      score: 7 + Math.random() * 3, // Amadeus typically has good quality
-    };
-  }).filter(Boolean);
-}
-
-function parseDuration(duration: string): string {
-  if (!duration) return '0h 0m';
-  
-  // Parse ISO 8601 duration (PT2H30M format)
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-  if (!match) return '0h 0m';
-  
-  const hours = parseInt(match[1] || '0');
-  const minutes = parseInt(match[2] || '0');
-  
-  return `${hours}h ${minutes}m`;
-}
+// Clean implementation using new FlightSearchManager - old functions removed
 
 function generateEnhancedMockFlights(params: any) {
   const airlines = [
@@ -339,12 +80,12 @@ function generateEnhancedMockFlights(params: any) {
       duration: `${Math.floor(duration)}h ${Math.floor((duration % 1) * 60)}m`,
       departure: {
         time: `${Math.floor(departureHour)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')} ${departureHour >= 12 ? 'PM' : 'AM'}`,
-        airport: getCityIataCode(params.from),
+        airport: params.from.substring(0, 3).toUpperCase() + (Math.floor(Math.random() * 9) + 1),
         city: params.from,
       },
       arrival: {
         time: `${Math.floor((departureHour + duration) % 24)}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')} ${((departureHour + duration) % 24) >= 12 ? 'PM' : 'AM'}`,
-        airport: getCityIataCode(params.to),
+        airport: params.to.substring(0, 3).toUpperCase() + (Math.floor(Math.random() * 9) + 1),
         city: params.to,
       },
       stops: Math.random() > 0.6 ? 0 : Math.random() > 0.8 ? 2 : 1,
@@ -397,8 +138,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Search for flights
-    const { flights, provider } = await searchFlightsWithAmadeus(searchParams);
+    // Search for flights using new multi-provider system
+    const { flights, provider } = await searchFlightsWithProviders(searchParams);
 
     // Cache results if cache is available
     if (cacheAvailable && flights.length > 0) {

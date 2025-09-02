@@ -33,7 +33,7 @@ export interface CachedFlightData {
   flights: any[];
   searchParams: FlightSearchParams;
   resultsCount: number;
-  provider: 'amadeus' | 'rapidapi' | 'mock';
+  provider: string;
   cachedAt: number;
   expiresAt: number;
 }
@@ -77,7 +77,7 @@ export function generateFlightCacheKey(params: FlightSearchParams): string {
 export async function cacheFlightResults(
   params: FlightSearchParams,
   flights: any[],
-  provider: 'amadeus' | 'rapidapi' | 'mock',
+  provider: string,
   isPremium = false
 ): Promise<boolean> {
   if (!redis) {
