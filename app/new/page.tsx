@@ -225,7 +225,7 @@ function LocationStep({ tripData, setTripData, onNext }: any) {
     <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-navy-100 mb-2">Plan Your Perfect Journey</h2>
-        <p className="text-navy-300">Tell us where you want to go and we'll create a personalized travel experience just for you</p>
+        <p className="text-navy-300">Tell us where you want to go and we&apos;ll create a personalized travel experience just for you</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
