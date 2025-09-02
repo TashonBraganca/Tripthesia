@@ -21,6 +21,7 @@ import {
   Bed
 } from 'lucide-react';
 import InteractiveMapPlanner from '@/components/planning/InteractiveMapPlanner';
+import POIRecommendations from '@/components/planning/POIRecommendations';
 import { type RouteResult } from '@/lib/services/google-maps-provider';
 import { type POI, type POICategory, POI_CATEGORIES } from '@/lib/services/poi-detector';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,7 @@ export default function RoadTripPlannerPage() {
   const [currentRoute, setCurrentRoute] = useState<RouteResult | null>(null);
   const [pois, setPOIs] = useState<POI[]>([]);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+  const [routeCoordinates, setRouteCoordinates] = useState<Array<{ lat: number; lng: number }>>([]);
   const [tripPreferences, setTripPreferences] = useState<TripPreferences>({
     vehicleType: 'car',
     travelers: { adults: 2, children: 0, pets: false },
@@ -85,6 +87,22 @@ export default function RoadTripPlannerPage() {
     setCurrentRoute(route);
     setPOIs(routePOIs);
     setIsCalculating(false);
+    
+    // Extract route coordinates for POI detection
+    const coordinates: Array<{ lat: number; lng: number }> = [];
+    route.legs.forEach(leg => {
+      leg.steps.forEach(step => {
+        coordinates.push({
+          lat: step.startLocation.lat,
+          lng: step.startLocation.lng
+        });
+        coordinates.push({
+          lat: step.endLocation.lat,
+          lng: step.endLocation.lng
+        });
+      });
+    });
+    setRouteCoordinates(coordinates);
   }, []);
 
   // Handle waypoints change
@@ -452,59 +470,24 @@ export default function RoadTripPlannerPage() {
                 )}
 
                 {activeTab === 'pois' && (
-                  <Card className="bg-navy-800/50 border-navy-700/50">
-                    <CardHeader>
-                      <CardTitle className="text-navy-100">
-                        Points of Interest ({pois.length})
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {Object.entries(poisByCategory).map(([category, categoryPOIs]) => {
-                          const config = POI_CATEGORIES[category as POICategory];
-                          return (
-                            <div key={category}>
-                              <h3 className="font-medium text-navy-200 mb-2 flex items-center">
-                                <span className="mr-2">{config.icon}</span>
-                                {config.name} ({categoryPOIs.length})
-                              </h3>
-                              <div className="grid gap-2">
-                                {categoryPOIs.slice(0, 5).map((poi) => (
-                                  <div
-                                    key={poi.placeId}
-                                    className="bg-navy-700/30 border border-navy-600/50 rounded-lg p-3"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex-1">
-                                        <h4 className="font-medium text-navy-100">{poi.name}</h4>
-                                        <p className="text-sm text-navy-400">{poi.formattedAddress}</p>
-                                        {poi.rating && (
-                                          <div className="flex items-center mt-1">
-                                            <span className="text-yellow-400">★</span>
-                                            <span className="text-sm text-navy-300 ml-1">
-                                              {poi.rating.toFixed(1)}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="text-right">
-                                        <div className="text-sm text-teal-400">
-                                          +{poi.estimatedDetour}min
-                                        </div>
-                                        <div className="text-xs text-navy-400">
-                                          {Math.round(poi.distanceFromRoute)}m
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <POIRecommendations
+                    routeCoordinates={routeCoordinates}
+                    onPOISelect={(poi) => {
+                      console.log('POI selected:', poi);
+                      // TODO: Show POI details in modal or sidebar
+                    }}
+                    onPOIAdd={(poi) => {
+                      console.log('POI added to route:', poi);
+                      // TODO: Add POI as waypoint to current route
+                    }}
+                    maxDistance={15000} // 15km search radius
+                    userPreferences={{
+                      categories: Object.keys(POI_CATEGORIES) as POICategory[],
+                      priceLevel: 4,
+                      minRating: 3.0
+                    }}
+                    className="space-y-4"
+                  />
                 )}
               </div>
             )}
