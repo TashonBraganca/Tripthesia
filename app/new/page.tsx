@@ -23,7 +23,7 @@ function EmergencyFallback({ error }: { error?: string }) {
             Trip Planning Temporarily Unavailable
           </h1>
           <p style={{ fontSize: '1.2rem', marginBottom: '2rem', color: '#B8C7D3' }}>
-            We're experiencing technical difficulties loading the trip planner.
+            We&apos;re experiencing technical difficulties loading the trip planner.
           </p>
           {error && (
             <div style={{ backgroundColor: '#FF6B6B20', padding: '1rem', borderRadius: '0.5rem', marginBottom: '2rem' }}>
