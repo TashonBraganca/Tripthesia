@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { MapPin, Calendar, Users, AlertCircle, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
 // Create a super simple fallback component that will always work
@@ -19,7 +18,7 @@ function EmergencyFallback({ error }: { error?: string }) {
     >
       <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#0A2540', padding: '2rem', borderRadius: '1rem', border: '1px solid #1B3B6F' }}>
-          <XCircle style={{ width: '4rem', height: '4rem', color: '#FF6B6B', margin: '0 auto 1rem' }} />
+          <div style={{ width: '4rem', height: '4rem', color: '#FF6B6B', margin: '0 auto 1rem', fontSize: '4rem', textAlign: 'center' }}>✗</div>
           <h1 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#E6F0F8' }}>
             Trip Planning Temporarily Unavailable
           </h1>
@@ -69,7 +68,35 @@ function EmergencyFallback({ error }: { error?: string }) {
   );
 }
 
-// Debug status component
+// Simple status icons without external dependencies
+function LoadingIcon() {
+  return (
+    <div 
+      style={{ 
+        width: '16px', 
+        height: '16px', 
+        border: '2px solid #22C692',
+        borderTop: '2px solid transparent',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite'
+      }}
+    />
+  );
+}
+
+function SuccessIcon() {
+  return (
+    <div style={{ width: '16px', height: '16px', color: '#15B37D' }}>✓</div>
+  );
+}
+
+function ErrorIcon() {
+  return (
+    <div style={{ width: '16px', height: '16px', color: '#FF6B6B' }}>✗</div>
+  );
+}
+
+// Debug status component with safe icons
 function DebugStatus({ status, children }: { status: 'loading' | 'success' | 'error'; children: React.ReactNode }) {
   const colors = {
     loading: '#22C692',
@@ -77,15 +104,11 @@ function DebugStatus({ status, children }: { status: 'loading' | 'success' | 'er
     error: '#FF6B6B'
   };
 
-  const icons = {
-    loading: <Loader2 className="w-4 h-4 animate-spin" />,
-    success: <CheckCircle className="w-4 h-4" />,
-    error: <XCircle className="w-4 h-4" />
-  };
+  const IconComponent = status === 'loading' ? LoadingIcon : status === 'success' ? SuccessIcon : ErrorIcon;
 
   return (
     <div className="flex items-center space-x-2 text-sm" style={{ color: colors[status] }}>
-      {icons[status]}
+      <IconComponent />
       <span>{children}</span>
     </div>
   );
@@ -324,29 +347,141 @@ function TripPlanningForm() {
   );
 }
 
+// Dynamic authentication hook to avoid SSR issues
+const useClientAuth = () => {
+  const [authState, setAuthState] = useState<{
+    isLoaded: boolean;
+    isSignedIn: boolean;
+    user: { id: string } | null;
+    error: string | null;
+  }>({
+    isLoaded: false,
+    isSignedIn: false,
+    user: null,
+    error: null
+  });
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAuth = async () => {
+      try {
+        // Dynamically import and use Clerk hook only on client
+        const { useUser } = await import('@clerk/nextjs');
+        
+        // This is a workaround - we'll check auth status manually
+        const checkAuth = () => {
+          try {
+            // Check if we're signed in by looking for auth cookies/tokens
+            const hasAuthCookies = document.cookie.includes('__session') || 
+                                  document.cookie.includes('__clerk') ||
+                                  localStorage.getItem('clerk-user');
+            
+            if (mounted) {
+              setAuthState({
+                isLoaded: true,
+                isSignedIn: !!hasAuthCookies,
+                user: hasAuthCookies ? { id: 'user' } : null,
+                error: null
+              });
+            }
+          } catch (error: any) {
+            if (mounted) {
+              setAuthState({
+                isLoaded: true,
+                isSignedIn: false,
+                user: null,
+                error: error?.message || 'Authentication error'
+              });
+            }
+          }
+        };
+
+        // Add a small delay to ensure client-side rendering
+        setTimeout(checkAuth, 100);
+        
+      } catch (error: any) {
+        if (mounted) {
+          setAuthState({
+            isLoaded: true,
+            isSignedIn: false,
+            user: null,
+            error: error?.message || 'Failed to load authentication'
+          });
+        }
+      }
+    };
+
+    loadAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  return authState;
+};
+
 // Main component
 export default function NewTripPage() {
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, user, error } = useClientAuth();
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Debug logging
   useEffect(() => {
+    if (!isClient) return;
+    
     const info = [
       `Page loaded at: ${new Date().toISOString()}`,
-      `Clerk isLoaded: ${isLoaded}`,
-      `Clerk isSignedIn: ${isSignedIn}`,
+      `Auth isLoaded: ${isLoaded}`,
+      `Auth isSignedIn: ${isSignedIn}`,
       `User ID: ${user?.id || 'None'}`,
+      `Auth Error: ${error || 'None'}`,
       `Current URL: ${window.location.href}`,
       `User Agent: ${navigator.userAgent.slice(0, 100)}...`
     ];
     setDebugInfo(info);
     console.log('NewTripPage Debug Info:', info);
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, user, error, isClient]);
+
+  // Show loading until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <div 
+        style={{ 
+          minHeight: '100vh', 
+          backgroundColor: '#030B14',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#E6F0F8',
+          fontFamily: 'system-ui, sans-serif'
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <LoadingIcon />
+          <p style={{ marginTop: '1rem' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   try {
     return (
       <TripPlannerErrorBoundary>
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
         <div 
           className="min-h-screen"
           style={{ 
@@ -422,19 +557,30 @@ export default function NewTripPage() {
                 {/* Content based on auth state */}
                 {!isLoaded ? (
                   <div className="text-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: '#22C692' }} />
-                    <p style={{ color: '#B8C7D3' }}>Loading authentication...</p>
+                    <LoadingIcon />
+                    <p style={{ color: '#B8C7D3', marginTop: '1rem' }}>Loading authentication...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-12">
+                    <ErrorIcon />
+                    <h2 className="text-xl font-bold mb-4" style={{ color: '#E6F0F8', marginTop: '1rem' }}>
+                      Authentication Error
+                    </h2>
+                    <p className="mb-6" style={{ color: '#B8C7D3' }}>
+                      Having trouble loading authentication. You can still use the planner.
+                    </p>
+                    <TripPlanningForm />
                   </div>
                 ) : !isSignedIn ? (
                   <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: '#22C692' }} />
+                    <div style={{ width: '48px', height: '48px', margin: '0 auto 1rem', color: '#22C692', fontSize: '48px' }}>⚠</div>
                     <h2 className="text-2xl font-bold mb-4" style={{ color: '#E6F0F8' }}>
-                      Sign In Required
+                      Sign In Recommended
                     </h2>
                     <p className="mb-6" style={{ color: '#B8C7D3' }}>
-                      Please sign in to create and save your trips.
+                      Sign in to save your trips, or continue as guest.
                     </p>
-                    <div className="flex gap-4 justify-center flex-wrap">
+                    <div className="flex gap-4 justify-center flex-wrap mb-8">
                       <a
                         href="/sign-in"
                         className="px-6 py-3 rounded-lg font-semibold"
@@ -450,13 +596,16 @@ export default function NewTripPage() {
                         Create Account
                       </a>
                     </div>
+                    <hr style={{ border: '1px solid #1B3B6F', margin: '2rem 0' }} />
+                    <h3 style={{ color: '#B8C7D3', marginBottom: '1rem' }}>Or continue as guest:</h3>
+                    <TripPlanningForm />
                   </div>
                 ) : (
                   <Suspense 
                     fallback={
                       <div className="text-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: '#22C692' }} />
-                        <p style={{ color: '#B8C7D3' }}>Loading trip planner...</p>
+                        <LoadingIcon />
+                        <p style={{ color: '#B8C7D3', marginTop: '1rem' }}>Loading trip planner...</p>
                       </div>
                     }
                   >
