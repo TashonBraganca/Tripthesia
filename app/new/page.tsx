@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car, Bike, Bus, MapPin as Taxi, Shield, Clock, Star, Hotel, Home, Building2, Wifi, Car as Parking, Coffee, Dumbbell, Waves, Camera, Mountain, Landmark, TreePine, Palette, Music, ShoppingBag, Heart } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car, Bike, Bus, MapPin as Taxi, Shield, Clock, Star, Hotel, Home, Building2, Wifi, Car as Parking, Coffee, Dumbbell, Waves, Camera, Mountain, Landmark, TreePine, Palette, Music, ShoppingBag, Heart, UtensilsCrossed, ChefHat, Soup, Fish, Pizza, Salad } from 'lucide-react';
 
 // Import the sophisticated form components
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
@@ -64,6 +64,10 @@ export default function NewTripPage() {
   // Activities step state
   const [selectedActivities, setSelectedActivities] = useState<any[]>([]);
   const [isSearchingActivities, setIsSearchingActivities] = useState(false);
+  
+  // Dining step state
+  const [selectedDining, setSelectedDining] = useState<any[]>([]);
+  const [isSearchingDining, setIsSearchingDining] = useState(false);
   
   const [formData, setFormData] = useState<TripFormData>({
     from: null,
@@ -1362,13 +1366,287 @@ export default function NewTripPage() {
     );
   };
 
-  const renderDiningStep = () => (
-    <div className="text-center py-20">
-      <h2 className="text-3xl font-bold text-navy-100 mb-4">Dining & Restaurants</h2>
-      <p className="text-navy-300 mb-8">Optional: Find great places to eat</p>
-      <div className="text-amber-400">🚧 Dining recommendations coming soon...</div>
-    </div>
-  );
+  const renderDiningStep = () => {
+    const handleDiningSelection = (dining: any) => {
+      const updatedDining = selectedDining.some(d => d.id === dining.id)
+        ? selectedDining.filter(d => d.id !== dining.id)
+        : [...selectedDining, dining];
+      
+      setSelectedDining(updatedDining);
+      setFormData(prev => ({
+        ...prev,
+        dining: updatedDining
+      }));
+      
+      // Mark dining step as completed if any dining is selected
+      if (updatedDining.length > 0 && !completedSteps.includes('dining')) {
+        setCompletedSteps(prev => [...prev, 'dining']);
+      }
+    };
+
+    const diningCategories = [
+      {
+        id: 'fine-dining',
+        type: 'fine-dining',
+        title: 'Fine Dining',
+        description: 'Upscale restaurants with exceptional cuisine',
+        icon: ChefHat,
+        priceRange: '₹2,000 - ₹6,000',
+        avgRating: 4.5,
+        features: ['Premium Ingredients', 'Expert Chefs', 'Elegant Ambiance', 'Wine Pairing'],
+        cuisines: ['Continental', 'French', 'Japanese', 'Fusion'],
+        examples: ['Michelin Star', 'Celebrity Chef', 'Hotel Restaurants', 'Rooftop Dining']
+      },
+      {
+        id: 'local-cuisine',
+        type: 'local',
+        title: 'Local Cuisine',
+        description: 'Authentic regional dishes and local flavors',
+        icon: Soup,
+        priceRange: '₹300 - ₹1,200',
+        avgRating: 4.3,
+        features: ['Authentic Recipes', 'Local Ingredients', 'Cultural Experience', 'Family-run'],
+        cuisines: ['Regional', 'Traditional', 'Street Food', 'Home-style'],
+        examples: ['Local Specialties', 'Traditional Thalis', 'Heritage Recipes', 'Regional Delicacies']
+      },
+      {
+        id: 'street-food',
+        type: 'street',
+        title: 'Street Food & Casual',
+        description: 'Popular street vendors and casual eateries',
+        icon: Pizza,
+        priceRange: '₹50 - ₹400',
+        avgRating: 4.1,
+        features: ['Quick Service', 'Affordable Prices', 'Local Favorites', 'Authentic Taste'],
+        cuisines: ['Street Food', 'Snacks', 'Fast Food', 'Local Bites'],
+        examples: ['Food Streets', 'Night Markets', 'Popular Stalls', 'Local Favorites']
+      },
+      {
+        id: 'international',
+        type: 'international',
+        title: 'International Cuisine',
+        description: 'Global flavors and international restaurants',
+        icon: UtensilsCrossed,
+        priceRange: '₹800 - ₹2,500',
+        avgRating: 4.2,
+        features: ['Diverse Menu', 'Quality Service', 'Modern Ambiance', 'Global Standards'],
+        cuisines: ['Italian', 'Chinese', 'Thai', 'Mexican'],
+        examples: ['Chain Restaurants', 'International Brands', 'Fusion Restaurants', 'Global Cuisine']
+      },
+      {
+        id: 'seafood',
+        type: 'seafood',
+        title: 'Seafood & Coastal',
+        description: 'Fresh seafood and coastal specialties',
+        icon: Fish,
+        priceRange: '₹600 - ₹2,000',
+        avgRating: 4.4,
+        features: ['Fresh Catch', 'Coastal Recipes', 'Seaside Dining', 'Local Fishing'],
+        cuisines: ['Coastal', 'Seafood', 'Fish Curry', 'Grilled Fish'],
+        examples: ['Beach Shacks', 'Harbor Restaurants', 'Fishing Villages', 'Coastal Specialties']
+      },
+      {
+        id: 'vegetarian',
+        type: 'vegetarian',
+        title: 'Vegetarian & Healthy',
+        description: 'Plant-based and health-conscious dining',
+        icon: Salad,
+        priceRange: '₹200 - ₹1,000',
+        avgRating: 4.3,
+        features: ['Fresh Ingredients', 'Healthy Options', 'Organic Produce', 'Nutritious Meals'],
+        cuisines: ['Vegetarian', 'Vegan', 'Organic', 'Health Food'],
+        examples: ['Pure Veg Restaurants', 'Health Cafes', 'Organic Restaurants', 'Salad Bars']
+      }
+    ];
+
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-navy-100 mb-4">Culinary Experiences</h2>
+          <p className="text-navy-300 mb-2">
+            Discover amazing dining options in {formData.to?.name || 'your destination'}
+          </p>
+          <p className="text-navy-400 text-sm">
+            Optional step - Select dining preferences that interest you or skip to continue
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {diningCategories.map((category) => {
+            const IconComponent = category.icon;
+            const isSelected = selectedDining.some(d => d.id === category.id);
+            
+            return (
+              <motion.div
+                key={category.id}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-teal-900/30 border-teal-500/50 shadow-lg shadow-teal-500/20'
+                    : 'bg-navy-900/20 border-navy-800/30 hover:bg-navy-800/30 hover:border-navy-700/50'
+                }`}
+                onClick={() => handleDiningSelection(category)}
+              >
+                {isSelected && (
+                  <div className="absolute top-4 right-4">
+                    <CheckCircle className="w-6 h-6 text-teal-400" />
+                  </div>
+                )}
+                
+                <div className="text-center mb-4">
+                  <div className={`inline-flex p-4 rounded-2xl mb-3 ${
+                    isSelected ? 'bg-teal-500/20' : 'bg-navy-800/30'
+                  }`}>
+                    <IconComponent className={`w-8 h-8 ${
+                      isSelected ? 'text-teal-300' : 'text-navy-300'
+                    }`} />
+                  </div>
+                  <h3 className={`text-lg font-semibold mb-2 ${
+                    isSelected ? 'text-teal-100' : 'text-navy-100'
+                  }`}>
+                    {category.title}
+                  </h3>
+                  <p className={`text-sm mb-3 ${
+                    isSelected ? 'text-teal-300' : 'text-navy-300'
+                  }`}>
+                    {category.description}
+                  </p>
+                </div>
+
+                {/* Price and Rating */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                      Price Range:
+                    </span>
+                    <span className={`font-medium ${isSelected ? 'text-teal-200' : 'text-navy-200'}`}>
+                      {category.priceRange}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                      Avg Rating:
+                    </span>
+                    <div className="flex items-center">
+                      <Star className={`w-3 h-3 fill-current mr-1 ${
+                        isSelected ? 'text-teal-400' : 'text-amber-400'
+                      }`} />
+                      <span className={`font-medium ${isSelected ? 'text-teal-200' : 'text-navy-200'}`}>
+                        {category.avgRating}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cuisines */}
+                <div className="mb-4">
+                  <h4 className={`text-sm font-medium mb-2 ${
+                    isSelected ? 'text-teal-200' : 'text-navy-200'
+                  }`}>
+                    Popular Cuisines:
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {category.cuisines.slice(0, 2).map((cuisine, index) => (
+                      <span
+                        key={index}
+                        className={`px-2 py-1 text-xs rounded-md ${
+                          isSelected 
+                            ? 'bg-teal-800/30 text-teal-300' 
+                            : 'bg-navy-800/50 text-navy-400'
+                        }`}
+                      >
+                        {cuisine}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="mb-4">
+                  <h4 className={`text-sm font-medium mb-2 ${
+                    isSelected ? 'text-teal-200' : 'text-navy-200'
+                  }`}>
+                    What to Expect:
+                  </h4>
+                  <div className="grid grid-cols-2 gap-1">
+                    {category.features.slice(0, 4).map((feature, index) => (
+                      <div key={index} className="flex items-center text-xs">
+                        <UtensilsCrossed className={`w-3 h-3 mr-1 ${
+                          isSelected ? 'text-teal-400' : 'text-navy-400'
+                        }`} />
+                        <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                          {feature}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Selected Dining Summary */}
+        {selectedDining.length > 0 && (
+          <div className="bg-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-teal-500/30 mb-6">
+            <h3 className="text-lg font-semibold text-teal-100 mb-4">Your Dining Preferences</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedDining.map((dining, index) => {
+                const category = diningCategories.find(c => c.id === dining.id);
+                if (!category) return null;
+                
+                const IconComponent = category.icon;
+                return (
+                  <div key={index} className="flex items-center bg-teal-800/20 rounded-lg p-4">
+                    <div className="flex-shrink-0 mr-4">
+                      <div className="p-2 bg-teal-700/30 rounded-lg">
+                        <IconComponent className="w-6 h-6 text-teal-300" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-teal-100 mb-1">{category.title}</div>
+                      <div className="text-sm text-teal-300 mb-1">{category.description}</div>
+                      <div className="text-xs text-teal-400 flex items-center">
+                        {category.priceRange} • 
+                        <Star className="w-3 h-3 fill-current text-amber-400 mx-1" />
+                        {category.avgRating}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="mt-6 p-4 bg-teal-800/30 rounded-lg">
+              <div className="flex items-start">
+                <Coffee className="w-5 h-5 text-teal-400 mr-2 mt-0.5" />
+                <div className="text-sm text-teal-300">
+                  <strong>Dining Tips:</strong> Make reservations for fine dining restaurants. 
+                  Try local specialties and ask locals for their favorite hidden gems. 
+                  Consider dietary restrictions and food allergies when exploring new cuisines.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Skip Option */}
+        <div className="text-center">
+          <button
+            onClick={() => {
+              if (!completedSteps.includes('dining')) {
+                setCompletedSteps(prev => [...prev, 'dining']);
+              }
+            }}
+            className="text-navy-400 hover:text-navy-300 transition-colors text-sm"
+          >
+            Skip this step - I&apos;ll find restaurants on my own
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   if (!mounted) {
     return null; // Prevent hydration mismatch
