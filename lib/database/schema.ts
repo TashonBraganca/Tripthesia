@@ -109,6 +109,35 @@ export const trips = pgTable("trips", {
   sharedTokenIdx: index("trips_shared_token_idx").on(table.sharedToken),
 }));
 
+// Draft trips for step-by-step progress saving
+export const draftTrips = pgTable("draft_trips", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  currentStep: varchar("current_step", { length: 24 }).default("destination").notNull(),
+  completedSteps: jsonb("completed_steps").$type<string[]>().default([]).notNull(),
+  formData: jsonb("form_data").notNull(), // Complete form data from all steps
+  stepData: jsonb("step_data"), // Step-specific data (transport selections, etc.)
+  title: varchar("title", { length: 160 }), // Optional user-provided title
+  lastSaved: timestamp("last_saved").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "draft_trips_user_id_fk"
+  }),
+  // Check constraints
+  currentStepCheck: check("current_step_check", sql`current_step IN ('destination', 'transport', 'rental', 'accommodation', 'activities', 'dining')`),
+  titleCheck: check("title_check", sql`title IS NULL OR LENGTH(title) > 0`),
+  // Indexes for performance
+  userIdIdx: index("draft_trips_user_id_idx").on(table.userId),
+  lastSavedIdx: index("draft_trips_last_saved_idx").on(table.lastSaved),
+  currentStepIdx: index("draft_trips_current_step_idx").on(table.currentStep),
+  createdAtIdx: index("draft_trips_created_at_idx").on(table.createdAt),
+}));
+
 // Generated itineraries
 export const itineraries = pgTable("itineraries", {
   id: serial("id").primaryKey(),
@@ -263,6 +292,7 @@ export const usageEvents = pgTable("usage_events", {
 export type User = typeof users.$inferSelect;
 export type Profile = typeof profiles.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
+export type DraftTrip = typeof draftTrips.$inferSelect;
 export type Itinerary = typeof itineraries.$inferSelect;
 export type Place = typeof places.$inferSelect;
 export type PriceQuote = typeof priceQuotes.$inferSelect;

@@ -29,7 +29,8 @@
       "Bash(gh api:*)",
       "Bash(npm install:*)",
       "Bash(ANALYZE=true npm run build)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Read(\\/**)"
     ],
     "deny": [],
     "ask": []

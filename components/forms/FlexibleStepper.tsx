@@ -16,7 +16,7 @@ interface StepDefinition {
 }
 
 interface FlexibleStepperProps {
-  steps: StepDefinition[];
+  steps?: StepDefinition[];
   currentStep: string;
   completedSteps: string[];
   formData: Record<string, any>;
