@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car, Bike, Bus, MapPin as Taxi, Shield, Clock, Star, Hotel, Home, Building2, Wifi, Car as Parking, Coffee, Dumbbell, Waves } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car, Bike, Bus, MapPin as Taxi, Shield, Clock, Star, Hotel, Home, Building2, Wifi, Car as Parking, Coffee, Dumbbell, Waves, Camera, Mountain, Landmark, TreePine, Palette, Music, ShoppingBag, Heart } from 'lucide-react';
 
 // Import the sophisticated form components
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
@@ -60,6 +60,10 @@ export default function NewTripPage() {
   // Accommodation step state
   const [selectedAccommodations, setSelectedAccommodations] = useState<any[]>([]);
   const [isSearchingAccommodations, setIsSearchingAccommodations] = useState(false);
+  
+  // Activities step state
+  const [selectedActivities, setSelectedActivities] = useState<any[]>([]);
+  const [isSearchingActivities, setIsSearchingActivities] = useState(false);
   
   const [formData, setFormData] = useState<TripFormData>({
     from: null,
@@ -644,7 +648,7 @@ export default function NewTripPage() {
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-navy-100 mb-4">Local Transportation</h2>
           <p className="text-navy-300 mb-2">
-            Choose how you'll get around in {formData.to?.name || 'your destination'}
+            Choose how you&apos;ll get around in {formData.to?.name || 'your destination'}
           </p>
           <p className="text-navy-400 text-sm">
             Optional step - You can select multiple options or skip this step
@@ -798,7 +802,7 @@ export default function NewTripPage() {
             }}
             className="text-navy-400 hover:text-navy-300 transition-colors text-sm"
           >
-            Skip this step - I'll arrange local transport later
+            Skip this step - I&apos;ll arrange local transport later
           </button>
         </div>
       </div>
@@ -882,7 +886,7 @@ export default function NewTripPage() {
     return (
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-navy-100 mb-4">Where You'll Stay</h2>
+          <h2 className="text-3xl font-bold text-navy-100 mb-4">Where You&apos;ll Stay</h2>
           <p className="text-navy-300 mb-2">
             Find perfect accommodation in {formData.to?.name || 'your destination'}
           </p>
@@ -1083,20 +1087,280 @@ export default function NewTripPage() {
             }}
             className="text-navy-400 hover:text-navy-300 transition-colors text-sm"
           >
-            Skip this step - I'll book accommodation separately
+            Skip this step - I&apos;ll book accommodation separately
           </button>
         </div>
       </div>
     );
   };
 
-  const renderActivitiesStep = () => (
-    <div className="text-center py-20">
-      <h2 className="text-3xl font-bold text-navy-100 mb-4">Activities & Attractions</h2>
-      <p className="text-navy-300 mb-8">Optional: Discover things to do</p>
-      <div className="text-amber-400">🚧 Activities interface coming soon...</div>
-    </div>
-  );
+  const renderActivitiesStep = () => {
+    const handleActivitySelection = (activity: any) => {
+      const updatedActivities = selectedActivities.some(a => a.id === activity.id)
+        ? selectedActivities.filter(a => a.id !== activity.id)
+        : [...selectedActivities, activity];
+      
+      setSelectedActivities(updatedActivities);
+      setFormData(prev => ({
+        ...prev,
+        activities: updatedActivities
+      }));
+      
+      // Mark activities step as completed if any activity is selected
+      if (updatedActivities.length > 0 && !completedSteps.includes('activities')) {
+        setCompletedSteps(prev => [...prev, 'activities']);
+      }
+    };
+
+    const activityCategories = [
+      {
+        id: 'sightseeing',
+        type: 'sightseeing',
+        title: 'Sightseeing & Landmarks',
+        description: 'Visit iconic places and historic landmarks',
+        icon: Landmark,
+        estimatedCost: '₹200 - ₹2,000',
+        duration: '2-6 hours',
+        features: ['Guided Tours', 'Photo Opportunities', 'Historical Insights', 'Audio Guides'],
+        examples: ['Monuments', 'Museums', 'Palaces', 'Heritage Sites']
+      },
+      {
+        id: 'adventure',
+        type: 'adventure',
+        title: 'Adventure & Outdoor',
+        description: 'Thrilling experiences and outdoor activities',
+        icon: Mountain,
+        estimatedCost: '₹1,000 - ₹5,000',
+        duration: '3-8 hours',
+        features: ['Professional Guides', 'Safety Equipment', 'Certification', 'Group Discounts'],
+        examples: ['Trekking', 'Rock Climbing', 'Water Sports', 'Zip Lining']
+      },
+      {
+        id: 'cultural',
+        type: 'cultural',
+        title: 'Cultural & Arts',
+        description: 'Immerse yourself in local culture and arts',
+        icon: Palette,
+        estimatedCost: '₹300 - ₹1,500',
+        duration: '1-4 hours',
+        features: ['Local Artists', 'Workshops', 'Cultural Shows', 'Art Galleries'],
+        examples: ['Art Galleries', 'Cultural Shows', 'Workshops', 'Local Markets']
+      },
+      {
+        id: 'entertainment',
+        type: 'entertainment',
+        title: 'Entertainment & Shows',
+        description: 'Live performances and entertainment venues',
+        icon: Music,
+        estimatedCost: '₹500 - ₹3,000',
+        duration: '2-4 hours',
+        features: ['Reserved Seating', 'VIP Options', 'Refreshments', 'Meet & Greet'],
+        examples: ['Concerts', 'Theater Shows', 'Comedy Shows', 'Dance Performances']
+      },
+      {
+        id: 'nature',
+        type: 'nature',
+        title: 'Nature & Wildlife',
+        description: 'Connect with nature and observe wildlife',
+        icon: TreePine,
+        estimatedCost: '₹400 - ₹2,500',
+        duration: '3-8 hours',
+        features: ['Expert Naturalists', 'Wildlife Spotting', 'Photography', 'Conservation'],
+        examples: ['National Parks', 'Wildlife Safaris', 'Bird Watching', 'Nature Walks']
+      },
+      {
+        id: 'shopping',
+        type: 'shopping',
+        title: 'Shopping & Markets',
+        description: 'Explore local markets and shopping districts',
+        icon: ShoppingBag,
+        estimatedCost: '₹500 - ₹10,000',
+        duration: '2-6 hours',
+        features: ['Local Guides', 'Bargaining Tips', 'Authentic Products', 'Tax Refunds'],
+        examples: ['Local Markets', 'Shopping Malls', 'Handicrafts', 'Souvenir Shops']
+      }
+    ];
+
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-navy-100 mb-4">Things to Do & Explore</h2>
+          <p className="text-navy-300 mb-2">
+            Discover amazing activities and attractions in {formData.to?.name || 'your destination'}
+          </p>
+          <p className="text-navy-400 text-sm">
+            Optional step - Select activities that interest you or skip to continue
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {activityCategories.map((category) => {
+            const IconComponent = category.icon;
+            const isSelected = selectedActivities.some(a => a.id === category.id);
+            
+            return (
+              <motion.div
+                key={category.id}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-teal-900/30 border-teal-500/50 shadow-lg shadow-teal-500/20'
+                    : 'bg-navy-900/20 border-navy-800/30 hover:bg-navy-800/30 hover:border-navy-700/50'
+                }`}
+                onClick={() => handleActivitySelection(category)}
+              >
+                {isSelected && (
+                  <div className="absolute top-4 right-4">
+                    <CheckCircle className="w-6 h-6 text-teal-400" />
+                  </div>
+                )}
+                
+                <div className="text-center mb-4">
+                  <div className={`inline-flex p-4 rounded-2xl mb-3 ${
+                    isSelected ? 'bg-teal-500/20' : 'bg-navy-800/30'
+                  }`}>
+                    <IconComponent className={`w-8 h-8 ${
+                      isSelected ? 'text-teal-300' : 'text-navy-300'
+                    }`} />
+                  </div>
+                  <h3 className={`text-lg font-semibold mb-2 ${
+                    isSelected ? 'text-teal-100' : 'text-navy-100'
+                  }`}>
+                    {category.title}
+                  </h3>
+                  <p className={`text-sm mb-4 ${
+                    isSelected ? 'text-teal-300' : 'text-navy-300'
+                  }`}>
+                    {category.description}
+                  </p>
+                </div>
+
+                {/* Cost and Duration */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                      Cost Range:
+                    </span>
+                    <span className={`font-medium ${isSelected ? 'text-teal-200' : 'text-navy-200'}`}>
+                      {category.estimatedCost}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                      Duration:
+                    </span>
+                    <span className={`font-medium ${isSelected ? 'text-teal-200' : 'text-navy-200'}`}>
+                      {category.duration}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="mb-4">
+                  <h4 className={`text-sm font-medium mb-2 ${
+                    isSelected ? 'text-teal-200' : 'text-navy-200'
+                  }`}>
+                    What&apos;s Included:
+                  </h4>
+                  <div className="grid grid-cols-2 gap-1">
+                    {category.features.map((feature, index) => (
+                      <div key={index} className="flex items-center text-xs">
+                        <Heart className={`w-3 h-3 mr-1 ${
+                          isSelected ? 'text-teal-400' : 'text-navy-400'
+                        }`} />
+                        <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                          {feature}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Examples */}
+                <div>
+                  <h4 className={`text-sm font-medium mb-2 ${
+                    isSelected ? 'text-teal-200' : 'text-navy-200'
+                  }`}>
+                    Popular Options:
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {category.examples.slice(0, 2).map((example, index) => (
+                      <span
+                        key={index}
+                        className={`px-2 py-1 text-xs rounded-md ${
+                          isSelected 
+                            ? 'bg-teal-800/30 text-teal-300' 
+                            : 'bg-navy-800/50 text-navy-400'
+                        }`}
+                      >
+                        {example}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Selected Activities Summary */}
+        {selectedActivities.length > 0 && (
+          <div className="bg-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-teal-500/30 mb-6">
+            <h3 className="text-lg font-semibold text-teal-100 mb-4">Your Activity Interests</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {selectedActivities.map((activity, index) => {
+                const category = activityCategories.find(c => c.id === activity.id);
+                if (!category) return null;
+                
+                const IconComponent = category.icon;
+                return (
+                  <div key={index} className="flex items-center bg-teal-800/20 rounded-lg p-4">
+                    <div className="flex-shrink-0 mr-4">
+                      <div className="p-2 bg-teal-700/30 rounded-lg">
+                        <IconComponent className="w-6 h-6 text-teal-300" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-teal-100 mb-1">{category.title}</div>
+                      <div className="text-sm text-teal-300 mb-1">{category.description}</div>
+                      <div className="text-xs text-teal-400">
+                        {category.estimatedCost} • {category.duration}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            <div className="mt-6 p-4 bg-teal-800/30 rounded-lg">
+              <div className="flex items-start">
+                <Camera className="w-5 h-5 text-teal-400 mr-2 mt-0.5" />
+                <div className="text-sm text-teal-300">
+                  <strong>Planning Tips:</strong> Book popular activities in advance, especially during peak season. 
+                  Consider grouping activities by location to optimize travel time and costs.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Skip Option */}
+        <div className="text-center">
+          <button
+            onClick={() => {
+              if (!completedSteps.includes('activities')) {
+                setCompletedSteps(prev => [...prev, 'activities']);
+              }
+            }}
+            className="text-navy-400 hover:text-navy-300 transition-colors text-sm"
+          >
+            Skip this step - I&apos;ll plan activities later
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const renderDiningStep = () => (
     <div className="text-center py-20">
