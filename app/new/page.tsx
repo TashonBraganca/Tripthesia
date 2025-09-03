@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
-import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car } from 'lucide-react';
 
 // Import the sophisticated form components
 import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
@@ -14,6 +14,7 @@ import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
 import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
+import TransportSearchResults from '@/components/transport/TransportSearchResults';
 import type { LocationData } from '@/lib/data/locations';
 
 interface TripFormData {
@@ -47,6 +48,10 @@ export default function NewTripPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
+  
+  // Transport step state
+  const [selectedTransport, setSelectedTransport] = useState<any>(null);
+  const [isSearchingTransport, setIsSearchingTransport] = useState(false);
   
   const [formData, setFormData] = useState<TripFormData>({
     from: null,
@@ -379,13 +384,191 @@ export default function NewTripPage() {
     </>
   );
 
-  const renderTransportStep = () => (
-    <div className="text-center py-20">
-      <h2 className="text-3xl font-bold text-navy-100 mb-4">Transport Selection</h2>
-      <p className="text-navy-300 mb-8">Choose your transportation method</p>
-      <div className="text-amber-400">🚧 Transport selection interface coming soon...</div>
-    </div>
-  );
+  const renderTransportStep = () => {
+    const handleTransportSearch = async (searchParams: any) => {
+      if (!formData.from || !formData.to || !formData.startDate) {
+        alert('Please complete the destination step first');
+        return;
+      }
+
+      setIsSearchingTransport(true);
+      try {
+        const response = await fetch('/api/transport/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            origin: {
+              name: formData.from.name,
+              iataCode: formData.from.iataCode || ''
+            },
+            destination: {
+              name: formData.to.name,
+              iataCode: formData.to.iataCode || ''
+            },
+            departureDate: formData.startDate,
+            returnDate: formData.endDate,
+            passengers: formData.travelers,
+            tripType: formData.endDate ? 'roundtrip' : 'oneway',
+            ...searchParams
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Transport search failed');
+        }
+
+        const data = await response.json();
+        // Results will be handled by the TransportSearchResults component
+      } catch (error) {
+        console.error('Transport search error:', error);
+        alert('Failed to search for transport options. Please try again.');
+      } finally {
+        setIsSearchingTransport(false);
+      }
+    };
+
+    const handleTransportSelection = (transport: any) => {
+      setSelectedTransport(transport);
+      setFormData(prev => ({
+        ...prev,
+        transport: {
+          mode: transport.type,
+          selection: transport
+        }
+      }));
+      
+      // Mark transport step as completed
+      if (!completedSteps.includes('transport')) {
+        setCompletedSteps(prev => [...prev, 'transport']);
+      }
+    };
+
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-navy-100 mb-4">Choose Your Transportation</h2>
+          <p className="text-navy-300 mb-2">
+            Find the best way to travel from {formData.from?.name || 'your origin'} to {formData.to?.name || 'your destination'}
+          </p>
+          {formData.startDate && (
+            <p className="text-navy-400 text-sm">
+              Departure: {new Date(formData.startDate).toLocaleDateString()}
+              {formData.endDate && ` • Return: ${new Date(formData.endDate).toLocaleDateString()}`}
+            </p>
+          )}
+        </div>
+
+        {!formData.from || !formData.to || !formData.startDate ? (
+          <div className="text-center py-12 bg-navy-900/20 backdrop-blur-sm rounded-2xl border border-navy-800/30">
+            <div className="text-amber-400 mb-4">
+              <Plane className="w-12 h-12 mx-auto mb-2" />
+            </div>
+            <h3 className="text-xl font-semibold text-navy-100 mb-2">Complete Previous Steps</h3>
+            <p className="text-navy-300 mb-4">
+              Please complete the destination and dates in the previous step to search for transportation.
+            </p>
+            <button
+              onClick={() => setCurrentStep('destination')}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go to Destination Step
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Transport Mode Selection */}
+            <div className="bg-navy-900/20 backdrop-blur-sm rounded-2xl p-6 border border-navy-800/30">
+              <h3 className="text-lg font-semibold text-navy-100 mb-4">Select Transport Mode</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => handleTransportSearch({ preferredMode: 'flight' })}
+                  disabled={isSearchingTransport}
+                  className="flex items-center p-4 bg-navy-800/30 rounded-xl hover:bg-navy-700/30 transition-all border border-navy-700/20 hover:border-teal-500/30 group"
+                >
+                  <Plane className="w-6 h-6 text-teal-400 mr-3 group-hover:text-teal-300" />
+                  <div className="text-left">
+                    <div className="font-medium text-navy-100">Flights</div>
+                    <div className="text-sm text-navy-400">Fastest option</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleTransportSearch({ preferredMode: 'train' })}
+                  disabled={isSearchingTransport}
+                  className="flex items-center p-4 bg-navy-800/30 rounded-xl hover:bg-navy-700/30 transition-all border border-navy-700/20 hover:border-teal-500/30 group"
+                >
+                  <Train className="w-6 h-6 text-teal-400 mr-3 group-hover:text-teal-300" />
+                  <div className="text-left">
+                    <div className="font-medium text-navy-100">Trains</div>
+                    <div className="text-sm text-navy-400">Eco-friendly</div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => handleTransportSearch({ preferredMode: 'bus' })}
+                  disabled={isSearchingTransport}
+                  className="flex items-center p-4 bg-navy-800/30 rounded-xl hover:bg-navy-700/30 transition-all border border-navy-700/20 hover:border-teal-500/30 group"
+                >
+                  <Car className="w-6 h-6 text-teal-400 mr-3 group-hover:text-teal-300" />
+                  <div className="text-left">
+                    <div className="font-medium text-navy-100">Bus</div>
+                    <div className="text-sm text-navy-400">Budget-friendly</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Transport Search Results */}
+            <TransportSearchResults
+              searchParams={{
+                from: formData.from?.name || '',
+                to: formData.to?.name || '',
+                departureDate: formData.startDate,
+                returnDate: formData.endDate,
+                adults: formData.travelers,
+                currency: 'INR'
+              }}
+              onSelectTransport={handleTransportSelection}
+              selectedTransport={selectedTransport}
+            />
+
+            {/* Selected Transport Summary */}
+            {selectedTransport && (
+              <div className="bg-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-teal-500/30">
+                <h3 className="text-lg font-semibold text-teal-100 mb-4">Selected Transportation</h3>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {selectedTransport.type === 'flight' && <Plane className="w-5 h-5 text-teal-400 mr-2" />}
+                    {selectedTransport.type === 'train' && <Train className="w-5 h-5 text-teal-400 mr-2" />}
+                    {selectedTransport.type === 'bus' && <Car className="w-5 h-5 text-teal-400 mr-2" />}
+                    <div>
+                      <div className="font-medium text-teal-100">
+                        {selectedTransport.airline || selectedTransport.carrier || 'Transport'}
+                      </div>
+                      <div className="text-sm text-teal-300">
+                        {selectedTransport.departure} - {selectedTransport.arrival}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-teal-100">
+                      {selectedTransport.price}
+                    </div>
+                    <div className="text-sm text-teal-400">
+                      per person
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderRentalStep = () => (
     <div className="text-center py-20">
