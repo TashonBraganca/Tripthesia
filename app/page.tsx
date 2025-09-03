@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Hero } from "@/components/marketing/hero";
+import { ResumePlanning } from "@/components/marketing/resume-planning";
 import { BentoFeatures } from "@/components/marketing/bento-features";
 import { Pricing } from "@/components/marketing/pricing";
 import { Testimonials } from "@/components/marketing/testimonials";
@@ -19,6 +20,7 @@ export default function HomePage() {
         <Navbar />
         <main>
           <Hero />
+          <ResumePlanning />
           <BentoFeatures />
           <Testimonials />
           <Pricing />
