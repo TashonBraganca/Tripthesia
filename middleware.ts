@@ -23,13 +23,14 @@ const isProRoute = createRouteMatcher([
   '/api/export/advanced',
 ]);
 
-export default clerkMiddleware((auth, req) => {
+export default clerkMiddleware(async (auth, req) => {
   const path = req.nextUrl.pathname;
   
   // Allow all Clerk-related routes and static assets without interference
   if (path.startsWith('/sign-in') || path.startsWith('/sign-up') || 
       path.startsWith('/_clerk') || path.startsWith('/_next') ||
-      path.startsWith('/api/webhooks/') || path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/)) {
+      path.startsWith('/api/webhooks/') || path.startsWith('/api/health') ||
+      path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf)$/)) {
     return NextResponse.next();
   }
   
@@ -38,23 +39,30 @@ export default clerkMiddleware((auth, req) => {
     return NextResponse.next();
   }
 
-  // Enhanced error handling for protected routes
+  // Enhanced error handling for protected routes with session validation
   try {
     // Protected routes require authentication
     const protectedRoutes = ['/trips', '/new', '/upgrade', '/dashboard'];
     if (protectedRoutes.some(route => path.startsWith(route))) {
       try {
-        const { userId } = auth();
-        if (!userId) {
-          // Create more robust redirect with fallback
+        const { userId, sessionClaims } = auth();
+        
+        // Only redirect if we're absolutely sure the user is not authenticated
+        if (!userId || !sessionClaims) {
           const redirectUrl = new URL('/sign-in', req.url);
-          redirectUrl.searchParams.set('redirectTo', path);
+          redirectUrl.searchParams.set('redirect_url', path);
           return NextResponse.redirect(redirectUrl);
         }
+        
+        // Add user info to response headers for client-side use
+        const response = NextResponse.next();
+        response.headers.set('x-user-authenticated', 'true');
+        return response;
+        
       } catch (authError) {
-        console.error('Authentication error:', authError);
-        // Fallback to sign-in on auth errors
-        return NextResponse.redirect(new URL('/sign-in', req.url));
+        console.error('Authentication validation error:', authError);
+        // Don't redirect on auth errors, let the client handle it
+        return NextResponse.next();
       }
     }
 

@@ -98,13 +98,30 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
       afterSignInUrl="/trips"
       afterSignUpUrl="/trips"
       signInFallbackRedirectUrl="/trips"
       signUpFallbackRedirectUrl="/trips"
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
+      appearance={{
+        variables: {
+          colorPrimary: '#15B37D',
+          colorBackground: '#030B14',
+          colorInputBackground: '#0A2540',
+          colorInputText: '#E6F0F8',
+          colorText: '#E6F0F8'
+        }
+      }}
+      localization={{
+        signIn: {
+          start: {
+            title: 'Welcome back to Tripthesia',
+            subtitle: 'Sign in to continue planning your trips'
+          }
+        }
+      }}
     >
       <html
         lang="en"
