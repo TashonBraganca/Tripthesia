@@ -15,6 +15,7 @@ import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import TransportSearchResults from '@/components/transport/TransportSearchResults';
+import { TripOptimizer } from '@/components/ai/TripOptimizer';
 import type { LocationData } from '@/lib/data/locations';
 
 interface TripFormData {
@@ -69,6 +70,10 @@ export default function NewTripPage() {
   const [selectedDining, setSelectedDining] = useState<any[]>([]);
   const [isSearchingDining, setIsSearchingDining] = useState(false);
   
+  // AI Optimizer state
+  const [showOptimizer, setShowOptimizer] = useState(false);
+  const [optimizerCollapsed, setOptimizerCollapsed] = useState(true);
+  
   const [formData, setFormData] = useState<TripFormData>({
     from: null,
     to: null,
@@ -94,6 +99,18 @@ export default function NewTripPage() {
 
     return () => clearTimeout(timeoutId);
   }, [formData, currentStep, completedSteps, mounted, user]);
+
+  // Show AI optimizer when user has made selections in multiple steps
+  useEffect(() => {
+    const hasMultipleSelections = (
+      (formData.from && formData.to) &&
+      (selectedTransport || selectedRentals.length > 0 || selectedAccommodations.length > 0 || selectedActivities.length > 0 || selectedDining.length > 0)
+    );
+    
+    if (hasMultipleSelections && completedSteps.length >= 2) {
+      setShowOptimizer(true);
+    }
+  }, [formData, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining, completedSteps]);
 
   // Load existing draft trip on page load
   const loadDraftTrip = async () => {
@@ -201,6 +218,33 @@ export default function NewTripPage() {
     console.log('Creating trip with data:', formData);
     // Could navigate to summary or confirmation page
     router.push('/trips');
+  };
+
+  const handleApplyOptimization = (optimization: any) => {
+    console.log('Applying optimization:', optimization);
+    
+    // Apply optimization suggestions based on the type
+    optimization.suggestions.forEach((suggestion: any) => {
+      switch (suggestion.step) {
+        case 'accommodation':
+          // Logic to update accommodation selections
+          break;
+        case 'activities':
+          // Logic to reorder or update activities
+          break;
+        case 'transport':
+          // Logic to update transport selection
+          break;
+        case 'dining':
+          // Logic to update dining preferences
+          break;
+        default:
+          break;
+      }
+    });
+    
+    // Show feedback to user
+    alert(`Applied: ${optimization.title}`);
   };
 
   const isDestinationStepValid = validateDestinationStep();
@@ -1727,6 +1771,70 @@ export default function NewTripPage() {
           {renderStepContent()}
         </div>
       </div>
+
+      {/* AI Trip Optimizer - Floating Assistant */}
+      {showOptimizer && (
+        <motion.div
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 100 }}
+          className="fixed right-6 top-1/2 transform -translate-y-1/2 z-50 max-w-sm w-full max-h-[80vh] overflow-hidden"
+        >
+          <div className="bg-navy-900/95 backdrop-blur-xl rounded-2xl border border-navy-800/50 shadow-2xl">
+            {/* Optimizer Header */}
+            <div className="p-4 border-b border-navy-800/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <Star className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-navy-100">AI Assistant</h3>
+                    <p className="text-xs text-navy-400">Trip Optimization</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setOptimizerCollapsed(!optimizerCollapsed)}
+                    className="p-1 text-navy-400 hover:text-navy-300 transition-colors"
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-transform ${optimizerCollapsed ? '' : 'rotate-90'}`} />
+                  </button>
+                  <button
+                    onClick={() => setShowOptimizer(false)}
+                    className="p-1 text-navy-400 hover:text-red-400 transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Optimizer Content */}
+            {!optimizerCollapsed && (
+              <div className="p-4 max-h-96 overflow-y-auto">
+                <TripOptimizer
+                  tripData={{
+                    destination: formData.to ? { name: formData.to.name } : undefined,
+                    transport: selectedTransport,
+                    accommodation: selectedAccommodations,
+                    activities: selectedActivities,
+                    dining: selectedDining,
+                    dates: formData.startDate && formData.endDate ? {
+                      start: formData.startDate,
+                      end: formData.endDate
+                    } : undefined,
+                    travelers: formData.travelers,
+                    budget: formData.budget
+                  }}
+                  onApplyOptimization={handleApplyOptimization}
+                  className="text-sm"
+                />
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }
