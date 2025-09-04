@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Plane, Car, Hotel, MapIcon, UtensilsCrossed, Check, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Plane, Car, Hotel, MapIcon, UtensilsCrossed, Check, AlertCircle, ChevronLeft, ChevronRight, ClipboardCheck } from 'lucide-react';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 
 interface StepDefinition {
@@ -82,6 +82,14 @@ const defaultSteps: StepDefinition[] = [
     shortName: 'Eat',
     icon: UtensilsCrossed,
     description: 'Restaurants and local cuisine',
+    required: false
+  },
+  {
+    id: 'review',
+    name: 'Review & Submit',
+    shortName: 'Review',
+    icon: ClipboardCheck,
+    description: 'Review your trip and submit',
     required: false
   }
 ];

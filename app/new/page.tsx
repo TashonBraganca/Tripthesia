@@ -16,6 +16,7 @@ import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import TransportSearchResults from '@/components/transport/TransportSearchResults';
 import { TripOptimizer } from '@/components/ai/TripOptimizer';
+import { TripReview } from '@/components/trip/TripReview';
 import type { LocationData } from '@/lib/data/locations';
 
 interface TripFormData {
@@ -189,7 +190,7 @@ export default function NewTripPage() {
   };
 
   const handleNext = () => {
-    const stepOrder = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'dining'];
+    const stepOrder = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'dining', 'review'];
     const currentIndex = stepOrder.indexOf(currentStep);
     
     // Mark current step as completed if valid
@@ -205,7 +206,7 @@ export default function NewTripPage() {
   };
 
   const handlePrevious = () => {
-    const stepOrder = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'dining'];
+    const stepOrder = ['destination', 'transport', 'rental', 'accommodation', 'activities', 'dining', 'review'];
     const currentIndex = stepOrder.indexOf(currentStep);
     
     if (currentIndex > 0) {
@@ -213,11 +214,57 @@ export default function NewTripPage() {
     }
   };
 
-  const handleSubmit = () => {
-    // Complete trip creation process
-    console.log('Creating trip with data:', formData);
-    // Could navigate to summary or confirmation page
-    router.push('/trips');
+  const handleSubmit = async () => {
+    if (!user || !formData.from || !formData.to) {
+      alert('Missing required trip information');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: `Trip to ${formData.to.name} from ${formData.from.name}`,
+          destination: formData.to.name,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          travelers: formData.travelers,
+          budget: formData.budget,
+          tripType: formData.tripType,
+          formData: formData,
+          selections: {
+            transport: selectedTransport,
+            rentals: selectedRentals,
+            accommodations: selectedAccommodations,
+            activities: selectedActivities,
+            dining: selectedDining
+          },
+          status: 'planned'
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Clean up draft if it exists
+        if (draftId) {
+          await fetch(`/api/trips/draft?id=${draftId}`, {
+            method: 'DELETE'
+          });
+        }
+        
+        // Navigate to trip details or trips list
+        router.push(`/trips`);
+      } else {
+        throw new Error('Failed to create trip');
+      }
+    } catch (error) {
+      console.error('Error creating trip:', error);
+      alert('Failed to create trip. Please try again.');
+    }
   };
 
   const handleApplyOptimization = (optimization: any) => {
@@ -265,6 +312,8 @@ export default function NewTripPage() {
         return renderActivitiesStep();
       case 'dining':
         return renderDiningStep();
+      case 'review':
+        return renderReviewStep();
       default:
         return renderDestinationStep();
     }
@@ -1689,6 +1738,30 @@ export default function NewTripPage() {
           </button>
         </div>
       </div>
+    );
+  };
+
+  const renderReviewStep = () => {
+    return (
+      <TripReview
+        tripData={{
+          from: formData.from ? { name: formData.from.name } : undefined,
+          to: formData.to ? { name: formData.to.name } : undefined,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          travelers: formData.travelers,
+          budget: formData.budget,
+          tripType: formData.tripType,
+          transport: selectedTransport,
+          rental: selectedRentals,
+          accommodation: selectedAccommodations,
+          activities: selectedActivities,
+          dining: selectedDining
+        }}
+        completedSteps={completedSteps}
+        onEdit={handleStepChange}
+        onSubmit={handleSubmit}
+      />
     );
   };
 
