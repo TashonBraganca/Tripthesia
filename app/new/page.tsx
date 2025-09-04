@@ -128,6 +128,25 @@ export default function NewTripPage() {
           setCurrentStep(draft.currentStep);
           setCompletedSteps(draft.completedSteps);
           setLastSaved(new Date(draft.lastSaved));
+          
+          // Restore step selections if they exist
+          if (draft.stepData) {
+            if (draft.stepData.selectedTransport) {
+              setSelectedTransport(draft.stepData.selectedTransport);
+            }
+            if (draft.stepData.selectedRentals) {
+              setSelectedRentals(draft.stepData.selectedRentals);
+            }
+            if (draft.stepData.selectedAccommodations) {
+              setSelectedAccommodations(draft.stepData.selectedAccommodations);
+            }
+            if (draft.stepData.selectedActivities) {
+              setSelectedActivities(draft.stepData.selectedActivities);
+            }
+            if (draft.stepData.selectedDining) {
+              setSelectedDining(draft.stepData.selectedDining);
+            }
+          }
         }
       }
     } catch (error) {
@@ -151,7 +170,13 @@ export default function NewTripPage() {
           currentStep,
           completedSteps,
           formData,
-          stepData: {}, // Can be expanded later for step-specific data
+          stepData: {
+            selectedTransport,
+            selectedRentals,
+            selectedAccommodations,
+            selectedActivities,
+            selectedDining
+          },
           title: formData.from && formData.to ? 
             `Trip to ${formData.to.name} from ${formData.from.name}` : 
             'Untitled Trip'
@@ -339,13 +364,13 @@ export default function NewTripPage() {
       </motion.div>
 
       {/* Bento Grid Layout for Destination Step */}
-      <div className="grid grid-cols-12 grid-rows-6 gap-6 h-[800px]">
+      <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-4 gap-6 md:h-[700px]">
         {/* From Location */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="col-span-12 md:col-span-6 md:col-start-1 row-span-1 row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-teal-500/10 to-teal-400/5 relative"
+          className="col-span-1 md:col-span-6 md:col-start-1 md:row-span-1 md:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-teal-500/10 to-teal-400/5 relative"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-teal-500/20 rounded-lg">
@@ -367,7 +392,7 @@ export default function NewTripPage() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="col-span-12 md:col-span-6 md:col-start-7 row-span-1 row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-400/5 relative"
+          className="col-span-1 md:col-span-6 md:col-start-7 md:row-span-1 md:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-400/5 relative"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-emerald-500/20 rounded-lg">
@@ -389,7 +414,7 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="col-span-12 md:col-span-7 md:col-start-1 row-span-1 row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-purple-500/10 to-purple-400/5 relative"
+          className="col-span-1 md:col-span-7 md:col-start-1 md:row-span-1 md:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-purple-500/10 to-purple-400/5 relative"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-purple-500/20 rounded-lg">
@@ -416,7 +441,7 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="col-span-12 md:col-span-5 md:col-start-8 row-span-1 row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-amber-500/10 to-amber-400/5 relative"
+          className="col-span-1 md:col-span-5 md:col-start-8 md:row-span-1 md:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-amber-500/10 to-amber-400/5 relative"
         >
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-amber-500/20 rounded-lg">
@@ -474,7 +499,7 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="col-span-12 col-start-1 row-span-3 row-start-3 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-indigo-500/10 to-indigo-400/5 relative"
+          className="col-span-1 md:col-span-12 md:col-start-1 md:row-span-2 md:row-start-3 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-indigo-500/10 to-indigo-400/5 relative"
         >
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-indigo-500/20 rounded-lg">

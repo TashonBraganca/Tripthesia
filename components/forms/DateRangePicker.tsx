@@ -269,7 +269,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 mt-2 z-[999999]"
+            className="absolute top-full left-0 right-0 mt-2 z-50"
           >
             <InteractiveCard
               variant="glass"
