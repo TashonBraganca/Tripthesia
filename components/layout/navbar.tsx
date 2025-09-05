@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
 import { useUser, useClerk } from "@clerk/nextjs"
 import { motion, AnimatePresence } from "framer-motion"
+import { useKeyboardHandler } from "@/lib/accessibility/hooks"
 
 const navigation = [
   { name: "Trips", href: "/trips" },
@@ -18,6 +19,8 @@ export function Navbar() {
   const { user, isLoaded } = useUser()
   const { signOut } = useClerk()
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const { handleKeyDown } = useKeyboardHandler()
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -32,6 +35,25 @@ export function Navbar() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  // Keyboard navigation for menus
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        if (userMenuOpen) {
+          setUserMenuOpen(false)
+        }
+        if (mobileMenuOpen) {
+          setMobileMenuOpen(false)
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleGlobalKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown)
+    }
+  }, [userMenuOpen, mobileMenuOpen])
 
   return (
     <header className="fixed top-0 w-full z-50 bg-navy-900/80 backdrop-blur-md border-b border-navy-400/20">
@@ -49,8 +71,14 @@ export function Navbar() {
         <div className="flex lg:hidden">
           <button
             type="button"
-            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-navy-200 hover:text-navy-50"
+            className="-m-2.5 inline-flex items-center justify-center rounded-md p-2.5 text-navy-200 hover:text-navy-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-navy-900"
             onClick={() => setMobileMenuOpen(true)}
+            onKeyDown={(e) => handleKeyDown(e, {
+              onEnter: () => setMobileMenuOpen(true),
+              onSpace: () => setMobileMenuOpen(true)
+            })}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
             <span className="sr-only">Open main menu</span>
             <Menu className="h-6 w-6" aria-hidden="true" />
@@ -71,8 +99,17 @@ export function Navbar() {
           {isLoaded && user ? (
             <div className="relative" ref={userMenuRef}>
               <button
+                id="user-menu-button"
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 px-4 py-2 bg-navy-800/50 hover:bg-navy-700/50 border border-navy-400/30 hover:border-teal-400/50 rounded-lg transition-all duration-200"
+                onKeyDown={(e) => handleKeyDown(e, {
+                  onEnter: () => setUserMenuOpen(!userMenuOpen),
+                  onSpace: () => setUserMenuOpen(!userMenuOpen),
+                  onEscape: () => setUserMenuOpen(false)
+                })}
+                className="flex items-center gap-3 px-4 py-2 bg-navy-800/50 hover:bg-navy-700/50 border border-navy-400/30 hover:border-teal-400/50 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-navy-900"
+                aria-expanded={userMenuOpen}
+                aria-controls="user-menu"
+                aria-haspopup="menu"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-teal-500 to-teal-400 flex items-center justify-center">
                   <User className="w-4 h-4 text-navy-900" />
@@ -85,16 +122,22 @@ export function Navbar() {
               <AnimatePresence>
                 {userMenuOpen && (
                   <motion.div
+                    id="user-menu"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute right-0 mt-2 w-48 bg-navy-800/90 backdrop-blur-md border border-navy-400/30 rounded-lg shadow-xl z-50"
+                    role="menu"
+                    aria-orientation="vertical"
+                    aria-labelledby="user-menu-button"
                   >
                     <div className="py-2">
                       <Link
                         href="/trips"
-                        className="block px-4 py-2 text-sm text-navy-200 hover:bg-navy-700/50 hover:text-teal-400 transition-colors"
+                        className="block px-4 py-2 text-sm text-navy-200 hover:bg-navy-700/50 hover:text-teal-400 transition-colors focus:outline-none focus:bg-navy-700/50 focus:text-teal-400"
                         onClick={() => setUserMenuOpen(false)}
+                        role="menuitem"
+                        tabIndex={-1}
                       >
                         My Trips
                       </Link>
@@ -103,7 +146,15 @@ export function Navbar() {
                           signOut({ redirectUrl: '/' });
                           setUserMenuOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-navy-700/50 transition-colors flex items-center gap-2"
+                        onKeyDown={(e) => handleKeyDown(e, {
+                          onEnter: () => {
+                            signOut({ redirectUrl: '/' });
+                            setUserMenuOpen(false);
+                          }
+                        })}
+                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-navy-700/50 transition-colors flex items-center gap-2 focus:outline-none focus:bg-navy-700/50"
+                        role="menuitem"
+                        tabIndex={-1}
                       >
                         <LogOut className="w-4 h-4" />
                         Sign Out
@@ -128,8 +179,15 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden">
-          <div className="fixed inset-0 z-10" />
-          <div className="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-navy-900/95 backdrop-blur-md px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-navy-400/20">
+          <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)} />
+          <div 
+            id="mobile-menu"
+            ref={mobileMenuRef}
+            className="fixed inset-y-0 right-0 z-10 w-full overflow-y-auto bg-navy-900/95 backdrop-blur-md px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-navy-400/20"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation menu"
+          >
             <div className="flex items-center justify-between">
               <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
                 <MapPin className="h-8 w-8 text-teal-500 dark:text-teal-400" />
@@ -137,8 +195,14 @@ export function Navbar() {
               </Link>
               <button
                 type="button"
-                className="-m-2.5 rounded-md p-2.5 text-navy-200 hover:text-navy-50"
+                className="-m-2.5 rounded-md p-2.5 text-navy-200 hover:text-navy-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-navy-900"
                 onClick={() => setMobileMenuOpen(false)}
+                onKeyDown={(e) => handleKeyDown(e, {
+                  onEnter: () => setMobileMenuOpen(false),
+                  onSpace: () => setMobileMenuOpen(false),
+                  onEscape: () => setMobileMenuOpen(false)
+                })}
+                aria-label="Close mobile menu"
               >
                 <span className="sr-only">Close menu</span>
                 <X className="h-6 w-6" aria-hidden="true" />
