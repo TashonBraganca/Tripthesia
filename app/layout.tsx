@@ -10,6 +10,7 @@ import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
 import { AccessibilityTester } from "@/components/accessibility/AccessibilityTester";
 import { SkipLink } from "@/components/accessibility/SkipLink";
 import { ColorContrastTester } from "@/components/accessibility/ColorContrastTester";
+import { GlobalLiveRegions, RouteAnnouncer } from "@/components/accessibility/LiveRegions";
 import { generateMetadata as generateSEOMetadata, generateStructuredData } from "@/lib/seo/meta-generator";
 
 import "./globals.css";
@@ -130,6 +131,8 @@ export default function RootLayout({
                 <PerformanceMonitor />
                 <AccessibilityTester />
                 <ColorContrastTester />
+                <GlobalLiveRegions />
+                <RouteAnnouncer />
                 
                 <div className="relative flex min-h-screen flex-col">
                   <main id="main-content">
