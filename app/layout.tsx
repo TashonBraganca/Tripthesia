@@ -9,6 +9,7 @@ import { ErrorTrackingInit } from "@/components/monitoring/ErrorTrackingInit";
 import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
 import { AccessibilityTester } from "@/components/accessibility/AccessibilityTester";
 import { SkipLink } from "@/components/accessibility/SkipLink";
+import { ColorContrastTester } from "@/components/accessibility/ColorContrastTester";
 import { generateMetadata as generateSEOMetadata, generateStructuredData } from "@/lib/seo/meta-generator";
 
 import "./globals.css";
@@ -128,6 +129,7 @@ export default function RootLayout({
                 <ErrorTrackingInit />
                 <PerformanceMonitor />
                 <AccessibilityTester />
+                <ColorContrastTester />
                 
                 <div className="relative flex min-h-screen flex-col">
                   <main id="main-content">
