@@ -35,7 +35,11 @@ export function Navbar() {
 
   return (
     <header className="fixed top-0 w-full z-50 bg-navy-900/80 backdrop-blur-md border-b border-navy-400/20">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" aria-label="Global">
+      <nav 
+        id="main-navigation"
+        className="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8" 
+        aria-label="Main navigation"
+      >
         <div className="flex lg:flex-1">
           <Link href="/" className="-m-1.5 p-1.5 flex items-center gap-2">
             <MapPin className="h-8 w-8 text-teal-500 dark:text-teal-400" />

@@ -14,7 +14,7 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html>
+    <html lang="en">
       <body>
         <div style={{ 
           minHeight: '100vh', 
@@ -96,6 +96,7 @@ export default function GlobalError({
                     fontWeight: 'bold',
                     fontSize: '1rem'
                   }}
+                  aria-label="Retry loading the application"
                 >
                   🔄 Retry
                 </button>

@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { ProductionErrorBoundary } from "@/components/error-boundary/ProductionErrorBoundary";
 import { ErrorTrackingInit } from "@/components/monitoring/ErrorTrackingInit";
 import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
+import { AccessibilityTester } from "@/components/accessibility/AccessibilityTester";
+import { SkipLink } from "@/components/accessibility/SkipLink";
 import { generateMetadata as generateSEOMetadata, generateStructuredData } from "@/lib/seo/meta-generator";
 
 import "./globals.css";
@@ -112,6 +114,9 @@ export default function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-background font-sans antialiased">
+          <SkipLink targetId="main-content">Skip to main content</SkipLink>
+          <SkipLink targetId="main-navigation">Skip to navigation</SkipLink>
+          
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
@@ -122,8 +127,12 @@ export default function RootLayout({
               <ProductionErrorBoundary showReportButton={true}>
                 <ErrorTrackingInit />
                 <PerformanceMonitor />
+                <AccessibilityTester />
+                
                 <div className="relative flex min-h-screen flex-col">
-                  {children}
+                  <main id="main-content">
+                    {children}
+                  </main>
                 </div>
               </ProductionErrorBoundary>
               <Toaster />
