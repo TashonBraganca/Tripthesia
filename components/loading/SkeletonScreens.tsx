@@ -264,9 +264,11 @@ export const TransportSkeletonScreen: React.FC = () => {
   );
 };
 
-export default {
+const SkeletonScreens = {
   CurrencySkeletonScreen,
   LocationSkeletonScreen,
   TripFormSkeletonScreen,
   TransportSkeletonScreen
 };
+
+export default SkeletonScreens;

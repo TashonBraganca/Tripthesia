@@ -216,7 +216,7 @@ Please describe what you were doing when this error occurred:
                 Oops! Something went wrong
               </h1>
               <p className="text-navy-300 text-sm mb-1">
-                We encountered an unexpected error. Don't worry, we've been notified and are working on a fix.
+                We encountered an unexpected error. Don&apos;t worry, we&apos;ve been notified and are working on a fix.
               </p>
               <p className="text-navy-400 text-xs font-mono">
                 Error ID: {this.state.errorId}
@@ -355,7 +355,7 @@ export function APIErrorBoundary({ children }: { children: ReactNode }) {
             <h3 className="text-red-300 font-medium">API Error</h3>
           </div>
           <p className="text-red-200 text-sm mb-4">
-            We're having trouble connecting to our services. Please try again in a moment.
+            We&apos;re having trouble connecting to our services. Please try again in a moment.
           </p>
           <AnimatedButton
             onClick={() => window.location.reload()}

@@ -168,16 +168,14 @@ export function SmartLoading({
   const [showTimeout, setShowTimeout] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
-  // Get appropriate messages
-  const messages = customMessage 
-    ? [customMessage]
-    : (LOADING_MESSAGES[loadingType] as any)?.[context] || (LOADING_MESSAGES[loadingType] as any)?.general || ['Loading...'];
-  
-  const tips = (LOADING_TIPS as any)[context] || LOADING_TIPS.general;
-
   // Cycle through messages
   useEffect(() => {
     if (!isLoading) return;
+
+    // Get appropriate messages inside useEffect to avoid dependency issues
+    const messages = customMessage 
+      ? [customMessage]
+      : (LOADING_MESSAGES[loadingType] as any)?.[context] || (LOADING_MESSAGES[loadingType] as any)?.general || ['Loading...'];
 
     let messageIndex = 0;
     setCurrentMessage(messages[0]);
@@ -188,11 +186,14 @@ export function SmartLoading({
     }, 3000);
 
     return () => clearInterval(messageInterval);
-  }, [isLoading, messages]);
+  }, [isLoading, customMessage, loadingType, context]);
 
   // Cycle through tips
   useEffect(() => {
     if (!isLoading || !showTips) return;
+
+    // Get appropriate tips inside useEffect to avoid dependency issues
+    const tips = (LOADING_TIPS as any)[context] || LOADING_TIPS.general;
 
     let tipIndex = 0;
     setCurrentTip(tips[0]);
@@ -203,7 +204,7 @@ export function SmartLoading({
     }, 5000);
 
     return () => clearInterval(tipInterval);
-  }, [isLoading, showTips, tips]);
+  }, [isLoading, showTips, context]);
 
   // Track elapsed time
   useEffect(() => {
