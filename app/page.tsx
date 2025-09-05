@@ -18,7 +18,7 @@ export default function HomePage() {
     return (
       <>
         <Navbar />
-        <main>
+        <main id="main-content" role="main" aria-label="Homepage content">
           <Hero />
           <ResumePlanning />
           <BentoFeatures />

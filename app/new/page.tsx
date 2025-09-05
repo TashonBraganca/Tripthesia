@@ -1829,7 +1829,7 @@ export default function NewTripPage() {
       />
 
       {/* Header */}
-      <div className="relative z-10 p-6">
+      <header className="relative z-10 p-6" role="banner">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <Link 
@@ -1884,14 +1884,14 @@ export default function NewTripPage() {
             className="mb-8"
           />
         </div>
-      </div>
+      </header>
 
       {/* Main Content - Dynamic Step Content */}
-      <div className="relative z-10 px-6 pb-8">
+      <main id="main-content" role="main" className="relative z-10 px-6 pb-8" aria-label="Trip planning form">
         <div className="max-w-7xl mx-auto">
           {renderStepContent()}
         </div>
-      </div>
+      </main>
 
       {/* AI Trip Optimizer - Floating Assistant */}
       {showOptimizer && (
