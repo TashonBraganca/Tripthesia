@@ -134,7 +134,7 @@ export default function AIAssistantPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -159,12 +159,12 @@ export default function AIAssistantPage() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - AI Tools */}
-          <div className="lg:col-span-1">
+          <aside className="lg:col-span-1" role="complementary" aria-label="AI tool selection">
             <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Tools</h2>
               
@@ -308,10 +308,10 @@ export default function AIAssistantPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
 
           {/* Main Content */}
-          <div className="lg:col-span-3">
+          <main id="main-content" role="main" className="lg:col-span-3" aria-label="AI assistant interface">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTool}
@@ -457,7 +457,7 @@ export default function AIAssistantPage() {
                 </div>
               </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </div>
