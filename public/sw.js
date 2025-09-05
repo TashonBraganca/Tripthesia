@@ -1,7 +1,8 @@
-// Tripthesia Service Worker for Enhanced Caching
-const CACHE_NAME = 'tripthesia-v1';
-const STATIC_CACHE = 'tripthesia-static-v1';
-const DYNAMIC_CACHE = 'tripthesia-dynamic-v1';
+// Tripthesia Service Worker for Enhanced Caching - Phase 7 Production Excellence
+const CACHE_NAME = 'tripthesia-v1.2.0';
+const STATIC_CACHE = 'tripthesia-static-v1.2.0';
+const DYNAMIC_CACHE = 'tripthesia-dynamic-v1.2.0';
+const API_CACHE = 'tripthesia-api-v1.2.0';
 
 // Assets to cache on install
 const STATIC_ASSETS = [
@@ -13,21 +14,27 @@ const STATIC_ASSETS = [
   '/manifest.json'
 ];
 
-// API endpoints to cache
+// API endpoints to cache with enhanced draft trip support
 const CACHEABLE_APIS = [
   '/api/currency/rates',
   '/api/currency/convert',
   '/api/health',
   '/api/flights/search',
-  '/api/transport/search'
+  '/api/transport/search',
+  '/api/trips/draft',
+  '/api/ai/suggestions',
+  '/api/ai/route-planning'
 ];
 
-// Enhanced API caching with different TTL strategies
+// Enhanced API caching with different TTL strategies - Phase 7 optimization
 const API_CACHE_CONFIG = {
   '/api/currency/rates': { ttl: 4 * 60 * 60 * 1000, priority: 'high' }, // 4 hours
   '/api/currency/convert': { ttl: 4 * 60 * 60 * 1000, priority: 'high' }, // 4 hours
   '/api/flights/search': { ttl: 2 * 60 * 60 * 1000, priority: 'medium' }, // 2 hours
   '/api/transport/search': { ttl: 2 * 60 * 60 * 1000, priority: 'medium' }, // 2 hours
+  '/api/trips/draft': { ttl: 24 * 60 * 60 * 1000, priority: 'critical' }, // 24 hours - critical for resumption
+  '/api/ai/suggestions': { ttl: 6 * 60 * 60 * 1000, priority: 'medium' }, // 6 hours
+  '/api/ai/route-planning': { ttl: 6 * 60 * 60 * 1000, priority: 'medium' }, // 6 hours
   '/api/health': { ttl: 5 * 60 * 1000, priority: 'low' }, // 5 minutes
 };
 

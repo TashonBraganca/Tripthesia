@@ -7,16 +7,39 @@ import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { ArrowLeft, Plane, MapPin, Calendar, Users, ChevronRight, Save, CheckCircle, Train, Car, Bike, Bus, MapPin as Taxi, Shield, Clock, Star, Hotel, Home, Building2, Wifi, Car as Parking, Coffee, Dumbbell, Waves, Camera, Mountain, Landmark, TreePine, Palette, Music, ShoppingBag, Heart, UtensilsCrossed, ChefHat, Soup, Fish, Pizza, Salad } from 'lucide-react';
 
-// Import the sophisticated form components
-import { LocationAutocomplete } from '@/components/forms/LocationAutocomplete';
-import { DateRangePicker } from '@/components/forms/DateRangePicker';
-import { TripTypeSelector } from '@/components/forms/TripTypeSelector';
+// Import essential components synchronously
 import { FlexibleStepper } from '@/components/forms/FlexibleStepper';
 import { TopographicalGrid } from '@/components/backgrounds/TopographicalGrid';
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
-import TransportSearchResults from '@/components/transport/TransportSearchResults';
-import { TripOptimizer } from '@/components/ai/TripOptimizer';
-import { TripReview } from '@/components/trip/TripReview';
+
+// Lazy load heavy components for better performance
+import dynamic from 'next/dynamic';
+
+const LocationAutocomplete = dynamic(() => import('@/components/forms/LocationAutocomplete').then(mod => ({ default: mod.LocationAutocomplete })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-16 w-full" />,
+  ssr: false
+});
+
+const DateRangePicker = dynamic(() => import('@/components/forms/DateRangePicker').then(mod => ({ default: mod.DateRangePicker })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-16 w-full" />,
+  ssr: false
+});
+
+const TripTypeSelector = dynamic(() => import('@/components/forms/TripTypeSelector').then(mod => ({ default: mod.TripTypeSelector })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-2xl h-32 w-full" />
+});
+
+const TransportSearchResults = dynamic(() => import('@/components/transport/TransportSearchResults'), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-96 w-full" />
+});
+
+const TripOptimizer = dynamic(() => import('@/components/ai/TripOptimizer').then(mod => ({ default: mod.TripOptimizer })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-2xl h-80 w-full max-w-sm" />
+});
+
+const TripReview = dynamic(() => import('@/components/trip/TripReview').then(mod => ({ default: mod.TripReview })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-64 w-full" />
+});
 import type { LocationData } from '@/lib/data/locations';
 
 interface TripFormData {

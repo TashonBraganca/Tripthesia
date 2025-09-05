@@ -14,10 +14,19 @@ const ErrorContextSchema = z.object({
 });
 
 const ErrorReportSchema = z.object({
-  id: z.string(),
-  message: z.string(),
+  id: z.string().optional(),
+  error: z.string(),
+  message: z.string().optional(), 
   stack: z.string().optional(),
-  context: ErrorContextSchema,
+  componentStack: z.string().optional(),
+  errorId: z.string(),
+  timestamp: z.string(),
+  userAgent: z.string().optional(),
+  url: z.string().optional(),
+  userId: z.string().optional(),
+  type: z.string().optional(),
+  severity: z.string().optional(),
+  context: ErrorContextSchema.optional(),
   fingerprint: z.string(),
   occurrenceCount: z.number(),
   firstOccurred: z.string(),
@@ -62,7 +71,7 @@ export async function POST(request: NextRequest) {
         ? existingError.occurrenceCount 
         : error.occurrenceCount;
 
-      if (shouldAlert(error.context.severity, totalOccurrences)) {
+      if (error.context && shouldAlert(error.context.severity, totalOccurrences)) {
         await sendAlert(error, totalOccurrences);
       }
 

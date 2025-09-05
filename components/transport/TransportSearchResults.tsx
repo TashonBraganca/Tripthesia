@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Train, Car, Clock, MapPin, Star, ArrowRight, Filter, SlidersHorizontal, ExternalLink } from 'lucide-react';
+import { FlightSearchLoading } from '@/components/loading/SmartLoadingStates';
 
 interface TransportOption {
   id: string;
@@ -325,27 +326,12 @@ export default function TransportSearchResults({
 
   if (loading) {
     return (
-      <motion.div 
-        className="flex items-center justify-center py-12"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <div className="text-center">
-          <motion.div
-            className="inline-block w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          <motion.p 
-            className="text-gray-600 mt-4"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            Searching flights, trains, and buses...
-          </motion.p>
-        </div>
-      </motion.div>
+      <FlightSearchLoading 
+        isLoading={true}
+        variant="inline"
+        estimatedTime={12000}
+        customMessage="Searching flights, trains, and buses across multiple providers..."
+      />
     );
   }
 
