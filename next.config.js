@@ -38,7 +38,7 @@ const nextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Webpack configuration for better build stability
+  // Webpack configuration for better build stability and advanced code splitting
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     // Handle potential build issues
     config.resolve.fallback = {
@@ -48,20 +48,88 @@ const nextConfig = {
       tls: false,
     }
     
-    // Optimize bundle
+    // Advanced bundle optimization for production
     if (!dev && !isServer) {
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        default: false,
-        vendors: false,
-        framework: {
-          chunks: 'all',
-          name: 'framework',
-          test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-          priority: 40,
-          enforce: true,
-        },
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        minSize: 20000,
+        maxSize: 250000,
+        cacheGroups: {
+          // React framework chunk
+          framework: {
+            chunks: 'all',
+            name: 'framework',
+            test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          // AI components chunk (heavy components)
+          ai: {
+            chunks: 'all',
+            name: 'ai-components',
+            test: /[\\/]components[\\/]ai[\\/]/,
+            priority: 30,
+            enforce: true,
+          },
+          // Planning components chunk
+          planning: {
+            chunks: 'all',
+            name: 'planning-components', 
+            test: /[\\/]components[\\/]planning[\\/]/,
+            priority: 30,
+            enforce: true,
+          },
+          // Forms chunk
+          forms: {
+            chunks: 'all',
+            name: 'forms',
+            test: /[\\/]components[\\/]forms[\\/]/,
+            priority: 25,
+            minChunks: 2,
+          },
+          // Third-party libraries
+          lib: {
+            chunks: 'all',
+            name: 'lib',
+            test: /[\\/]node_modules[\\/](?!(react|react-dom|scheduler|prop-types|use-subscription)[\\/])/,
+            priority: 20,
+            minChunks: 1,
+            reuseExistingChunk: true,
+          },
+          // Maps and location services
+          maps: {
+            chunks: 'all',
+            name: 'maps-services',
+            test: /[\\/]node_modules[\\/](@googlemaps|@google|mapbox|leaflet)[\\/]/,
+            priority: 35,
+            enforce: true,
+          },
+          // Animation libraries
+          animations: {
+            chunks: 'all', 
+            name: 'animations',
+            test: /[\\/]node_modules[\\/](framer-motion|@radix-ui|lucide-react)[\\/]/,
+            priority: 25,
+            minChunks: 2,
+          },
+          // Default group
+          default: {
+            chunks: 'all',
+            name: 'common',
+            priority: 10,
+            minChunks: 2,
+            reuseExistingChunk: true,
+          }
+        }
       }
+
+      // Add module concatenation for better performance
+      config.optimization.concatenateModules = true;
+      
+      // Tree shaking optimization
+      config.optimization.usedExports = true;
+      config.optimization.providedExports = true;
+      config.optimization.sideEffects = false;
     }
     
     return config

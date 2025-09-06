@@ -21,7 +21,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "accessibility:test": "node scripts/accessibility-test.js",
-    "accessibility:audit": "npm run accessibility:test"
+    "accessibility:audit": "npm run accessibility:test",
+    "analyze": "ANALYZE=true npm run build",
+    "analyze:server": "BUNDLE_ANALYZE=server npm run build",
+    "analyze:browser": "BUNDLE_ANALYZE=browser npm run build"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.0",
