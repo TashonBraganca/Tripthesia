@@ -108,34 +108,6 @@ export default function NewTripPage() {
     budget: 50000
   });
 
-  useEffect(() => {
-    setMounted(true);
-    loadDraftTrip();
-  }, [loadDraftTrip]);
-
-  // Auto-save functionality with debouncing
-  useEffect(() => {
-    if (!mounted || !user) return;
-
-    const timeoutId = setTimeout(() => {
-      saveDraftTrip();
-    }, 2000); // Save after 2 seconds of inactivity
-
-    return () => clearTimeout(timeoutId);
-  }, [formData, currentStep, completedSteps, mounted, user, saveDraftTrip]);
-
-  // Show AI optimizer when user has made selections in multiple steps
-  useEffect(() => {
-    const hasMultipleSelections = (
-      (formData.from && formData.to) &&
-      (selectedTransport || selectedRentals.length > 0 || selectedAccommodations.length > 0 || selectedActivities.length > 0 || selectedDining.length > 0)
-    );
-    
-    if (hasMultipleSelections && completedSteps.length >= 2) {
-      setShowOptimizer(true);
-    }
-  }, [formData, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining, completedSteps]);
-
   // Load existing draft trip on page load
   const loadDraftTrip = useCallback(async () => {
     if (!user) return;
@@ -222,6 +194,34 @@ export default function NewTripPage() {
       setSaveStatus('error');
     }
   }, [user, formData, currentStep, completedSteps, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining]);
+
+  useEffect(() => {
+    setMounted(true);
+    loadDraftTrip();
+  }, [loadDraftTrip]);
+
+  // Auto-save functionality with debouncing
+  useEffect(() => {
+    if (!mounted || !user) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraftTrip();
+    }, 2000); // Save after 2 seconds of inactivity
+
+    return () => clearTimeout(timeoutId);
+  }, [formData, currentStep, completedSteps, mounted, user, saveDraftTrip]);
+
+  // Show AI optimizer when user has made selections in multiple steps
+  useEffect(() => {
+    const hasMultipleSelections = (
+      (formData.from && formData.to) &&
+      (selectedTransport || selectedRentals.length > 0 || selectedAccommodations.length > 0 || selectedActivities.length > 0 || selectedDining.length > 0)
+    );
+    
+    if (hasMultipleSelections && completedSteps.length >= 2) {
+      setShowOptimizer(true);
+    }
+  }, [formData, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining, completedSteps]);
 
   // Step validation functions
   const validateDestinationStep = (): boolean => {
