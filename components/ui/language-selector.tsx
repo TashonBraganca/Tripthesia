@@ -87,6 +87,15 @@ export function LanguageSelector({
               <div
                 className="fixed inset-0 z-10"
                 onClick={() => setIsOpen(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsOpen(false);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Close language selector"
               />
 
               {/* Dropdown */}

@@ -242,10 +242,11 @@ export default function TimeSlotManager({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Start Time */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="start-time-select" className="block text-sm font-medium text-gray-700">
             Start Time
           </label>
           <select
+            id="start-time-select"
             value={timeSlot.start}
             onChange={(e) => handleStartTimeChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -265,10 +266,11 @@ export default function TimeSlotManager({
 
         {/* End Time */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="end-time-select" className="block text-sm font-medium text-gray-700">
             End Time
           </label>
           <select
+            id="end-time-select"
             value={timeSlot.end}
             onChange={(e) => handleEndTimeChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -296,11 +298,12 @@ export default function TimeSlotManager({
 
         {/* Duration Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="duration-input" className="block text-sm font-medium text-gray-700">
             Or set duration directly (minutes):
           </label>
           <div className="flex items-center space-x-2">
             <input
+              id="duration-input"
               type="number"
               value={timeSlot.duration}
               onChange={(e) => handleDurationChange(parseInt(e.target.value) || 0)}
@@ -314,10 +317,10 @@ export default function TimeSlotManager({
         </div>
 
         {/* Duration Presets */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
+        <fieldset className="space-y-2">
+          <legend className="block text-sm font-medium text-gray-700">
             Quick presets:
-          </label>
+          </legend>
           <div className="flex flex-wrap gap-2">
             {durationPresets.map((preset) => (
               <motion.button
@@ -335,7 +338,7 @@ export default function TimeSlotManager({
               </motion.button>
             ))}
           </div>
-        </div>
+        </fieldset>
       </div>
 
       {/* Conflicts Display */}

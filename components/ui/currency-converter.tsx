@@ -121,12 +121,13 @@ export function CurrencyConverter({
       <div className="space-y-4">
         {/* From Currency */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-contrast-medium">
+          <label htmlFor="from-amount-input" className="text-sm font-medium text-contrast-medium">
             From
           </label>
           <div className="flex gap-3">
             <div className="flex-1">
               <input
+                id="from-amount-input"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
@@ -169,12 +170,12 @@ export function CurrencyConverter({
 
         {/* To Currency */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-contrast-medium">
+          <label htmlFor="to-currency-display" className="text-sm font-medium text-contrast-medium">
             To
           </label>
           <div className="flex gap-3">
             <div className="flex-1">
-              <div className="px-4 py-3 bg-navy-800/30 border border-navy-400/30 rounded-lg">
+              <div id="to-currency-display" className="px-4 py-3 bg-navy-800/30 border border-navy-400/30 rounded-lg">
                 {isLoading ? (
                   <div className="flex items-center gap-2 text-contrast-medium">
                     <div className="w-4 h-4 border border-teal-400 border-t-transparent rounded-full animate-spin" />

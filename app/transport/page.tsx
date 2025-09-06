@@ -309,8 +309,9 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
               {/* Location Inputs */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-navy-200">Departure</label>
+                  <label htmlFor="departure-input" className="block text-sm font-medium text-navy-200">Departure</label>
                   <LocationAutocomplete
+                    id="departure-input"
                     variant="departure"
                     value={formData.from}
                     onChange={(location) => setFormData({ ...formData, from: location })}
@@ -321,8 +322,9 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-navy-200">Destination</label>
+                  <label htmlFor="destination-input" className="block text-sm font-medium text-navy-200">Destination</label>
                   <LocationAutocomplete
+                    id="destination-input"
                     variant="destination"
                     value={formData.to}
                     onChange={(location) => setFormData({ ...formData, to: location })}
@@ -336,10 +338,11 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
               {/* Travel Details */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-navy-200">Departure Date</label>
+                  <label htmlFor="departure-date-input" className="block text-sm font-medium text-navy-200">Departure Date</label>
                   <div className="relative">
                     <Calendar className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
                     <input
+                      id="departure-date-input"
                       type="date"
                       value={formData.departureDate}
                       onChange={(e) => setFormData({ ...formData, departureDate: e.target.value })}
@@ -351,10 +354,11 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-navy-200">Return Date (Optional)</label>
+                  <label htmlFor="return-date-input" className="block text-sm font-medium text-navy-200">Return Date (Optional)</label>
                   <div className="relative">
                     <Calendar className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
                     <input
+                      id="return-date-input"
                       type="date"
                       value={formData.returnDate}
                       onChange={(e) => setFormData({ ...formData, returnDate: e.target.value })}
@@ -365,10 +369,11 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-navy-200">Travelers</label>
+                  <label htmlFor="travelers-input" className="block text-sm font-medium text-navy-200">Travelers</label>
                   <div className="relative">
                     <Users className="h-4 w-4 absolute left-3 top-3 text-teal-400 z-10" />
                     <select
+                      id="travelers-input"
                       value={formData.adults}
                       onChange={(e) => setFormData({ ...formData, adults: parseInt(e.target.value) })}
                       className="w-full pl-10 pr-3 py-3 bg-navy-800/50 border border-navy-600 rounded-xl text-navy-100 focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 focus:outline-none transition-all duration-200 appearance-none"
@@ -385,8 +390,9 @@ function SearchTransportView({ searchParams, onSearch, onSelectTransport, select
               
               {/* Currency Selection */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-navy-200">Currency</label>
+                <label htmlFor="currency-input" className="block text-sm font-medium text-navy-200">Currency</label>
                 <CurrencySelector
+                  id="currency-input"
                   value={formData.currency as CurrencyCode}
                   onChange={(currency) => setFormData({ ...formData, currency })}
                   showLocationInfo={true}

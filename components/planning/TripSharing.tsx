@@ -264,7 +264,7 @@ export default function TripSharing({
 
             {/* Share Link */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="share-link-input" className="block text-sm font-medium text-gray-700">
                 Share Link
               </label>
               <div className="flex items-center space-x-2">
@@ -273,6 +273,7 @@ export default function TripSharing({
                     <LinkIcon className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
+                    id="share-link-input"
                     type="text"
                     value={shareUrl}
                     readOnly
@@ -306,7 +307,7 @@ export default function TripSharing({
 
             {/* Invite Users */}
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="invite-email-input" className="block text-sm font-medium text-gray-700">
                 Invite Collaborators
               </label>
               
@@ -314,6 +315,7 @@ export default function TripSharing({
                 <div className="flex items-end space-x-2">
                   <div className="flex-1">
                     <input
+                      id="invite-email-input"
                       type="email"
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}

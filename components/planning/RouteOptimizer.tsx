@@ -124,8 +124,8 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
       </div>
 
       {/* Travel Mode Selection */}
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Transportation Mode</label>
+      <fieldset className="space-y-2">
+        <legend className="block text-sm font-medium text-gray-700">Transportation Mode</legend>
         <div className="grid grid-cols-3 gap-2">
           {travelModeOptions.map((option) => {
             const IconComponent = option.icon;
@@ -150,7 +150,7 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
             );
           })}
         </div>
-      </div>
+      </fieldset>
 
       {/* Current Route Stats */}
       {currentRouteMetrics && (

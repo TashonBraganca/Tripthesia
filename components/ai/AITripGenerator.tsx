@@ -219,12 +219,13 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
           {/* Basic Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="destination-input" className="block text-sm font-medium text-gray-700 mb-2">
                 Destination *
               </label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
+                  id="destination-input"
                   type="text"
                   value={formData.destination}
                   onChange={(e) => handleInputChange('destination', e.target.value)}
@@ -254,12 +255,13 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="duration-input" className="block text-sm font-medium text-gray-700 mb-2">
                 Duration (days)
               </label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
+                  id="duration-input"
                   type="number"
                   min="1"
                   max="30"
@@ -274,12 +276,13 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
           {/* Budget */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="budget-input" className="block text-sm font-medium text-gray-700 mb-2">
                 Total Budget
               </label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
+                  id="budget-input"
                   type="number"
                   min="0"
                   value={formData.budget}
@@ -290,10 +293,11 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="currency-select" className="block text-sm font-medium text-gray-700 mb-2">
                 Currency
               </label>
               <select
+                id="currency-select"
                 value={formData.currency}
                 onChange={(e) => handleInputChange('currency', e.target.value as 'USD' | 'INR')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -307,10 +311,11 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
           {/* Travel Style & Group Size */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="travel-style-select" className="block text-sm font-medium text-gray-700 mb-2">
                 Travel Style
               </label>
               <select
+                id="travel-style-select"
                 value={formData.travelStyle}
                 onChange={(e) => handleInputChange('travelStyle', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -322,12 +327,13 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="group-size-input" className="block text-sm font-medium text-gray-700 mb-2">
                 Group Size
               </label>
               <div className="relative">
                 <Users className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
+                  id="group-size-input"
                   type="number"
                   min="1"
                   max="20"
@@ -340,10 +346,10 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
           </div>
 
           {/* Interests */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <fieldset>
+            <legend className="block text-sm font-medium text-gray-700 mb-2">
               Interests & Activities
-            </label>
+            </legend>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {interestOptions.map(interest => (
                 <button
@@ -359,7 +365,7 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
 
           {/* Advanced Options Toggle */}
           <button
@@ -386,10 +392,11 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="accommodation-select" className="block text-sm font-medium text-gray-700 mb-2">
                       Accommodation Type
                     </label>
                     <select
+                      id="accommodation-select"
                       value={formData.accommodation}
                       onChange={(e) => handleInputChange('accommodation', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -402,10 +409,11 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="transportation-select" className="block text-sm font-medium text-gray-700 mb-2">
                       Primary Transportation
                     </label>
                     <select
+                      id="transportation-select"
                       value={formData.transportation}
                       onChange={(e) => handleInputChange('transportation', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -419,10 +427,11 @@ export default function AITripGenerator({ onTripGenerated, className = '' }: AIT
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="special-requests-textarea" className="block text-sm font-medium text-gray-700 mb-2">
                     Special Requests
                   </label>
                   <textarea
+                    id="special-requests-textarea"
                     value={formData.specialRequests}
                     onChange={(e) => handleInputChange('specialRequests', e.target.value)}
                     placeholder="Any specific requirements, dietary restrictions, accessibility needs, etc."

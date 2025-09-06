@@ -19,7 +19,9 @@
     "backup:restore": "node scripts/backup/backup-system.js restore",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "accessibility:test": "node scripts/accessibility-test.js",
+    "accessibility:audit": "npm run accessibility:test"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.0",

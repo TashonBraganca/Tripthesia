@@ -179,7 +179,19 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden">
-          <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)} />
+          <div 
+            className="fixed inset-0 z-10" 
+            onClick={() => setMobileMenuOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close mobile menu"
+          />
           <div 
             id="mobile-menu"
             ref={mobileMenuRef}

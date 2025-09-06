@@ -108,7 +108,6 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full px-3 py-2 bg-navy-700/50 border border-navy-600/30 rounded-lg text-sm text-navy-100 placeholder-navy-400 focus:outline-none focus:ring-2 focus:ring-teal-400/50 focus:border-teal-400/30"
-                autoFocus
               />
             </div>
 
@@ -184,6 +183,15 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsOpen(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close currency selector"
         />
       )}
     </div>

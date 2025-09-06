@@ -30,7 +30,11 @@
       "Bash(npm install:*)",
       "Bash(ANALYZE=true npm run build)",
       "WebFetch(domain:localhost)",
-      "Read(\\/**)"
+      "Read(\\/**)",
+      "Bash(grep:*)",
+      "Bash(for file in ./app/road-trip/page.tsx ./app/transport/page.tsx ./components/transport/TransportSearchResults.tsx ./components/planning/TimeSlotManager.tsx ./components/planning/TripSharing.tsx)",
+      "Bash(done)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

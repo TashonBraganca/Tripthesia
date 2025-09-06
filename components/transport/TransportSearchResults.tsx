@@ -447,8 +447,9 @@ export default function TransportSearchResults({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Stops</label>
+                <label htmlFor="stops-filter" className="block text-sm font-medium text-gray-700 mb-2">Stops</label>
                 <select
+                  id="stops-filter"
                   value={filters.stops}
                   onChange={(e) => setFilters({ ...filters, stops: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
@@ -459,8 +460,9 @@ export default function TransportSearchResults({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Departure Time</label>
+                <label htmlFor="departure-time-filter" className="block text-sm font-medium text-gray-700 mb-2">Departure Time</label>
                 <select
+                  id="departure-time-filter"
                   value={filters.departure}
                   onChange={(e) => setFilters({ ...filters, departure: e.target.value })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"

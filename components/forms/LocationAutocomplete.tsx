@@ -11,6 +11,7 @@ import { trackFieldSuggest } from '@/lib/analytics/events';
 // LocationData interface is imported from lib/data/locations
 
 interface LocationAutocompleteProps {
+  label?: string;
   placeholder?: string;
   value?: LocationData | null;
   onChange: (location: LocationData | null) => void;
@@ -51,6 +52,7 @@ const variantStyles = {
 };
 
 export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
+  label,
   placeholder,
   value,
   onChange,
@@ -63,6 +65,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   showNearbyLocations = true
 }) => {
   const [query, setQuery] = useState('');
+  const inputId = React.useId();
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -283,6 +286,14 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
+      {label && (
+        <label 
+          htmlFor={inputId}
+          className="block text-sm font-medium text-navy-100 mb-2"
+        >
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+      )}
       <div className="relative">
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
           <IconComponent 
@@ -293,6 +304,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         
         <input
           ref={inputRef}
+          id={inputId}
           type="text"
           value={query}
           onChange={handleInputChange}

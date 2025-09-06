@@ -258,12 +258,13 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="alert-threshold-input" className="block text-sm font-medium text-gray-700 mb-1">
                   Alert when price drops below:
                 </label>
                 <div className="relative">
                   <DollarSign className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
                   <input
+                    id="alert-threshold-input"
                     type="number"
                     value={alertThreshold}
                     onChange={(e) => setAlertThreshold(parseFloat(e.target.value) || 0)}
@@ -274,10 +275,11 @@ export default function PriceTracker({ transportOption, onPriceAlert }: PriceTra
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="notification-email-input" className="block text-sm font-medium text-gray-700 mb-1">
                   Email notifications (optional):
                 </label>
                 <input
+                  id="notification-email-input"
                   type="email"
                   value={notificationEmail}
                   onChange={(e) => setNotificationEmail(e.target.value)}

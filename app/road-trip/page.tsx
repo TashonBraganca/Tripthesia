@@ -292,7 +292,7 @@ export default function RoadTripPlannerPage() {
                   <CardContent className="space-y-4">
                     {/* Vehicle Type */}
                     <div>
-                      <label className="block text-sm font-medium text-navy-300 mb-2">
+                      <label htmlFor="vehicle-type" className="block text-sm font-medium text-navy-300 mb-2">
                         Vehicle Type
                       </label>
                       <div className="grid grid-cols-2 gap-2">
@@ -317,13 +317,14 @@ export default function RoadTripPlannerPage() {
 
                     {/* Travelers */}
                     <div>
-                      <label className="block text-sm font-medium text-navy-300 mb-2">
+                      <label htmlFor="travelers" className="block text-sm font-medium text-navy-300 mb-2">
                         Travelers
                       </label>
                       <div className="flex space-x-4">
                         <div>
-                          <label className="text-xs text-navy-400">Adults</label>
+                          <label htmlFor="adults-input" className="text-xs text-navy-400">Adults</label>
                           <input
+                            id="adults-input"
                             type="number"
                             min="1"
                             max="8"
@@ -336,8 +337,9 @@ export default function RoadTripPlannerPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-navy-400">Children</label>
+                          <label htmlFor="children-input" className="text-xs text-navy-400">Children</label>
                           <input
+                            id="children-input"
                             type="number"
                             min="0"
                             max="6"
@@ -354,7 +356,7 @@ export default function RoadTripPlannerPage() {
 
                     {/* Budget */}
                     <div>
-                      <label className="block text-sm font-medium text-navy-300 mb-2">
+                      <label htmlFor="budget-level" className="block text-sm font-medium text-navy-300 mb-2">
                         Budget Level
                       </label>
                       <div className="flex space-x-2">

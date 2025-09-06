@@ -239,10 +239,11 @@ export default function ActivityForm({
               
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-title-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Activity Title *
                 </label>
                 <input
+                  id="activity-title-input"
                   type="text"
                   value={formData.title || ''}
                   onChange={(e) => handleInputChange('title', e.target.value)}
@@ -253,7 +254,7 @@ export default function ActivityForm({
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-category" className="block text-sm font-medium text-gray-700 mb-2">
                   Category
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -279,10 +280,11 @@ export default function ActivityForm({
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-description-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
+                  id="activity-description-input"
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="Additional details about this activity..."
@@ -297,11 +299,12 @@ export default function ActivityForm({
               <h3 className="text-lg font-medium text-gray-900">Location</h3>
               
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-location-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Location *
                 </label>
                 <div className="relative">
                   <input
+                    id="activity-location-input"
                     type="text"
                     value={locationQuery || formData.location?.name || ''}
                     onChange={(e) => {
@@ -386,11 +389,12 @@ export default function ActivityForm({
               
               {/* Budget */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-budget-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Budget (optional)
                 </label>
                 <div className="relative">
                   <input
+                    id="activity-budget-input"
                     type="number"
                     value={formData.budget || ''}
                     onChange={(e) => handleInputChange('budget', parseFloat(e.target.value) || 0)}
@@ -407,11 +411,12 @@ export default function ActivityForm({
 
               {/* Booking URL */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-booking-url-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Booking/Website URL (optional)
                 </label>
                 <div className="relative">
                   <input
+                    id="activity-booking-url-input"
                     type="url"
                     value={formData.bookingUrl || ''}
                     onChange={(e) => handleInputChange('bookingUrl', e.target.value)}
@@ -426,11 +431,12 @@ export default function ActivityForm({
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="activity-notes-input" className="block text-sm font-medium text-gray-700 mb-2">
                   Notes (optional)
                 </label>
                 <div className="relative">
                   <textarea
+                    id="activity-notes-input"
                     value={formData.notes || ''}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="Any additional notes or reminders..."

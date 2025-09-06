@@ -489,10 +489,11 @@ export default function TripExporter({
               <div className="mt-4 pt-4 border-t border-purple-200">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-purple-800 mb-1">
+                    <label htmlFor="theme-select" className="block text-sm font-medium text-purple-800 mb-1">
                       Theme
                     </label>
                     <select
+                      id="theme-select"
                       value={exportOptions.theme}
                       onChange={(e) => setExportOptions(prev => ({ ...prev, theme: e.target.value as any }))}
                       className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm"
@@ -504,10 +505,11 @@ export default function TripExporter({
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-purple-800 mb-1">
+                    <label htmlFor="language-select" className="block text-sm font-medium text-purple-800 mb-1">
                       Language
                     </label>
                     <select
+                      id="language-select"
                       value={exportOptions.language}
                       onChange={(e) => setExportOptions(prev => ({ ...prev, language: e.target.value as any }))}
                       className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm"

@@ -209,6 +209,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <label 
+        htmlFor="date-range-button"
         className="block text-sm font-medium text-navy-100 mb-2"
         id="date-range-label"
       >
@@ -217,6 +218,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       
       {/* Main Input Display */}
       <motion.button
+        id="date-range-button"
         onClick={() => setIsOpen(!isOpen)}
         aria-labelledby="date-range-label"
         aria-expanded={isOpen}
@@ -315,8 +317,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                   <h3 className="text-sm font-medium text-navy-100 mb-3">Custom Range</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-navy-400 mb-1">Start Date</label>
+                      <label htmlFor="start-date-input" className="block text-xs text-navy-400 mb-1">Start Date</label>
                       <motion.input
+                        id="start-date-input"
                         type="date"
                         value={value.startDate || ''}
                         onChange={(e) => handleDateChange('start', e.target.value)}
@@ -338,8 +341,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     </div>
                     
                     <div>
-                      <label className="block text-xs text-navy-400 mb-1">End Date</label>
+                      <label htmlFor="end-date-input" className="block text-xs text-navy-400 mb-1">End Date</label>
                       <motion.input
+                        id="end-date-input"
                         type="date"
                         value={value.endDate || ''}
                         onChange={(e) => handleDateChange('end', e.target.value)}

@@ -164,7 +164,7 @@ export default function AIAssistantPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar - AI Tools */}
-          <aside className="lg:col-span-1" role="complementary" aria-label="AI tool selection">
+          <aside className="lg:col-span-1" aria-label="AI tool selection">
             <div className="bg-white rounded-lg border border-gray-200 p-6 sticky top-8">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">AI Tools</h2>
               
@@ -222,12 +222,13 @@ export default function AIAssistantPage() {
                 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label htmlFor="destination-input" className="block text-xs font-medium text-gray-700 mb-1">
                       Destination
                     </label>
                     <div className="relative">
                       <MapPin className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
                       <input
+                        id="destination-input"
                         type="text"
                         value={destination}
                         onChange={(e) => setDestination(e.target.value)}
@@ -238,13 +239,14 @@ export default function AIAssistantPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label htmlFor="budget-input" className="block text-xs font-medium text-gray-700 mb-1">
                       Budget
                     </label>
                     <div className="flex space-x-2">
                       <div className="relative flex-1">
                         <DollarSign className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
                         <input
+                          id="budget-input"
                           type="number"
                           value={userPreferences.budget}
                           onChange={(e) => setUserPreferences(prev => ({ 
@@ -269,12 +271,13 @@ export default function AIAssistantPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label htmlFor="group-size-input" className="block text-xs font-medium text-gray-700 mb-1">
                       Group Size
                     </label>
                     <div className="relative">
                       <Users className="absolute left-2 top-2 h-3 w-3 text-gray-400" />
                       <input
+                        id="group-size-input"
                         type="number"
                         min="1"
                         max="20"
@@ -289,10 +292,11 @@ export default function AIAssistantPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label htmlFor="travel-style-select" className="block text-xs font-medium text-gray-700 mb-1">
                       Travel Style
                     </label>
                     <select
+                      id="travel-style-select"
                       value={userPreferences.travelStyle}
                       onChange={(e) => setUserPreferences(prev => ({ 
                         ...prev, 

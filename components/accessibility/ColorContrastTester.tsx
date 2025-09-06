@@ -86,17 +86,19 @@ export function ColorContrastTester({ enabled = process.env.NODE_ENV === 'develo
                   <h3 className="text-lg font-semibold text-navy-100 mb-4">Custom Color Test</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-navy-200 mb-2">
+                      <label htmlFor="foreground-color-input" className="block text-sm font-medium text-navy-200 mb-2">
                         Foreground Color
                       </label>
                       <div className="flex gap-2">
                         <input
+                          id="foreground-color-input"
                           type="color"
                           value={customForeground}
                           onChange={(e) => setCustomForeground(e.target.value)}
                           className="w-12 h-10 rounded border border-navy-400/30"
                         />
                         <input
+                          id="foreground-text-input"
                           type="text"
                           value={customForeground}
                           onChange={(e) => setCustomForeground(e.target.value)}
@@ -106,17 +108,19 @@ export function ColorContrastTester({ enabled = process.env.NODE_ENV === 'develo
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-navy-200 mb-2">
+                      <label htmlFor="background-color-input" className="block text-sm font-medium text-navy-200 mb-2">
                         Background Color
                       </label>
                       <div className="flex gap-2">
                         <input
+                          id="background-color-input"
                           type="color"
                           value={customBackground}
                           onChange={(e) => setCustomBackground(e.target.value)}
                           className="w-12 h-10 rounded border border-navy-400/30"
                         />
                         <input
+                          id="background-text-input"
                           type="text"
                           value={customBackground}
                           onChange={(e) => setCustomBackground(e.target.value)}

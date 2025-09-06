@@ -8,6 +8,7 @@ import { ProductionErrorBoundary } from "@/components/error-boundary/ProductionE
 import { ErrorTrackingInit } from "@/components/monitoring/ErrorTrackingInit";
 import { PerformanceMonitor } from "@/components/monitoring/PerformanceMonitor";
 import { AccessibilityTester } from "@/components/accessibility/AccessibilityTester";
+import { AccessibilityDevTools } from "@/components/accessibility/AccessibilityDevTools";
 import { SkipLink } from "@/components/accessibility/SkipLink";
 import { ColorContrastTester } from "@/components/accessibility/ColorContrastTester";
 import { GlobalLiveRegions, RouteAnnouncer } from "@/components/accessibility/LiveRegions";
@@ -130,6 +131,7 @@ export default function RootLayout({
                 <ErrorTrackingInit />
                 <PerformanceMonitor />
                 <AccessibilityTester />
+                <AccessibilityDevTools enabled={true} position="bottom-right" />
                 <ColorContrastTester />
                 <GlobalLiveRegions />
                 <RouteAnnouncer />
