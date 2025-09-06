@@ -12,6 +12,7 @@ const CurrencySelector = dynamic(() => import('./CurrencySelector').then(mod => 
 });
 
 interface CurrencySelectorLazyProps {
+  id?: string;
   value: CurrencyCode;
   onChange: (currency: CurrencyCode) => void;
   className?: string;

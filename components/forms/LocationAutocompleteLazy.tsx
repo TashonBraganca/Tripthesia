@@ -12,6 +12,7 @@ const LocationAutocomplete = dynamic(() => import('./LocationAutocomplete').then
 });
 
 interface LocationAutocompleteLazyProps {
+  id?: string;
   variant?: 'departure' | 'destination' | 'waypoint';
   value?: LocationData | null;
   onChange: (location: LocationData | null) => void;

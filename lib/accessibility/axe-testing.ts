@@ -1,6 +1,6 @@
 "use client";
 
-import { axe, AxeResults } from 'axe-core';
+import axe, { AxeResults } from 'axe-core';
 
 /**
  * Automated Accessibility Testing Utility
@@ -41,13 +41,13 @@ export async function runAccessibilityTest(
     // Add custom rule inclusions/exclusions
     if (config.includeRules) {
       config.includeRules.forEach(rule => {
-        axeConfig.rules[rule] = { enabled: true };
+        (axeConfig.rules as Record<string, any>)[rule] = { enabled: true };
       });
     }
     
     if (config.excludeRules) {
       config.excludeRules.forEach(rule => {
-        axeConfig.rules[rule] = { enabled: false };
+        (axeConfig.rules as Record<string, any>)[rule] = { enabled: false };
       });
     }
 
@@ -56,7 +56,7 @@ export async function runAccessibilityTest(
     const passes = results.passes.length;
     const violations = results.violations.length;
     const incomplete = results.incomplete.length;
-    const inaccessible = results.inaccessible.length;
+    const inaccessible = 0; // AxeResults doesn't have inaccessible property
     
     const total = passes + violations + incomplete + inaccessible;
     const score = total > 0 ? Math.round((passes / total) * 100) : 100;
@@ -74,7 +74,7 @@ export async function runAccessibilityTest(
     };
   } catch (error) {
     console.error('Accessibility testing failed:', error);
-    throw new Error(`Accessibility testing failed: ${error.message}`);
+    throw new Error(`Accessibility testing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -100,7 +100,7 @@ export function generateAccessibilityReport(result: AccessibilityTestResult): st
     });
   }
 
-  if (result.incomplete.length > 0) {
+  if (result.incomplete > 0) {
     report += `## Items Needing Review\n`;
     result.details.incomplete.forEach((item, index) => {
       report += `### ${index + 1}. ${item.description}\n`;
@@ -148,7 +148,7 @@ export async function testMultipleComponents(
         incomplete: 0,
         inaccessible: 0,
         details: null as any,
-        summary: `Error: ${error.message}`,
+        summary: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         score: 0
       };
     }
