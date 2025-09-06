@@ -60,6 +60,9 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<Position>({ top: 0, left: 0 });
   const [mounted, setMounted] = useState(false);
+  
+  // Generate unique ID for dropdown content
+  const dropdownId = useRef(`dropdown-${Math.random().toString(36).substr(2, 9)}`).current;
 
   // Ensure component only renders on client
   useEffect(() => {
@@ -243,6 +246,7 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          id={dropdownId}
           ref={contentRef}
           initial={{ opacity: 0, scale: 0.95, y: -10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -262,6 +266,7 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
             rounded-xl shadow-2xl overflow-hidden
             ${contentClassName}
           `}
+          role="listbox"
         >
           {children}
         </motion.div>
@@ -276,6 +281,7 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
         className={className}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        aria-controls={dropdownId}
         role="combobox"
       >
         {trigger}

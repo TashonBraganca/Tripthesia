@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -111,7 +111,7 @@ export default function NewTripPage() {
   useEffect(() => {
     setMounted(true);
     loadDraftTrip();
-  }, []);
+  }, [loadDraftTrip]);
 
   // Auto-save functionality with debouncing
   useEffect(() => {
@@ -122,7 +122,7 @@ export default function NewTripPage() {
     }, 2000); // Save after 2 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  }, [formData, currentStep, completedSteps, mounted, user]);
+  }, [formData, currentStep, completedSteps, mounted, user, saveDraftTrip]);
 
   // Show AI optimizer when user has made selections in multiple steps
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function NewTripPage() {
   }, [formData, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining, completedSteps]);
 
   // Load existing draft trip on page load
-  const loadDraftTrip = async () => {
+  const loadDraftTrip = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -175,10 +175,10 @@ export default function NewTripPage() {
     } catch (error) {
       console.error('Error loading draft trip:', error);
     }
-  };
+  }, [user]);
 
   // Auto-save draft trip
-  const saveDraftTrip = async () => {
+  const saveDraftTrip = useCallback(async () => {
     if (!user || !formData.from || !formData.to) return; // Only save if basic data exists
 
     setSaveStatus('saving');
@@ -221,7 +221,7 @@ export default function NewTripPage() {
       console.error('Error saving draft trip:', error);
       setSaveStatus('error');
     }
-  };
+  }, [user, formData, currentStep, completedSteps, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining]);
 
   // Step validation functions
   const validateDestinationStep = (): boolean => {
@@ -375,6 +375,7 @@ export default function NewTripPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
         className="col-span-12 row-span-1 glass rounded-2xl border border-navy-400/30 p-8 mb-6"
+        role="banner"
       >
         <div className="text-center">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-navy-50 via-teal-300 to-sky-300 bg-clip-text text-transparent mb-4">
@@ -387,19 +388,19 @@ export default function NewTripPage() {
       </motion.div>
 
       {/* Bento Grid Layout for Destination Step */}
-      <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-4 gap-6 md:h-[700px]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-4 gap-4 md:gap-6 lg:h-[700px] overflow-visible">
         {/* From Location */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="col-span-1 md:col-span-6 md:col-start-1 md:row-span-1 md:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-teal-500/10 to-teal-400/5 relative"
+          className="col-span-full lg:col-span-6 lg:col-start-1 lg:row-span-1 lg:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-teal-500/10 to-teal-400/5 relative overflow-visible"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-teal-500/20 rounded-lg">
+            <div className="p-2 bg-teal-500/20 rounded-lg" aria-hidden="true">
               <Plane className="w-5 h-5 text-teal-400" />
             </div>
-            <h3 className="text-lg font-semibold text-navy-50">From</h3>
+            <h3 className="text-lg font-semibold text-navy-50" id="from-location-label">From</h3>
           </div>
           <LocationAutocomplete
             placeholder="Where are you starting from?"
@@ -407,7 +408,12 @@ export default function NewTripPage() {
             onChange={(location) => setFormData(prev => ({ ...prev, from: location }))}
             variant="departure"
             showCurrentLocation={true}
+            aria-labelledby="from-location-label"
+            aria-describedby="from-location-description"
           />
+          <div id="from-location-description" className="sr-only">
+            Select your departure location. You can search for cities, airports, or addresses.
+          </div>
         </motion.div>
 
         {/* To Location */}
@@ -415,13 +421,13 @@ export default function NewTripPage() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="col-span-1 md:col-span-6 md:col-start-7 md:row-span-1 md:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-400/5 relative"
+          className="col-span-full lg:col-span-6 lg:col-start-7 lg:row-span-1 lg:row-start-1 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-emerald-500/10 to-emerald-400/5 relative overflow-visible"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-emerald-500/20 rounded-lg">
+            <div className="p-2 bg-emerald-500/20 rounded-lg" aria-hidden="true">
               <MapPin className="w-5 h-5 text-emerald-400" />
             </div>
-            <h3 className="text-lg font-semibold text-navy-50">To</h3>
+            <h3 className="text-lg font-semibold text-navy-50" id="to-location-label">To</h3>
           </div>
           <LocationAutocomplete
             placeholder="Where do you want to go?"
@@ -429,7 +435,13 @@ export default function NewTripPage() {
             onChange={(location) => setFormData(prev => ({ ...prev, to: location }))}
             variant="destination"
             showNearbyLocations={true}
+            aria-labelledby="to-location-label"
+            aria-describedby="to-location-description"
+            aria-required="true"
           />
+          <div id="to-location-description" className="sr-only">
+            Select your destination. Required field. You can search for cities, airports, or addresses.
+          </div>
         </motion.div>
 
         {/* Dates - Now larger (col-span-7) */}
@@ -437,13 +449,13 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="col-span-1 md:col-span-7 md:col-start-1 md:row-span-1 md:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-purple-500/10 to-purple-400/5 relative"
+          className="col-span-full lg:col-span-7 lg:col-start-1 lg:row-span-1 lg:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-purple-500/10 to-purple-400/5 relative overflow-visible"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
+            <div className="p-2 bg-purple-500/20 rounded-lg" aria-hidden="true">
               <Calendar className="w-5 h-5 text-purple-400" />
             </div>
-            <h3 className="text-lg font-semibold text-navy-50">Dates</h3>
+            <h3 className="text-lg font-semibold text-navy-50" id="dates-label">Dates</h3>
           </div>
           <DateRangePicker
             value={{
@@ -456,7 +468,13 @@ export default function NewTripPage() {
               endDate: range.endDate
             }))}
             className="w-full"
+            aria-labelledby="dates-label"
+            aria-describedby="dates-description"
+            aria-required="true"
           />
+          <div id="dates-description" className="sr-only">
+            Select your travel dates. Both start and end dates are required.
+          </div>
         </motion.div>
 
         {/* Trip Summary - Now smaller (col-span-5) */}
@@ -464,13 +482,13 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="col-span-1 md:col-span-5 md:col-start-8 md:row-span-1 md:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-amber-500/10 to-amber-400/5 relative"
+          className="col-span-full lg:col-span-5 lg:col-start-8 lg:row-span-1 lg:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-amber-500/10 to-amber-400/5 relative overflow-visible"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-amber-500/20 rounded-lg">
+            <div className="p-2 bg-amber-500/20 rounded-lg" aria-hidden="true">
               <Users className="w-5 h-5 text-amber-400" />
             </div>
-            <h3 className="text-lg font-semibold text-navy-50">Trip Overview</h3>
+            <h3 className="text-lg font-semibold text-navy-50" id="trip-overview-label">Trip Overview</h3>
           </div>
           
           {formData.from && formData.to ? (
@@ -490,20 +508,30 @@ export default function NewTripPage() {
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-navy-300">Travelers:</span>
-                <div className="flex items-center gap-2">
+                <label htmlFor="travelers-count" className="text-navy-300">Travelers:</label>
+                <div className="flex items-center gap-2" role="group" aria-labelledby="travelers-label">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, travelers: Math.max(1, prev.travelers - 1) }))}
-                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 text-navy-200 flex items-center justify-center transition-colors text-sm"
+                    disabled={formData.travelers <= 1}
+                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    aria-label="Decrease number of travelers"
                   >
                     -
                   </button>
-                  <span className="text-navy-100 font-medium min-w-[1.5rem] text-center text-sm">
+                  <span 
+                    id="travelers-count"
+                    className="text-navy-100 font-medium min-w-[1.5rem] text-center text-sm"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
                     {formData.travelers}
                   </span>
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, travelers: prev.travelers + 1 }))}
-                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 text-navy-200 flex items-center justify-center transition-colors text-sm"
+                    disabled={formData.travelers >= 20}
+                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    aria-label="Increase number of travelers"
                   >
                     +
                   </button>
@@ -522,20 +550,26 @@ export default function NewTripPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="col-span-1 md:col-span-12 md:col-start-1 md:row-span-2 md:row-start-3 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-indigo-500/10 to-indigo-400/5 relative"
+          className="col-span-full lg:col-span-12 lg:col-start-1 lg:row-span-2 lg:row-start-3 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-indigo-500/10 to-indigo-400/5 relative overflow-visible"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-indigo-500/20 rounded-lg">
+            <div className="p-2 bg-indigo-500/20 rounded-lg" aria-hidden="true">
               <MapPin className="w-5 h-5 text-indigo-400" />
             </div>
-            <h3 className="text-xl font-semibold text-navy-50">Choose Your Adventure</h3>
+            <h3 className="text-xl font-semibold text-navy-50" id="trip-type-label">Choose Your Adventure</h3>
           </div>
           
-          <TripTypeSelector
-            value={formData.tripType}
-            onChange={(typeId) => setFormData(prev => ({ ...prev, tripType: typeId }))}
-            showPreview={true}
-          />
+          <div role="region" aria-labelledby="trip-type-label" aria-describedby="trip-type-description">
+            <TripTypeSelector
+              value={formData.tripType}
+              onChange={(typeId) => setFormData(prev => ({ ...prev, tripType: typeId }))}
+              showPreview={true}
+              aria-required="true"
+            />
+            <div id="trip-type-description" className="sr-only">
+              Select the type of trip you want to plan. This helps us customize recommendations for you. This field is required.
+            </div>
+          </div>
         </motion.div>
       </div>
     </>
@@ -1819,6 +1853,13 @@ export default function NewTripPage() {
 
   return (
     <div className="min-h-screen bg-navy-950 relative overflow-hidden">
+      {/* Skip to main content link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[9999] bg-teal-600 text-white px-4 py-2 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-teal-400"
+      >
+        Skip to main content
+      </a>
       {/* Animated Background */}
       <TopographicalGrid
         density="normal"
@@ -1888,6 +1929,15 @@ export default function NewTripPage() {
 
       {/* Main Content - Dynamic Step Content */}
       <main id="main-content" role="main" className="relative z-10 px-6 pb-8" aria-label="Trip planning form">
+        <div className="sr-only" aria-live="polite" id="step-announcements">
+          {currentStep === 'destination' && 'Destination and dates step. Fill in your travel locations and dates.'}
+          {currentStep === 'transport' && 'Transportation step. Choose your preferred mode of transport.'}
+          {currentStep === 'rental' && 'Local transportation step. Select rental options if needed.'}
+          {currentStep === 'accommodation' && 'Accommodation step. Choose your preferred stay options.'}
+          {currentStep === 'activities' && 'Activities step. Select activities that interest you.'}
+          {currentStep === 'dining' && 'Dining step. Choose your food and dining preferences.'}
+          {currentStep === 'review' && 'Review step. Review your trip details and create your trip.'}
+        </div>
         <div className="max-w-7xl mx-auto">
           {renderStepContent()}
         </div>
