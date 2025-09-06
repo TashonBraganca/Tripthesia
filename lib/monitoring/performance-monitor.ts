@@ -371,7 +371,7 @@ class PerformanceMonitor {
   }
 
   private getCriticalThreshold(metric: string): number {
-    const thresholds = {
+    const thresholds: Record<string, number> = {
       'LCP': 4000, // 4 seconds
       'FID': 300,  // 300ms
       'CLS': 0.25, // 0.25

@@ -5,16 +5,19 @@ import dynamic from 'next/dynamic';
 import { DollarSign, TrendingDown, Loader2 } from 'lucide-react';
 
 // Dynamic import with loading component
-const BudgetOptimizer = dynamic(() => import('./BudgetOptimizer').then(mod => ({ default: mod.BudgetOptimizer })), {
+const BudgetOptimizer = dynamic(() => import('./BudgetOptimizer'), {
   loading: () => <BudgetOptimizerSkeleton />,
   ssr: false // AI components require client-side APIs
 });
 
 interface BudgetOptimizerLazyProps {
-  tripData?: any;
-  onOptimizationComplete?: (optimizedBudget: any) => void;
-  currentBudget?: number;
-  currency?: string;
+  destination: string;
+  totalBudget: number;
+  currency: 'USD' | 'INR';
+  duration: number;
+  groupSize: number;
+  currentItinerary: any[];
+  onOptimizationApplied?: (optimization: any) => void;
   className?: string;
 }
 

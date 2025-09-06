@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Brain, Loader2 } from 'lucide-react';
 
 // Dynamic import with loading component
-const AITripGenerator = dynamic(() => import('./AITripGenerator').then(mod => ({ default: mod.AITripGenerator })), {
+const AITripGenerator = dynamic(() => import('./AITripGenerator'), {
   loading: () => <AITripGeneratorSkeleton />,
   ssr: false // AI components require client-side APIs
 });

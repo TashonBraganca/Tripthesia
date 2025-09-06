@@ -242,15 +242,16 @@ export const SEOMetadata: React.FC<SEOMetadataProps> = ({
 
     // Add trip-specific structured data
     if (tripData?.destination && tripData?.departure) {
-      baseStructuredData["@graph"].push({
-        "@type": "TripAction",
+      (baseStructuredData["@graph"] as any[]).push({
+        "@type": "TravelAction",
+        "@id": `${DEFAULT_SEO.siteUrl}/#travel-action`,
         "name": `Trip from ${tripData.departure} to ${tripData.destination}`,
         "description": finalDescription,
-        "startLocation": {
+        "fromLocation": {
           "@type": "Place",
           "name": tripData.departure
         },
-        "endLocation": {
+        "toLocation": {
           "@type": "Place", 
           "name": tripData.destination
         },

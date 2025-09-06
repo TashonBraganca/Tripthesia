@@ -5,18 +5,16 @@ import dynamic from 'next/dynamic';
 import { Clock, Calendar, Loader2, GripVertical } from 'lucide-react';
 
 // Dynamic import with loading component
-const TimelineBuilder = dynamic(() => import('./TimelineBuilder').then(mod => ({ default: mod.TimelineBuilder })), {
+const TimelineBuilder = dynamic(() => import('./TimelineBuilder'), {
   loading: () => <TimelineBuilderSkeleton />,
   ssr: false // Interactive components require client-side APIs
 });
 
 interface TimelineBuilderLazyProps {
-  activities?: any[];
-  onActivitiesChange?: (activities: any[]) => void;
-  tripDays?: number;
-  onTimelineUpdate?: (timeline: any) => void;
-  className?: string;
-  editable?: boolean;
+  dayPlan: any;
+  onUpdateDayPlan: (dayPlan: any) => void;
+  onAddActivity: () => void;
+  isEditable?: boolean;
 }
 
 // Loading skeleton component

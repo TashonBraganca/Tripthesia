@@ -178,7 +178,7 @@ async function processError(error: any, sessionId: string, ip: string) {
 
 // Core Web Vitals analysis
 async function analyzeCoreWebVital(metric: any) {
-  const thresholds = {
+  const thresholds: Record<string, { good: number; poor: number }> = {
     LCP: { good: 2500, poor: 4000 },
     FID: { good: 100, poor: 300 },
     CLS: { good: 0.1, poor: 0.25 },
@@ -223,7 +223,7 @@ async function analyzeUserInteraction(metric: any) {
 // Performance regression detection
 async function checkPerformanceRegression(metric: any) {
   // Simple implementation - in production, compare against historical averages
-  const criticalThresholds = {
+  const criticalThresholds: Record<string, number> = {
     page_load_time: 5000, // 5 seconds
     LCP: 4000,
     FID: 300,
@@ -278,7 +278,7 @@ async function createBugReport(error: any) {
 
 // Helper functions
 function isCriticalMetric(metric: any): boolean {
-  const criticalThresholds = {
+  const criticalThresholds: Record<string, number> = {
     LCP: 4000,
     FID: 300,
     CLS: 0.25,
@@ -286,7 +286,7 @@ function isCriticalMetric(metric: any): boolean {
   };
   
   const threshold = criticalThresholds[metric.name];
-  return threshold && metric.value > threshold;
+  return threshold !== undefined && metric.value > threshold;
 }
 
 function isCoreWebVital(name: string): boolean {

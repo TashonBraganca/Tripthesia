@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { Map, Navigation, Loader2, MapPin } from 'lucide-react';
 
 // Dynamic import with loading component
-const InteractiveMapPlanner = dynamic(() => import('./InteractiveMapPlanner').then(mod => ({ default: mod.InteractiveMapPlanner })), {
+const InteractiveMapPlanner = dynamic(() => import('./InteractiveMapPlanner'), {
   loading: () => <InteractiveMapPlannerSkeleton />,
   ssr: false // Map components require client-side APIs
 });
