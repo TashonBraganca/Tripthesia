@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '@clerk/nextjs';
 import { 
   Share2, 
   Link as LinkIcon, 
@@ -15,8 +16,15 @@ import {
   X,
   Globe,
   Lock,
-  Settings
+  Settings,
+  Crown,
+  MessageCircle,
+  Activity,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
+import { collaborationEngine } from '@/lib/collaboration/real-time-sync';
+import type { CollaboratorInfo } from '@/lib/collaboration/real-time-sync';
 
 export interface SharePermission {
   level: 'view' | 'comment' | 'edit';
@@ -53,6 +61,7 @@ interface TripSharingProps {
   onSettingsChange: (settings: TripShareSettings) => void;
   isOpen: boolean;
   onClose: () => void;
+  currentUserRole?: 'owner' | 'editor' | 'viewer';
 }
 
 const PERMISSION_LEVELS: SharePermission[] = [
@@ -83,13 +92,18 @@ export default function TripSharing({
   onSettingsChange,
   isOpen,
   onClose,
+  currentUserRole = 'viewer',
 }: TripSharingProps) {
+  const { user } = useUser();
   const [settings, setSettings] = useState<TripShareSettings>(currentSettings);
   const [inviteEmail, setInviteEmail] = useState('');
   const [invitePermission, setInvitePermission] = useState<SharePermission['level']>('view');
   const [isInviting, setIsInviting] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [activeCollaborators, setActiveCollaborators] = useState<CollaboratorInfo[]>([]);
+  const [isCollaborationConnected, setIsCollaborationConnected] = useState(false);
+  const [realtimeActivity, setRealtimeActivity] = useState<string[]>([]);
 
   const shareUrl = `${window.location.origin}/shared-trip/${tripId}`;
 
@@ -97,6 +111,51 @@ export default function TripSharing({
   useEffect(() => {
     setSettings(currentSettings);
   }, [currentSettings]);
+
+  // Initialize real-time collaboration
+  useEffect(() => {
+    if (!user || !tripId || !isOpen) return;
+
+    const initCollaboration = async () => {
+      const joined = await collaborationEngine.joinTrip(tripId, user.id, {
+        name: user.fullName || user.username || 'Anonymous',
+        email: user.primaryEmailAddress?.emailAddress || '',
+        avatar: user.imageUrl,
+        role: currentUserRole,
+        isOnline: true,
+        lastSeen: new Date(),
+      });
+      setIsCollaborationConnected(joined);
+    };
+
+    collaborationEngine.setEventHandlers({
+      onCollaboratorJoin: (collaborator) => {
+        setActiveCollaborators(prev => {
+          const filtered = prev.filter(c => c.id !== collaborator.id);
+          return [...filtered, collaborator];
+        });
+        setRealtimeActivity(prev => ["" + collaborator.name + " joined the collaboration", ...prev.slice(0, 4)]);
+      },
+      onCollaboratorLeave: (userId) => {
+        setActiveCollaborators(prev => {
+          const leaving = prev.find(c => c.id === userId);
+          if (leaving) {
+            setRealtimeActivity(prevActivity => ["" + leaving.name + " left the collaboration", ...prevActivity.slice(0, 4)]);
+          }
+          return prev.filter(c => c.id !== userId);
+        });
+      },
+      onContentChange: (change) => {
+        setRealtimeActivity(prev => ["Content updated by " + change.author, ...prev.slice(0, 4)]);
+      },
+    });
+
+    initCollaboration();
+
+    return () => {
+      collaborationEngine.leaveTrip();
+    };
+  }, [user, tripId, currentUserRole, isOpen]);
 
   const handleCopyLink = useCallback(async () => {
     try {
@@ -225,6 +284,83 @@ export default function TripSharing({
           </div>
 
           <div className="p-6 space-y-6">
+            {/* Real-time Collaboration Status */}
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  {isCollaborationConnected ? (
+                    <Wifi className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <WifiOff className="h-5 w-5 text-red-500" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {isCollaborationConnected ? 'Real-time sync active' : 'Offline'}
+                  </span>
+                </div>
+                {activeCollaborators.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <Users className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">
+                      {activeCollaborators.length} active
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex -space-x-2">
+                {activeCollaborators.slice(0, 3).map((collaborator) => (
+                  <div
+                    key={collaborator.id}
+                    className="relative"
+                    title={collaborator.name}
+                  >
+                    <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center border-2 border-white">
+                      {collaborator.avatar ? (
+                        <img
+                          src={collaborator.avatar}
+                          alt={collaborator.name}
+                          className="w-full h-full rounded-full"
+                        />
+                      ) : (
+                        <span className="text-xs font-medium text-indigo-600">
+                          {collaborator.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-white rounded-full" />
+                  </div>
+                ))}
+                {activeCollaborators.length > 3 && (
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white">
+                    <span className="text-xs font-medium text-gray-600">
+                      +{activeCollaborators.length - 3}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            {realtimeActivity.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700 flex items-center">
+                  <Activity className="h-4 w-4 mr-2" />
+                  Recent Activity
+                </h3>
+                <div className="space-y-1 max-h-24 overflow-y-auto">
+                  {realtimeActivity.map((activity, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded"
+                    >
+                      {activity}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Public Sharing Toggle */}
             <div className="flex items-start justify-between p-4 border border-gray-200 rounded-lg">
               <div className="flex items-start space-x-3">
@@ -402,10 +538,19 @@ export default function TripSharing({
                         </div>
                         
                         <div className="flex items-center space-x-2">
+                          {/* Show if user is online */}
+                          {activeCollaborators.find(c => c.email === user.email) && (
+                            <div className="flex items-center space-x-1 px-2 py-1 bg-green-100 text-green-700 rounded-full">
+                              <div className="w-2 h-2 bg-green-500 rounded-full" />
+                              <span className="text-xs">Online</span>
+                            </div>
+                          )}
+                          
                           <select
                             value={user.permission}
                             onChange={(e) => handleChangePermission(user.id, e.target.value as SharePermission['level'])}
                             className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            disabled={currentUserRole !== 'owner'}
                           >
                             {PERMISSION_LEVELS.map((permission) => (
                               <option key={permission.level} value={permission.level}>
@@ -414,13 +559,15 @@ export default function TripSharing({
                             ))}
                           </select>
                           
-                          <button
-                            onClick={() => handleRemoveUser(user.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 rounded"
-                            title="Remove user"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
+                          {currentUserRole === 'owner' && (
+                            <button
+                              onClick={() => handleRemoveUser(user.id)}
+                              className="p-1 text-gray-400 hover:text-red-600 rounded"
+                              title="Remove user"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </motion.div>
                     );

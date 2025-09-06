@@ -56,12 +56,12 @@ interface TimelineBuilderProps {
 }
 
 const categoryColors = {
-  sightseeing: 'bg-blue-100 text-blue-800 border-blue-300',
-  dining: 'bg-orange-100 text-orange-800 border-orange-300',
-  transport: 'bg-gray-100 text-gray-800 border-gray-300',
-  accommodation: 'bg-purple-100 text-purple-800 border-purple-300',
-  entertainment: 'bg-pink-100 text-pink-800 border-pink-300',
-  shopping: 'bg-green-100 text-green-800 border-green-300',
+  sightseeing: 'bg-blue-400/10 text-blue-300 border-blue-400/30',
+  dining: 'bg-orange-400/10 text-orange-300 border-orange-400/30',
+  transport: 'bg-gray-400/10 text-gray-300 border-gray-400/30',
+  accommodation: 'bg-purple-400/10 text-purple-300 border-purple-400/30',
+  entertainment: 'bg-pink-400/10 text-pink-300 border-pink-400/30',
+  shopping: 'bg-green-400/10 text-green-300 border-green-400/30',
 };
 
 const categoryIcons = {
@@ -211,84 +211,115 @@ export default function TimelineBuilder({
     return (
       <motion.div
         layout
-        className={`bg-white rounded-lg border-2 p-4 cursor-pointer transition-all duration-200 ${
-          selectedActivity === activity.id ? 'border-indigo-500 shadow-lg' : 'border-gray-200 hover:border-gray-300'
-        } ${hasConflicts ? 'ring-2 ring-red-200' : ''}`}
+        className={`
+          bg-navy-800/50 backdrop-blur-md rounded-xl border-2 p-6 cursor-pointer 
+          transition-all duration-300 hover:bg-navy-700/50
+          ${selectedActivity === activity.id 
+            ? 'border-teal-400 shadow-2xl shadow-teal-400/20 bg-navy-700/70' 
+            : 'border-navy-600 hover:border-navy-500'
+          } 
+          ${hasConflicts ? 'ring-2 ring-red-400/50 border-red-400/50' : ''}
+          ${draggedActivity === activity.id ? 'shadow-2xl scale-105 rotate-2' : ''}
+        `}
         onClick={() => setSelectedActivity(selectedActivity === activity.id ? null : activity.id)}
         onDragStart={() => setDraggedActivity(activity.id)}
         onDragEnd={() => setDraggedActivity(null)}
-        whileHover={{ scale: 1.02 }}
-        whileDrag={{ scale: 1.05, zIndex: 1000 }}
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileDrag={{ scale: 1.05, zIndex: 1000, rotate: 2 }}
+        whileTap={{ scale: 0.98 }}
       >
         {/* Drag Handle */}
         {isEditable && (
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <GripVertical className="h-4 w-4 text-gray-400 cursor-grab active:cursor-grabbing" />
-              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${categoryColors[activity.category]}`}>
-                {typeof CategoryIcon === 'string' ? CategoryIcon : <CategoryIcon className="h-3 w-3 inline mr-1" />}
-                {activity.category}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <GripVertical className="h-5 w-5 text-navy-400 hover:text-navy-300 cursor-grab active:cursor-grabbing transition-colors" />
+              <span className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${categoryColors[activity.category]} backdrop-blur-sm`}>
+                {typeof CategoryIcon === 'string' ? (
+                  <span className="mr-1">{CategoryIcon}</span>
+                ) : (
+                  <CategoryIcon className="h-3 w-3 inline mr-1" />
+                )}
+                {activity.category.charAt(0).toUpperCase() + activity.category.slice(1)}
               </span>
             </div>
             
             {hasConflicts && (
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="flex items-center space-x-1"
+              >
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+                <span className="text-xs text-red-400 font-medium">
+                  {conflicts.length} issue{conflicts.length > 1 ? 's' : ''}
+                </span>
+              </motion.div>
             )}
           </div>
         )}
 
         {/* Activity Details */}
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="flex items-start justify-between">
-            <h3 className="font-semibold text-gray-900 flex-1">{activity.title}</h3>
+            <h3 className="font-bold text-navy-100 flex-1 text-lg leading-tight pr-4">
+              {activity.title}
+            </h3>
             {isEditable && (
-              <div className="flex space-x-1 ml-2">
-                <button
+              <div className="flex space-x-2 ml-2">
+                <motion.button
                   onClick={(e) => {
                     e.stopPropagation();
                     // Handle edit - you'd open an edit modal here
                   }}
-                  className="p-1 text-gray-400 hover:text-indigo-600 rounded"
+                  className="p-2 text-navy-400 hover:text-teal-300 bg-navy-700/50 hover:bg-teal-400/10 rounded-lg transition-all duration-200"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <Edit className="h-3 w-3" />
-                </button>
-                <button
+                  <Edit className="h-4 w-4" />
+                </motion.button>
+                <motion.button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDeleteActivity(activity.id);
                   }}
-                  className="p-1 text-gray-400 hover:text-red-600 rounded"
+                  className="p-2 text-navy-400 hover:text-red-300 bg-navy-700/50 hover:bg-red-400/10 rounded-lg transition-all duration-200"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                  <Trash2 className="h-4 w-4" />
+                </motion.button>
               </div>
             )}
           </div>
 
           {activity.description && (
-            <p className="text-sm text-gray-600">{activity.description}</p>
+            <p className="text-sm text-navy-300 leading-relaxed bg-navy-700/30 rounded-lg p-3">
+              {activity.description}
+            </p>
           )}
 
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <div className="flex items-center">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatTime(activity.timeSlot.start)} - {formatTime(activity.timeSlot.end)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center text-navy-300 bg-navy-700/30 rounded-lg p-3">
+              <Clock className="h-4 w-4 mr-2 text-teal-400 flex-shrink-0" />
+              <span className="font-medium">
+                {formatTime(activity.timeSlot.start)} - {formatTime(activity.timeSlot.end)}
+              </span>
             </div>
-            <div className="flex items-center">
-              <Calendar className="h-3 w-3 mr-1" />
-              {formatDuration(activity.timeSlot.duration)}
+            <div className="flex items-center text-navy-300 bg-navy-700/30 rounded-lg p-3">
+              <Calendar className="h-4 w-4 mr-2 text-blue-400 flex-shrink-0" />
+              <span className="font-medium">{formatDuration(activity.timeSlot.duration)}</span>
             </div>
           </div>
 
-          <div className="flex items-center text-sm text-gray-500">
-            <MapPin className="h-3 w-3 mr-1" />
-            <span className="truncate">{activity.location.name}</span>
+          <div className="flex items-center text-sm text-navy-300 bg-navy-700/30 rounded-lg p-3">
+            <MapPin className="h-4 w-4 mr-2 text-purple-400 flex-shrink-0" />
+            <span className="font-medium truncate">{activity.location.name}</span>
           </div>
 
           {activity.budget && (
-            <div className="flex items-center text-sm text-green-600">
-              <DollarSign className="h-3 w-3 mr-1" />
-              ${activity.budget}
+            <div className="flex items-center text-sm text-green-300 bg-green-400/10 rounded-lg p-3 border border-green-400/20">
+              <DollarSign className="h-4 w-4 mr-2 text-green-400 flex-shrink-0" />
+              <span className="font-bold">${activity.budget}</span>
             </div>
           )}
 
@@ -296,25 +327,41 @@ export default function TimelineBuilder({
           <AnimatePresence>
             {hasConflicts && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-1"
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="space-y-3"
               >
                 {conflicts.map((conflict, index) => (
-                  <div
+                  <motion.div
                     key={index}
-                    className={`text-xs p-2 rounded ${
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`text-sm p-4 rounded-xl border backdrop-blur-sm ${
                       conflict.severity === 'error' 
-                        ? 'bg-red-50 text-red-700 border border-red-200' 
-                        : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        ? 'bg-red-400/10 text-red-300 border-red-400/30' 
+                        : 'bg-yellow-400/10 text-yellow-300 border-yellow-400/30'
                     }`}
                   >
-                    <div className="flex items-start">
-                      <AlertTriangle className="h-3 w-3 mt-0.5 mr-1 flex-shrink-0" />
-                      <span>{conflict.message}</span>
+                    <div className="flex items-start space-x-3">
+                      <AlertTriangle className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                        conflict.severity === 'error' ? 'text-red-400' : 'text-yellow-400'
+                      }`} />
+                      <div>
+                        <div className="font-medium mb-1">
+                          {conflict.type === 'overlap' ? 'Schedule Conflict' :
+                           conflict.type === 'travel_time' ? 'Travel Time Issue' : 
+                           'Location Conflict'}
+                        </div>
+                        <div className="text-xs opacity-90 leading-relaxed">
+                          {conflict.message}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             )}
@@ -328,11 +375,11 @@ export default function TimelineBuilder({
   const totalDuration = dayPlan.activities.reduce((sum, activity) => sum + activity.timeSlot.duration, 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Day Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-navy-800/30 backdrop-blur-md rounded-2xl p-6 border border-navy-600">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-3xl font-bold text-navy-100 mb-2">
             {new Date(dayPlan.date).toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
@@ -340,21 +387,35 @@ export default function TimelineBuilder({
               day: 'numeric',
             })}
           </h2>
-          <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
-            <span>{dayPlan.activities.length} activities</span>
-            <span>{formatDuration(totalDuration)} total</span>
-            {totalBudget > 0 && <span>${totalBudget} budget</span>}
+          <div className="flex items-center space-x-6 text-sm">
+            <div className="flex items-center space-x-2 bg-navy-700/50 rounded-lg px-3 py-2">
+              <Calendar className="h-4 w-4 text-teal-400" />
+              <span className="text-navy-300 font-medium">{dayPlan.activities.length} activities</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-navy-700/50 rounded-lg px-3 py-2">
+              <Clock className="h-4 w-4 text-blue-400" />
+              <span className="text-navy-300 font-medium">{formatDuration(totalDuration)} total</span>
+            </div>
+            {totalBudget > 0 && (
+              <div className="flex items-center space-x-2 bg-green-400/10 border border-green-400/30 rounded-lg px-3 py-2">
+                <DollarSign className="h-4 w-4 text-green-400" />
+                <span className="text-green-300 font-bold">${totalBudget} budget</span>
+              </div>
+            )}
           </div>
         </div>
         
         {isEditable && (
           <motion.button
             onClick={onAddActivity}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            whileHover={{ scale: 1.05 }}
+            className="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-teal-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
             <span>Add Activity</span>
           </motion.button>
         )}
@@ -363,42 +424,105 @@ export default function TimelineBuilder({
       {/* Conflicts Summary */}
       {dayPlan.conflicts.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-yellow-50 border border-yellow-200 rounded-lg p-4"
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          className="bg-yellow-400/10 border border-yellow-400/30 rounded-xl p-6 backdrop-blur-md"
         >
-          <div className="flex items-center mb-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
-            <h3 className="font-medium text-yellow-800">
-              {dayPlan.conflicts.length} conflict{dayPlan.conflicts.length > 1 ? 's' : ''} detected
+          <div className="flex items-center mb-3">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              className="mr-3"
+            >
+              <AlertTriangle className="h-6 w-6 text-yellow-400" />
+            </motion.div>
+            <h3 className="font-bold text-yellow-300 text-lg">
+              {dayPlan.conflicts.length} Conflict{dayPlan.conflicts.length > 1 ? 's' : ''} Detected
             </h3>
           </div>
-          <p className="text-sm text-yellow-700">
-            Review your timeline for overlapping activities or insufficient travel time.
+          <p className="text-sm text-yellow-200 leading-relaxed">
+            Your timeline has scheduling issues that need attention. Review the highlighted activities below to resolve overlapping times or insufficient travel duration.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {dayPlan.conflicts.map((conflict, index) => (
+              <span
+                key={index}
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  conflict.severity === 'error' 
+                    ? 'bg-red-400/20 text-red-300 border border-red-400/30' 
+                    : 'bg-yellow-400/20 text-yellow-300 border border-yellow-400/30'
+                }`}
+              >
+                {conflict.type.replace('_', ' ')}
+              </span>
+            ))}
+          </div>
         </motion.div>
       )}
 
       {/* Timeline */}
-      <div className="space-y-4" ref={scrollContainerRef}>
+      <div className="space-y-6" ref={scrollContainerRef}>
         {dayPlan.activities.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
+            className="text-center py-16 bg-navy-800/20 backdrop-blur-md rounded-2xl border-2 border-dashed border-navy-500/50 relative overflow-hidden"
           >
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No activities planned</h3>
-            <p className="text-gray-600 mb-4">Start building your day by adding activities</p>
-            {isEditable && (
-              <button
-                onClick={onAddActivity}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            {/* Background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-400/5 to-blue-400/5"></div>
+            <div className="absolute top-4 right-4 w-32 h-32 bg-teal-400/10 rounded-full blur-xl"></div>
+            <div className="absolute bottom-4 left-4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl"></div>
+            
+            <div className="relative z-10">
+              <motion.div
+                animate={{ 
+                  rotate: [0, 5, -5, 0],
+                  scale: [1, 1.1, 1, 1.05, 1]
+                }}
+                transition={{ 
+                  repeat: Infinity,
+                  duration: 3,
+                  ease: 'easeInOut'
+                }}
+                className="mb-6"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add First Activity
-              </button>
-            )}
+                <Calendar className="h-16 w-16 text-teal-400 mx-auto" />
+              </motion.div>
+              
+              <h3 className="text-2xl font-bold text-navy-100 mb-3">
+                Your Day Awaits
+              </h3>
+              <p className="text-navy-300 mb-6 max-w-md mx-auto leading-relaxed">
+                Start crafting your perfect day by adding activities, attractions, and experiences
+              </p>
+              
+              {isEditable && (
+                <motion.button
+                  onClick={onAddActivity}
+                  className="inline-flex items-center space-x-3 px-8 py-4 bg-gradient-to-r from-teal-500 to-blue-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                  whileHover={{ 
+                    scale: 1.05, 
+                    y: -2,
+                    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Add Your First Activity</span>
+                </motion.button>
+              )}
+              
+              {!isEditable && (
+                <div className="text-navy-400 text-sm bg-navy-700/30 rounded-lg p-4 max-w-sm mx-auto">
+                  <MapPin className="h-4 w-4 inline mr-2" />
+                  This timeline is in view-only mode
+                </div>
+              )}
+            </div>
           </motion.div>
         ) : (
           <Reorder.Group

@@ -103,6 +103,228 @@ All critical user-reported issues have been resolved:
 - **Database Schema**: ✅ draft_trips table ready for migration
 - **API Validation**: ✅ Zod schemas for data validation and type safety
 
+## 🔗 COMPREHENSIVE API REGISTRY
+
+### **Phase 0: Travel Platform API Integration**
+This section documents all APIs integrated for comprehensive travel search functionality as outlined in Feature_fix.md Phase 0-6.
+
+### **✈️ Flight Search APIs**
+
+#### **Kiwi Tequila API** (Primary Flight Search)
+- **Purpose**: Meta-search engine for flights, trains, buses globally
+- **Authentication**: API key-based authentication
+- **Base URL**: `https://api.tequila.kiwi.com/`
+- **Rate Limits**: 1000 requests/month (free), paid tiers available
+- **Key Features**: Multi-modal search, price tracking, flexible dates
+- **Environment Variable**: `KIWI_TEQUILA_API_KEY`
+- **Fallback Strategy**: Amadeus API → Enhanced mock data
+
+#### **Amadeus GDS API** (Official Airline Data)
+- **Purpose**: Direct access to airline reservation systems
+- **Authentication**: OAuth 2.0 client credentials
+- **Base URL**: `https://api.amadeus.com/`
+- **Rate Limits**: 10 transactions/second, 10,000/month (self-service)
+- **Key Features**: Real-time pricing, seat maps, flight status
+- **Environment Variables**: `AMADEUS_CLIENT_ID`, `AMADEUS_CLIENT_SECRET`
+- **Fallback Strategy**: Kiwi API → Mock flight data
+
+#### **Aviationstack API** (Flight Tracking)
+- **Purpose**: Real-time flight tracking and status
+- **Authentication**: API key authentication
+- **Rate Limits**: 1000 requests/month (free tier)
+- **Key Features**: Live flight tracking, airport data, schedules
+- **Environment Variable**: `AVIATIONSTACK_API_KEY`
+- **Fallback Strategy**: Static flight status data
+
+### **🏨 Hotel Search APIs**
+
+#### **Booking.com Partner API** (Primary Hotel Search)
+- **Purpose**: Hotel inventory and booking integration
+- **Authentication**: Partner API key (requires application)
+- **Rate Limits**: Varies by partner tier
+- **Key Features**: Global inventory, real-time availability, commission tracking
+- **Environment Variable**: `BOOKING_COM_API_KEY`
+- **Fallback Strategy**: Amadeus Hotels → Mock hotel data
+
+#### **Amadeus Hotel APIs** (Secondary Hotel Search)
+- **Purpose**: Hotel search and booking through GDS
+- **Authentication**: OAuth 2.0 (same as flight API)
+- **Rate Limits**: Shared with flight API quotas
+- **Key Features**: Chain hotels, direct booking links
+- **Fallback Strategy**: Mock hotel data with local recommendations
+
+### **🚗 Ground Transport APIs**
+
+#### **Rome2Rio API** (Multi-Modal Transport)
+- **Purpose**: Global multi-modal transport routing
+- **Authentication**: API key authentication
+- **Base URL**: `https://free.rome2rio.com/api/`
+- **Rate Limits**: 1000 requests/month (free)
+- **Key Features**: Buses, trains, ferries, driving directions
+- **Environment Variable**: `ROME2RIO_API_KEY`
+- **Fallback Strategy**: Google Directions → Manual transport options
+
+#### **CarTrawler API** (Car Rental Aggregation)
+- **Purpose**: Global car rental comparison and booking
+- **Authentication**: Partner agreement required
+- **Rate Limits**: Commercial terms vary
+- **Key Features**: 4000+ locations, price comparison, affiliate tracking
+- **Environment Variable**: `CARTRAWLER_API_KEY`
+- **Fallback Strategy**: Direct car rental provider links
+
+### **🗺️ Maps & Routing APIs**
+
+#### **Mapbox API** (Primary Maps Provider)
+- **Purpose**: Interactive maps, routing, and geocoding
+- **Authentication**: Access token authentication
+- **Base URL**: `https://api.mapbox.com/`
+- **Rate Limits**: 50,000 requests/month (free tier)
+- **Key Features**: Vector maps, turn-by-turn directions, offline support
+- **Environment Variable**: `MAPBOX_ACCESS_TOKEN`
+- **Fallback Strategy**: Google Maps → Static map images
+
+#### **Google Maps Platform** (Premium Maps Features)
+- **Purpose**: Advanced mapping, Street View, detailed POI data
+- **Authentication**: API key with billing account
+- **Rate Limits**: $200/month free credit
+- **Key Features**: Street View, detailed business data, traffic
+- **Environment Variable**: `GOOGLE_MAPS_API_KEY`
+- **Usage**: Premium features only, not primary provider
+
+### **📍 Points of Interest APIs**
+
+#### **OpenTripMap API** (Attractions & Landmarks)
+- **Purpose**: Tourist attractions and landmarks database
+- **Authentication**: API key (free registration)
+- **Base URL**: `https://api.opentripmap.com/`
+- **Rate Limits**: 1000 requests/day (free)
+- **Key Features**: Wikipedia integration, photos, historical data
+- **Environment Variable**: `OPENTRIPMAP_API_KEY`
+- **Fallback Strategy**: Foursquare → Local recommendations
+
+#### **Foursquare Places API** (Business & Venue Data)
+- **Purpose**: Restaurant, bar, and business information
+- **Authentication**: API key authentication
+- **Base URL**: `https://api.foursquare.com/v3/`
+- **Rate Limits**: 950 calls/day (free tier)
+- **Key Features**: Reviews, photos, hours, categories
+- **Environment Variable**: `FOURSQUARE_API_KEY`
+- **Fallback Strategy**: Yelp Fusion → Static venue data
+
+#### **Yelp Fusion API** (Restaurant Reviews)
+- **Purpose**: Restaurant reviews and business data (US/UK focus)
+- **Authentication**: API key authentication
+- **Rate Limits**: 5000 requests/day
+- **Key Features**: User reviews, ratings, photos, delivery info
+- **Environment Variable**: `YELP_API_KEY`
+- **Fallback Strategy**: Static restaurant recommendations
+
+### **🤖 AI & LLM APIs**
+
+#### **Google Gemini 2.5 Flash** (Cost-Effective AI)
+- **Purpose**: Local insights, restaurant recommendations, cultural context
+- **Authentication**: API key authentication
+- **Rate Limits**: Generous free tier, pay-per-use
+- **Key Features**: Fast responses, good for recommendations
+- **Environment Variable**: `GOOGLE_GEMINI_API_KEY`
+- **Fallback Strategy**: GPT-4o Mini → Static recommendations
+
+#### **OpenAI GPT-4o Mini** (Advanced Reasoning)
+- **Purpose**: Complex itinerary planning, multi-constraint optimization
+- **Authentication**: API key authentication
+- **Rate Limits**: $20/month typical usage
+- **Key Features**: Advanced reasoning, structured outputs
+- **Environment Variable**: `OPENAI_API_KEY` (already configured)
+- **Fallback Strategy**: Basic algorithmic planning
+
+### **💰 Affiliate & Booking APIs**
+
+#### **Travelpayouts Affiliate Network**
+- **Purpose**: Flight and hotel affiliate commissions
+- **Authentication**: Partner account registration
+- **Key Features**: Commission tracking, deep linking, white-label
+- **Environment Variable**: `TRAVELPAYOUTS_API_KEY`
+- **Integration**: Revenue optimization through affiliate links
+
+#### **Direct Partner Integrations**
+- **Expedia Partner Solutions**: Hotel and flight inventory
+- **Agoda Partner Network**: Asia-Pacific hotel focus
+- **RentWire API**: Car rental affiliate network
+
+### **⚙️ API Usage Guidelines**
+
+#### **Rate Limiting Strategy**
+- Implement exponential backoff for all APIs
+- Cache responses with appropriate TTL (flights: 15min, hotels: 1hr, POI: 24hr)
+- Use Redis for distributed rate limit tracking
+- Monitor usage across all services
+
+#### **Error Handling Best Practices**
+- Graceful degradation: Always provide fallback data
+- User-friendly error messages (never expose API errors)
+- Retry logic with jitter for transient failures
+- Circuit breaker pattern for unstable services
+
+#### **Cost Optimization**
+- Cache aggressively to reduce API calls
+- Batch requests where possible
+- Use free tiers efficiently before upgrading
+- Monitor costs with alerts at 80% of budget
+
+#### **Security Requirements**
+- All API keys stored in environment variables
+- No API keys in client-side code
+- Key rotation strategy implemented
+- IP whitelisting where supported
+
+#### **Performance Targets**
+- Search results: < 3 seconds for initial results
+- Cached responses: < 500ms
+- Map loading: < 2 seconds
+- AI recommendations: < 5 seconds
+
+### **🔄 API Fallback Chain**
+
+#### **Flight Search Fallback Order**
+1. Kiwi Tequila API (primary)
+2. Amadeus GDS API (secondary)
+3. Enhanced mock data with realistic pricing
+
+#### **Hotel Search Fallback Order**
+1. Booking.com Partner API (primary)
+2. Amadeus Hotels API (secondary)
+3. Static hotel data with booking links
+
+#### **POI Discovery Fallback Order**
+1. OpenTripMap API (attractions)
+2. Foursquare API (businesses)
+3. Yelp API (restaurants, US/UK)
+4. Static recommendations database
+
+#### **AI Recommendations Fallback Order**
+1. Google Gemini 2.5 Flash (primary)
+2. OpenAI GPT-4o Mini (advanced reasoning)
+3. Algorithmic recommendations
+4. Static content database
+
+### **📊 API Monitoring & Analytics**
+
+#### **Key Metrics to Track**
+- Response times by API provider
+- Success/error rates
+- Cost per successful request
+- Cache hit ratios
+- User satisfaction by API quality
+
+#### **Alerting Thresholds**
+- Response time > 5 seconds
+- Error rate > 5%
+- Daily cost > $50
+- Cache hit rate < 60%
+- API quota usage > 80%
+
+---
+
 ## Project Architecture
 
 ### Tech Stack

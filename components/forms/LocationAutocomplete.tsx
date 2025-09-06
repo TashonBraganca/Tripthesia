@@ -7,6 +7,7 @@ import { searchLocations, formatLocationDisplay, getCityState, LocationData, get
 import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import { staggerContainer, staggerItem } from '@/lib/animations/variants';
 import { trackFieldSuggest } from '@/lib/analytics/events';
+import { PortalDropdown, useDropdown } from '@/components/ui/portal-dropdown';
 
 // LocationData interface is imported from lib/data/locations
 
@@ -67,7 +68,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [query, setQuery] = useState('');
   const inputId = React.useId();
   const [suggestions, setSuggestions] = useState<LocationData[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const dropdown = useDropdown(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
@@ -76,7 +77,6 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   
   const config = variantStyles[variant];
 
@@ -116,7 +116,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
-    setIsOpen(true);
+    dropdown.open();
     setLoading(true);
     setShowLocationOptions(false);
 
@@ -129,7 +129,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     searchDebounceRef.current = setTimeout(() => {
       performSearch(newQuery);
     }, 150); // Slightly faster response
-  }, [performSearch]);
+  }, [performSearch, dropdown]);
 
   const handleSuggestionSelect = useCallback((location: LocationData) => {
     // Track analytics for field suggestion usage
@@ -149,34 +149,34 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       onChange(location);
     }
     
-    setIsOpen(false);
+    dropdown.close();
     setSuggestions([]);
     setSelectedIndex(-1);
     setShowLocationOptions(false);
     inputRef.current?.blur();
-  }, [onChange, userLocation, variant, suggestions.length, query.length]);
+  }, [onChange, userLocation, variant, suggestions.length, query.length, dropdown]);
 
   const handleLocationOptionsToggle = useCallback(() => {
     setShowLocationOptions(!showLocationOptions);
     if (!showLocationOptions) {
-      setIsOpen(true);
+      dropdown.open();
       setLoading(true);
       performSearch('');
     }
-  }, [showLocationOptions, performSearch]);
+  }, [showLocationOptions, performSearch, dropdown]);
 
   const handleClear = useCallback(() => {
     setQuery('');
     onChange(null);
-    setIsOpen(false);
+    dropdown.close();
     setSuggestions([]);
     setSelectedIndex(-1);
     inputRef.current?.focus();
-  }, [onChange]);
+  }, [onChange, dropdown]);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen || suggestions.length === 0) return;
+    if (!dropdown.isOpen || suggestions.length === 0) return;
 
     switch (e.key) {
       case 'ArrowDown':
@@ -201,25 +201,18 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
         break;
         
       case 'Escape':
-        setIsOpen(false);
+        dropdown.close();
         setSelectedIndex(-1);
         inputRef.current?.blur();
         break;
     }
-  }, [isOpen, suggestions, selectedIndex, handleSuggestionSelect]);
+  }, [dropdown.isOpen, suggestions, selectedIndex, handleSuggestionSelect, dropdown]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setSelectedIndex(-1);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Handle dropdown close
+  const handleDropdownClose = useCallback(() => {
+    dropdown.close();
+    setSelectedIndex(-1);
+  }, [dropdown]);
 
   // Get user location on component mount
   useEffect(() => {
@@ -282,10 +275,10 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   }, [selectedIndex]);
 
   const IconComponent = config.icon;
-  const showSuggestions = isOpen && (suggestions.length > 0 || loading);
+  const showSuggestions = dropdown.isOpen && (suggestions.length > 0 || loading);
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
+    <div className={`relative ${className}`}>
       {label && (
         <label 
           htmlFor={inputId}
@@ -294,227 +287,223 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
           {label} {required && <span className="text-red-400">*</span>}
         </label>
       )}
-      <div className="relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
-          <IconComponent 
-            size={18} 
-            className={`text-${config.accent}-400 transition-colors duration-200`}
-          />
-        </div>
-        
-        <input
-          ref={inputRef}
-          id={inputId}
-          type="text"
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (query.length >= 2) {
-              setIsOpen(true);
-            } else if (showNearbyLocations && (userLocation || suggestions.length > 0)) {
-              setIsOpen(true);
-              performSearch('');
-            }
-          }}
-          placeholder={placeholder || config.placeholder}
-          disabled={disabled}
-          required={required}
-          className={`
-            w-full pl-10 pr-20 py-3 
-            bg-navy-800/50 border border-navy-600 rounded-xl
-            text-navy-100 placeholder-navy-400
-            focus:border-${config.accent}-400 focus:ring-2 focus:ring-${config.accent}-400/20
-            focus:outline-none transition-all duration-200
-            disabled:opacity-50 disabled:cursor-not-allowed
-            backdrop-blur-sm
-          `}
-        />
-        
-        {/* Action Buttons */}
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-          {showCurrentLocation && userLocation && (
-            <div title="Use current location">
-              <AnimatedButton
-                variant="ghost"
-                size="sm"
-                onClick={handleLocationOptionsToggle}
-                className="p-1.5 h-auto min-h-0 text-sky-400 hover:text-sky-300"
-                particles={false}
-              >
-                <Crosshair size={14} />
-              </AnimatedButton>
+      
+      <PortalDropdown
+        isOpen={showSuggestions}
+        onClose={handleDropdownClose}
+        sameWidth={true}
+        maxHeight={320}
+        placement="bottom-start"
+        trigger={
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 z-10">
+              <IconComponent 
+                size={18} 
+                className={`text-${config.accent}-400 transition-colors duration-200`}
+              />
             </div>
-          )}
-          
-          {(query || value) && !disabled && (
-            <AnimatedButton
-              variant="ghost"
-              size="sm"
-              onClick={handleClear}
-              className="p-1.5 h-auto min-h-0"
-              particles={false}
-            >
-              <X size={14} />
-            </AnimatedButton>
-          )}
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {showSuggestions && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 mt-2 z-50"
-          >
-            <div className="bg-navy-800/95 backdrop-blur-md border border-navy-600 rounded-xl shadow-2xl overflow-hidden">
-              {loading ? (
-                <div className="px-4 py-3 text-center text-navy-400">
-                  <Search className="inline-block animate-spin mr-2" size={16} />
-                  {query.length >= 2 ? 'Searching locations...' : 'Loading nearby places...'}
+            
+            <input
+              ref={inputRef}
+              id={inputId}
+              type="text"
+              value={query}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (query.length >= 2) {
+                  dropdown.open();
+                } else if (showNearbyLocations && (userLocation || suggestions.length > 0)) {
+                  dropdown.open();
+                  performSearch('');
+                }
+              }}
+              placeholder={placeholder || config.placeholder}
+              disabled={disabled}
+              required={required}
+              className={`
+                w-full pl-10 pr-20 py-3 
+                bg-navy-800/50 border border-navy-600 rounded-xl
+                text-navy-100 placeholder-navy-400
+                focus:border-${config.accent}-400 focus:ring-2 focus:ring-${config.accent}-400/20
+                focus:outline-none transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                backdrop-blur-sm
+              `}
+            />
+            
+            {/* Action Buttons */}
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+              {showCurrentLocation && userLocation && (
+                <div title="Use current location">
+                  <AnimatedButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLocationOptionsToggle}
+                    className="p-1.5 h-auto min-h-0 text-sky-400 hover:text-sky-300"
+                    particles={false}
+                  >
+                    <Crosshair size={14} />
+                  </AnimatedButton>
                 </div>
-              ) : (
-                <motion.ul
-                  ref={listRef}
-                  variants={staggerContainer}
-                  initial="hidden"
-                  animate="visible"
-                  className="max-h-80 overflow-y-auto"
+              )}
+              
+              {(query || value) && !disabled && (
+                <AnimatedButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClear}
+                  className="p-1.5 h-auto min-h-0"
+                  particles={false}
                 >
-                  {suggestions.map((location, index) => {
-                    const TypeIcon = typeIcons[location.type];
-                    const isSelected = index === selectedIndex;
-                    
-                    return (
-                      <motion.li
-                        key={location.id}
-                        variants={staggerItem}
-                        className={`
-                          px-4 py-3 cursor-pointer transition-all duration-150
-                          flex items-center space-x-3 group
-                          ${isSelected 
-                            ? `bg-${config.accent}-400/10 border-l-2 border-${config.accent}-400` 
-                            : 'hover:bg-navy-700/50 border-l-2 border-transparent'
-                          }
-                        `}
-                        onClick={() => handleSuggestionSelect(location)}
-                        onMouseEnter={() => setSelectedIndex(index)}
-                      >
-                        <div className={`
-                          p-2 rounded-lg transition-colors duration-200
-                          ${isSelected 
-                            ? `bg-${config.accent}-400/20 text-${config.accent}-300` 
-                            : 'bg-navy-700 text-navy-400 group-hover:text-navy-300'
-                          }
-                        `}>
-                          <TypeIcon size={16} />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-navy-100 truncate">
-                            {location.name}
-                          </div>
-                          <div className="text-sm text-navy-400 truncate">
-                            {getCityState(location)} • {location.type.charAt(0).toUpperCase() + location.type.slice(1)}
-                            {location.iataCode && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-navy-600 rounded text-xs font-mono">
-                                {location.iataCode}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {isSelected && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className={`w-2 h-2 bg-${config.accent}-400 rounded-full`}
-                          />
-                        )}
-                      </motion.li>
-                    );
-                  })}
-                  
-                  {/* Current Location Option */}
-                  {showCurrentLocation && userLocation && query.toLowerCase().includes('current') && (
-                    <motion.li
-                      variants={staggerItem}
-                      className="px-4 py-3 cursor-pointer transition-all duration-150 flex items-center space-x-3 group bg-sky-400/10 border-l-2 border-sky-400 hover:bg-sky-400/20"
-                      onClick={() => handleSuggestionSelect({
-                        id: 'current-location',
-                        name: 'Current Location',
-                        displayName: 'Use Current Location 📍',
-                        type: 'city',
-                        country: 'Unknown',
-                        countryCode: 'XX',
-                        coordinates: [userLocation.coords.longitude, userLocation.coords.latitude],
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        flagEmoji: '📍',
-                        searchTerms: ['current', 'location'],
-                        popularity: 100
-                      })}
-                    >
-                      <div className="p-2 rounded-lg bg-sky-400/20 text-sky-300">
-                        <Crosshair size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sky-200">Use Current Location</div>
-                        <div className="text-sm text-sky-400">Detected location • GPS</div>
-                      </div>
-                    </motion.li>
-                  )}
-                  
-                  {/* Location Error */}
-                  {locationError && showCurrentLocation && (
-                    <motion.li
-                      variants={staggerItem}
-                      className="px-4 py-3 text-center text-amber-400 bg-amber-400/10 border-l-2 border-amber-400"
-                    >
-                      <AlertCircle size={16} className="inline-block mr-2" />
-                      <span className="text-sm">{locationError}</span>
-                    </motion.li>
-                  )}
-                  
-                  {suggestions.length === 0 && query.length >= 2 && (
-                    <motion.li
-                      variants={staggerItem}
-                      className="px-4 py-6 text-center text-navy-400"
-                    >
-                      <Search size={24} className="mx-auto mb-2 opacity-50" />
-                      <div>No locations found for &quot;{query}&quot;</div>
-                      <div className="text-sm mt-1">Try searching for a city, state, or landmark</div>
-                      {showCurrentLocation && (
-                        <div className="text-xs mt-2 text-sky-400">
-                          Tip: Type &quot;current&quot; to use your location
-                        </div>
-                      )}
-                    </motion.li>
-                  )}
-                  
-                  {/* Show popular/nearby locations when no query */}
-                  {suggestions.length === 0 && query.length < 2 && !loading && (
-                    <motion.li
-                      variants={staggerItem}
-                      className="px-4 py-4 text-center text-navy-400"
-                    >
-                      <MapPin size={20} className="mx-auto mb-2 opacity-50" />
-                      <div className="text-sm">Start typing to search locations</div>
-                      {userLocation && (
-                        <div className="text-xs mt-1 text-sky-400">
-                          Or we can show nearby popular destinations
-                        </div>
-                      )}
-                    </motion.li>
-                  )}
-                </motion.ul>
+                  <X size={14} />
+                </AnimatedButton>
               )}
             </div>
-          </motion.div>
+          </div>
+        }
+      >
+        {loading ? (
+          <div className="px-4 py-3 text-center text-navy-400">
+            <Search className="inline-block animate-spin mr-2" size={16} />
+            {query.length >= 2 ? 'Searching locations...' : 'Loading nearby places...'}
+          </div>
+        ) : (
+          <motion.ul
+            ref={listRef}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="max-h-80 overflow-y-auto"
+          >
+            {suggestions.map((location, index) => {
+              const TypeIcon = typeIcons[location.type];
+              const isSelected = index === selectedIndex;
+              
+              return (
+                <motion.li
+                  key={location.id}
+                  variants={staggerItem}
+                  className={`
+                    px-4 py-3 cursor-pointer transition-all duration-150
+                    flex items-center space-x-3 group
+                    ${isSelected 
+                      ? `bg-${config.accent}-400/10 border-l-2 border-${config.accent}-400` 
+                      : 'hover:bg-navy-700/50 border-l-2 border-transparent'
+                    }
+                  `}
+                  onClick={() => handleSuggestionSelect(location)}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <div className={`
+                    p-2 rounded-lg transition-colors duration-200
+                    ${isSelected 
+                      ? `bg-${config.accent}-400/20 text-${config.accent}-300` 
+                      : 'bg-navy-700 text-navy-400 group-hover:text-navy-300'
+                    }
+                  `}>
+                    <TypeIcon size={16} />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-navy-100 truncate">
+                      {location.name}
+                    </div>
+                    <div className="text-sm text-navy-400 truncate">
+                      {getCityState(location)} • {location.type.charAt(0).toUpperCase() + location.type.slice(1)}
+                      {location.iataCode && (
+                        <span className="ml-2 px-1.5 py-0.5 bg-navy-600 rounded text-xs font-mono">
+                          {location.iataCode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className={`w-2 h-2 bg-${config.accent}-400 rounded-full`}
+                    />
+                  )}
+                </motion.li>
+              );
+            })}
+            
+            {/* Current Location Option */}
+            {showCurrentLocation && userLocation && query.toLowerCase().includes('current') && (
+              <motion.li
+                variants={staggerItem}
+                className="px-4 py-3 cursor-pointer transition-all duration-150 flex items-center space-x-3 group bg-sky-400/10 border-l-2 border-sky-400 hover:bg-sky-400/20"
+                onClick={() => handleSuggestionSelect({
+                  id: 'current-location',
+                  name: 'Current Location',
+                  displayName: 'Use Current Location 📍',
+                  type: 'city',
+                  country: 'Unknown',
+                  countryCode: 'XX',
+                  coordinates: [userLocation.coords.longitude, userLocation.coords.latitude],
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  flagEmoji: '📍',
+                  searchTerms: ['current', 'location'],
+                  popularity: 100
+                })}
+              >
+                <div className="p-2 rounded-lg bg-sky-400/20 text-sky-300">
+                  <Crosshair size={16} />
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-sky-200">Use Current Location</div>
+                  <div className="text-sm text-sky-400">Detected location • GPS</div>
+                </div>
+              </motion.li>
+            )}
+            
+            {/* Location Error */}
+            {locationError && showCurrentLocation && (
+              <motion.li
+                variants={staggerItem}
+                className="px-4 py-3 text-center text-amber-400 bg-amber-400/10 border-l-2 border-amber-400"
+              >
+                <AlertCircle size={16} className="inline-block mr-2" />
+                <span className="text-sm">{locationError}</span>
+              </motion.li>
+            )}
+            
+            {suggestions.length === 0 && query.length >= 2 && (
+              <motion.li
+                variants={staggerItem}
+                className="px-4 py-6 text-center text-navy-400"
+              >
+                <Search size={24} className="mx-auto mb-2 opacity-50" />
+                <div>No locations found for &quot;{query}&quot;</div>
+                <div className="text-sm mt-1">Try searching for a city, state, or landmark</div>
+                {showCurrentLocation && (
+                  <div className="text-xs mt-2 text-sky-400">
+                    Tip: Type &quot;current&quot; to use your location
+                  </div>
+                )}
+              </motion.li>
+            )}
+            
+            {/* Show popular/nearby locations when no query */}
+            {suggestions.length === 0 && query.length < 2 && !loading && (
+              <motion.li
+                variants={staggerItem}
+                className="px-4 py-4 text-center text-navy-400"
+              >
+                <MapPin size={20} className="mx-auto mb-2 opacity-50" />
+                <div className="text-sm">Start typing to search locations</div>
+                {userLocation && (
+                  <div className="text-xs mt-1 text-sky-400">
+                    Or we can show nearby popular destinations
+                  </div>
+                )}
+              </motion.li>
+            )}
+          </motion.ul>
         )}
-      </AnimatePresence>
+      </PortalDropdown>
     </div>
   );
 };
