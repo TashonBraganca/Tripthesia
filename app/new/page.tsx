@@ -40,6 +40,11 @@ const TripOptimizer = dynamic(() => import('@/components/ai/TripOptimizer').then
 const TripReview = dynamic(() => import('@/components/trip/TripReview').then(mod => ({ default: mod.TripReview })), {
   loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-64 w-full" />
 });
+
+const HotelClusteringResults = dynamic(() => import('@/components/planning/HotelClusteringResults').then(mod => ({ default: mod.HotelClusteringResults })), {
+  loading: () => <div className="animate-pulse bg-navy-800/50 rounded-xl h-96 w-full" />
+});
+
 import type { LocationData } from '@/lib/data/locations';
 
 interface TripFormData {
@@ -85,6 +90,8 @@ export default function NewTripPage() {
   // Accommodation step state
   const [selectedAccommodations, setSelectedAccommodations] = useState<any[]>([]);
   const [isSearchingAccommodations, setIsSearchingAccommodations] = useState(false);
+  const [accommodationViewMode, setAccommodationViewMode] = useState<'types' | 'hotels'>('types');
+  const [selectedHotels, setSelectedHotels] = useState<any[]>([]);
   
   // Activities step state
   const [selectedActivities, setSelectedActivities] = useState<any[]>([]);
@@ -135,6 +142,12 @@ export default function NewTripPage() {
             if (draft.stepData.selectedAccommodations) {
               setSelectedAccommodations(draft.stepData.selectedAccommodations);
             }
+            if (draft.stepData.selectedHotels) {
+              setSelectedHotels(draft.stepData.selectedHotels);
+            }
+            if (draft.stepData.accommodationViewMode) {
+              setAccommodationViewMode(draft.stepData.accommodationViewMode);
+            }
             if (draft.stepData.selectedActivities) {
               setSelectedActivities(draft.stepData.selectedActivities);
             }
@@ -169,6 +182,8 @@ export default function NewTripPage() {
             selectedTransport,
             selectedRentals,
             selectedAccommodations,
+            selectedHotels,
+            accommodationViewMode,
             selectedActivities,
             selectedDining
           },
@@ -193,7 +208,7 @@ export default function NewTripPage() {
       console.error('Error saving draft trip:', error);
       setSaveStatus('error');
     }
-  }, [user, formData, currentStep, completedSteps, selectedTransport, selectedRentals, selectedAccommodations, selectedActivities, selectedDining]);
+  }, [user, formData, currentStep, completedSteps, selectedTransport, selectedRentals, selectedAccommodations, selectedHotels, accommodationViewMode, selectedActivities, selectedDining]);
 
   useEffect(() => {
     setMounted(true);
@@ -1006,6 +1021,23 @@ export default function NewTripPage() {
       }
     };
 
+    const handleHotelSelection = (hotel: any) => {
+      const updatedHotels = selectedHotels.some(h => h.id === hotel.id)
+        ? selectedHotels.filter(h => h.id !== hotel.id)
+        : [...selectedHotels, hotel];
+      
+      setSelectedHotels(updatedHotels);
+      setFormData(prev => ({
+        ...prev,
+        accommodation: [...selectedAccommodations, ...updatedHotels]
+      }));
+      
+      // Mark accommodation step as completed if any hotel is selected
+      if (updatedHotels.length > 0 && !completedSteps.includes('accommodation')) {
+        setCompletedSteps(prev => [...prev, 'accommodation']);
+      }
+    };
+
     const accommodationTypes = [
       {
         id: 'luxury-hotels',
@@ -1062,6 +1094,56 @@ export default function NewTripPage() {
       return <IconComponent className="w-4 h-4" />;
     };
 
+    // Create hotel search parameters from form data
+    const createHotelSearchParams = () => {
+      if (!formData.to || !formData.startDate || !formData.endDate) {
+        return null;
+      }
+
+      return {
+        location: {
+          type: 'city' as const,
+          value: formData.to.name,
+          coordinates: formData.to.coordinates,
+          radius: 10,
+          countryCode: formData.to.countryCode || 'IN'
+        },
+        checkIn: formData.startDate,
+        checkOut: formData.endDate,
+        rooms: [{
+          adults: Math.max(1, Math.floor(formData.travelers / 2)),
+          children: Math.max(0, formData.travelers - Math.floor(formData.travelers / 2)),
+        }],
+        filters: {
+          priceRange: {
+            max: formData.budget ? Math.floor(formData.budget / 10) : 15000,
+            currency: 'INR'
+          },
+          ...(selectedAccommodations.length > 0 && {
+            propertyType: selectedAccommodations.map(acc => {
+              switch (acc.id) {
+                case 'luxury-hotels': return 'hotel';
+                case 'business-hotels': return 'hotel';
+                case 'budget-hotels': return 'hotel';
+                case 'boutique-stays': return 'hotel';
+                default: return 'hotel';
+              }
+            }),
+            starRating: {
+              min: selectedAccommodations.some(acc => acc.id === 'luxury-hotels') ? 4 :
+                   selectedAccommodations.some(acc => acc.id === 'business-hotels') ? 3 :
+                   selectedAccommodations.some(acc => acc.id === 'boutique-stays') ? 4 : 1
+            }
+          })
+        },
+        sortBy: 'price' as const,
+        currency: 'INR',
+        language: 'en'
+      };
+    };
+
+    const searchParams = createHotelSearchParams();
+
     return (
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
@@ -1077,182 +1159,243 @@ export default function NewTripPage() {
             </p>
           )}
           <p className="text-navy-400 text-sm mt-2">
-            Optional step - You can select multiple types or skip this step
+            Optional step - Set preferences or search specific hotels
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {accommodationTypes.map((type) => {
-            const IconComponent = type.icon;
-            const isSelected = selectedAccommodations.some(a => a.id === type.id);
-            
-            return (
-              <motion.div
-                key={type.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${
-                  isSelected
-                    ? 'bg-teal-900/30 border-teal-500/50 shadow-lg shadow-teal-500/20'
-                    : 'bg-navy-900/20 border-navy-800/30 hover:bg-navy-800/30 hover:border-navy-700/50'
-                }`}
-                onClick={() => handleAccommodationSelection(type)}
-              >
-                {isSelected && (
-                  <div className="absolute top-4 right-4">
-                    <CheckCircle className="w-6 h-6 text-teal-400" />
-                  </div>
-                )}
-                
-                <div className="flex items-start mb-4">
-                  <div className={`p-3 rounded-xl mr-4 ${
-                    isSelected ? 'bg-teal-500/20' : 'bg-navy-800/30'
-                  }`}>
-                    <IconComponent className={`w-6 h-6 ${
-                      isSelected ? 'text-teal-300' : 'text-navy-300'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className={`text-xl font-semibold ${
-                        isSelected ? 'text-teal-100' : 'text-navy-100'
-                      }`}>
-                        {type.title}
-                      </h3>
-                      <div className="flex items-center">
-                        <Star className={`w-4 h-4 fill-current ${
-                          isSelected ? 'text-teal-400' : 'text-amber-400'
-                        }`} />
-                        <span className={`text-sm ml-1 ${
-                          isSelected ? 'text-teal-300' : 'text-navy-300'
-                        }`}>
-                          {type.rating}
-                        </span>
-                      </div>
-                    </div>
-                    <p className={`text-sm mb-3 ${
-                      isSelected ? 'text-teal-300' : 'text-navy-300'
-                    }`}>
-                      {type.description}
-                    </p>
-                    
-                    <div className={`text-lg font-bold mb-3 ${
-                      isSelected ? 'text-teal-200' : 'text-navy-200'
-                    }`}>
-                      {type.priceRange}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div className="mb-4">
-                  <h4 className={`text-sm font-medium mb-2 ${
-                    isSelected ? 'text-teal-200' : 'text-navy-200'
-                  }`}>
-                    Amenities:
-                  </h4>
-                  <div className="flex flex-wrap gap-3">
-                    {type.amenities.map((amenity, index) => (
-                      <div
-                        key={index}
-                        className={`flex items-center gap-1 ${
-                          isSelected ? 'text-teal-300' : 'text-navy-400'
-                        }`}
-                      >
-                        {getAmenityIcon(amenity)}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Features */}
-                <div className="mb-4">
-                  <h4 className={`text-sm font-medium mb-2 ${
-                    isSelected ? 'text-teal-200' : 'text-navy-200'
-                  }`}>
-                    Features:
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {type.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-xs">
-                        <Shield className={`w-3 h-3 mr-1 ${
-                          isSelected ? 'text-teal-400' : 'text-navy-400'
-                        }`} />
-                        <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
-                          {feature}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Examples */}
-                <div>
-                  <h4 className={`text-sm font-medium mb-2 ${
-                    isSelected ? 'text-teal-200' : 'text-navy-200'
-                  }`}>
-                    Popular Brands:
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {type.examples.slice(0, 3).map((example, index) => (
-                      <span
-                        key={index}
-                        className={`px-2 py-1 text-xs rounded-md ${
-                          isSelected 
-                            ? 'bg-teal-800/30 text-teal-300' 
-                            : 'bg-navy-800/50 text-navy-400'
-                        }`}
-                      >
-                        {example}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+        {/* View Mode Toggle */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="bg-navy-900/20 rounded-xl p-1 border border-navy-800/30">
+            <button
+              onClick={() => setAccommodationViewMode('types')}
+              className={`px-6 py-3 rounded-lg transition-all font-medium ${
+                accommodationViewMode === 'types'
+                  ? 'bg-teal-600 text-white shadow-lg'
+                  : 'text-navy-300 hover:text-navy-200'
+              }`}
+            >
+              Set Preferences
+            </button>
+            <button
+              onClick={() => setAccommodationViewMode('hotels')}
+              disabled={!searchParams}
+              className={`px-6 py-3 rounded-lg transition-all font-medium ${
+                accommodationViewMode === 'hotels'
+                  ? 'bg-teal-600 text-white shadow-lg'
+                  : !searchParams
+                  ? 'text-navy-500 cursor-not-allowed'
+                  : 'text-navy-300 hover:text-navy-200'
+              }`}
+            >
+              Search Hotels
+            </button>
+          </div>
         </div>
 
-        {/* Selected Accommodations Summary */}
-        {selectedAccommodations.length > 0 && (
-          <div className="bg-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-teal-500/30 mb-6">
-            <h3 className="text-lg font-semibold text-teal-100 mb-4">Selected Accommodation Types</h3>
-            <div className="space-y-3">
-              {selectedAccommodations.map((accommodation, index) => {
-                const type = accommodationTypes.find(t => t.id === accommodation.id);
-                if (!type) return null;
-                
+        {/* Content based on view mode */}
+        {accommodationViewMode === 'types' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {accommodationTypes.map((type) => {
                 const IconComponent = type.icon;
+                const isSelected = selectedAccommodations.some(a => a.id === type.id);
+                
                 return (
-                  <div key={index} className="flex items-center justify-between bg-teal-800/20 rounded-lg p-3">
-                    <div className="flex items-center">
-                      <IconComponent className="w-5 h-5 text-teal-400 mr-3" />
-                      <div>
-                        <div className="font-medium text-teal-100">{type.title}</div>
-                        <div className="text-sm text-teal-300 flex items-center gap-2">
-                          <Star className="w-3 h-3 fill-current text-amber-400" />
-                          {type.rating} • {type.description}
+                  <motion.div
+                    key={type.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative p-6 rounded-2xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-teal-900/30 border-teal-500/50 shadow-lg shadow-teal-500/20'
+                        : 'bg-navy-900/20 border-navy-800/30 hover:bg-navy-800/30 hover:border-navy-700/50'
+                    }`}
+                    onClick={() => handleAccommodationSelection(type)}
+                  >
+                    {isSelected && (
+                      <div className="absolute top-4 right-4">
+                        <CheckCircle className="w-6 h-6 text-teal-400" />
+                      </div>
+                    )}
+                    
+                    <div className="flex items-start mb-4">
+                      <div className={`p-3 rounded-xl mr-4 ${
+                        isSelected ? 'bg-teal-500/20' : 'bg-navy-800/30'
+                      }`}>
+                        <IconComponent className={`w-6 h-6 ${
+                          isSelected ? 'text-teal-300' : 'text-navy-300'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className={`text-xl font-semibold ${
+                            isSelected ? 'text-teal-100' : 'text-navy-100'
+                          }`}>
+                            {type.title}
+                          </h3>
+                          <div className="flex items-center">
+                            <Star className={`w-4 h-4 fill-current ${
+                              isSelected ? 'text-teal-400' : 'text-amber-400'
+                            }`} />
+                            <span className={`text-sm ml-1 ${
+                              isSelected ? 'text-teal-300' : 'text-navy-300'
+                            }`}>
+                              {type.rating}
+                            </span>
+                          </div>
+                        </div>
+                        <p className={`text-sm mb-3 ${
+                          isSelected ? 'text-teal-300' : 'text-navy-300'
+                        }`}>
+                          {type.description}
+                        </p>
+                        
+                        <div className={`text-lg font-bold mb-3 ${
+                          isSelected ? 'text-teal-200' : 'text-navy-200'
+                        }`}>
+                          {type.priceRange}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-teal-100">{type.priceRange}</div>
-                      <div className="text-sm text-teal-400">Per night</div>
+
+                    {/* Amenities */}
+                    <div className="mb-4">
+                      <h4 className={`text-sm font-medium mb-2 ${
+                        isSelected ? 'text-teal-200' : 'text-navy-200'
+                      }`}>
+                        Amenities:
+                      </h4>
+                      <div className="flex flex-wrap gap-3">
+                        {type.amenities.map((amenity, index) => (
+                          <div
+                            key={index}
+                            className={`flex items-center gap-1 ${
+                              isSelected ? 'text-teal-300' : 'text-navy-400'
+                            }`}
+                          >
+                            {getAmenityIcon(amenity)}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Features */}
+                    <div className="mb-4">
+                      <h4 className={`text-sm font-medium mb-2 ${
+                        isSelected ? 'text-teal-200' : 'text-navy-200'
+                      }`}>
+                        Features:
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {type.features.map((feature, index) => (
+                          <div key={index} className="flex items-center text-xs">
+                            <Shield className={`w-3 h-3 mr-1 ${
+                              isSelected ? 'text-teal-400' : 'text-navy-400'
+                            }`} />
+                            <span className={isSelected ? 'text-teal-300' : 'text-navy-400'}>
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Examples */}
+                    <div>
+                      <h4 className={`text-sm font-medium mb-2 ${
+                        isSelected ? 'text-teal-200' : 'text-navy-200'
+                      }`}>
+                        Popular Brands:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {type.examples.slice(0, 3).map((example, index) => (
+                          <span
+                            key={index}
+                            className={`px-2 py-1 text-xs rounded-md ${
+                              isSelected 
+                                ? 'bg-teal-800/30 text-teal-300' 
+                                : 'bg-navy-800/50 text-navy-400'
+                            }`}
+                          >
+                            {example}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
                 );
               })}
             </div>
             
-            <div className="mt-4 p-4 bg-teal-800/30 rounded-lg">
-              <div className="flex items-start">
-                <Clock className="w-5 h-5 text-teal-400 mr-2 mt-0.5" />
-                <div className="text-sm text-teal-300">
-                  <strong>Booking Tips:</strong> Book accommodations early for better rates and availability. 
-                  Consider location proximity to attractions and transport links.
+            {selectedAccommodations.length > 0 && (
+              <div className="bg-teal-900/20 backdrop-blur-sm rounded-2xl p-6 border border-teal-500/30 mb-6">
+                <h3 className="text-lg font-semibold text-teal-100 mb-4">Selected Accommodation Preferences</h3>
+                <div className="space-y-3">
+                  {selectedAccommodations.map((accommodation, index) => {
+                    const type = accommodationTypes.find(t => t.id === accommodation.id);
+                    if (!type) return null;
+                    
+                    const IconComponent = type.icon;
+                    return (
+                      <div key={index} className="flex items-center justify-between bg-teal-800/20 rounded-lg p-3">
+                        <div className="flex items-center">
+                          <IconComponent className="w-5 h-5 text-teal-400 mr-3" />
+                          <div>
+                            <div className="font-medium text-teal-100">{type.title}</div>
+                            <div className="text-sm text-teal-300 flex items-center gap-2">
+                              <Star className="w-3 h-3 fill-current text-amber-400" />
+                              {type.rating} • {type.description}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-teal-100">{type.priceRange}</div>
+                          <div className="text-sm text-teal-400">Per night</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                <div className="mt-4 p-4 bg-teal-800/30 rounded-lg">
+                  <div className="flex items-start">
+                    <Clock className="w-5 h-5 text-teal-400 mr-2 mt-0.5" />
+                    <div className="text-sm text-teal-300">
+                      <strong>Next Step:</strong> Switch to "Search Hotels" to find specific properties that match your preferences, 
+                      or proceed to the next step to continue planning your trip.
+                    </div>
+                  </div>
                 </div>
               </div>
+            )}
+          </>
+        )}
+
+        {accommodationViewMode === 'hotels' && searchParams && (
+          <HotelClusteringResults
+            searchParams={searchParams}
+            onSelectHotel={handleHotelSelection}
+            selectedHotels={selectedHotels}
+            className="mb-8"
+          />
+        )}
+
+        {accommodationViewMode === 'hotels' && !searchParams && (
+          <div className="text-center py-12 bg-navy-900/20 backdrop-blur-sm rounded-2xl border border-navy-800/30">
+            <div className="text-amber-400 mb-4">
+              <Hotel className="w-12 h-12 mx-auto mb-2" />
             </div>
+            <h3 className="text-xl font-semibold text-navy-100 mb-2">Complete Trip Details</h3>
+            <p className="text-navy-300 mb-4">
+              Please complete your destination and dates to search for hotels.
+            </p>
+            <button
+              onClick={() => handleStepChange('destination')}
+              className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go to Destination Step
+            </button>
           </div>
         )}
 

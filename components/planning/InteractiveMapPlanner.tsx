@@ -26,13 +26,23 @@ import {
   Share2
 } from 'lucide-react';
 import { GoogleMapsProvider, type Coordinate, type RouteRequest, type RouteResult } from '@/lib/services/google-maps-provider';
+import { UnifiedMapProvider, type UnifiedMapInstance, type MapProvider } from '@/lib/services/unified-map-provider';
 import { POIDetector, type POI, type POICategory, POI_CATEGORIES } from '@/lib/services/poi-detector';
 import { Button } from '@/components/ui/button';
 
-// Map configuration
+// Unified map configuration
 const DEFAULT_MAP_CONFIG = {
   zoom: 10,
   center: { lat: 39.8283, lng: -98.5795 }, // Center of USA
+  style: {
+    style: 'mapbox://styles/mapbox/streets-v12', // Mapbox style
+    name: 'Streets'
+  },
+  interactive: true,
+};
+
+// Google Maps fallback configuration
+const GOOGLE_MAPS_CONFIG = {
   mapTypeId: 'roadmap' as google.maps.MapTypeId,
   styles: [
     {
@@ -54,7 +64,7 @@ interface Waypoint {
   location: Coordinate;
   address: string;
   type: 'origin' | 'destination' | 'waypoint';
-  marker?: google.maps.Marker;
+  marker?: any; // Can be google.maps.Marker or mapboxgl.Marker
 }
 
 interface InteractiveMapPlannerProps {
@@ -79,7 +89,8 @@ export default function InteractiveMapPlanner({
   enableRouteOptimization = true,
 }: InteractiveMapPlannerProps) {
   // State management
-  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [mapInstance, setMapInstance] = useState<UnifiedMapInstance | null>(null);
+  const [activeProvider, setActiveProvider] = useState<MapProvider | null>(null);
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,6 +109,7 @@ export default function InteractiveMapPlanner({
   const [optimizeRoute, setOptimizeRoute] = useState(false);
   
   // Services
+  const [unifiedProvider, setUnifiedProvider] = useState<UnifiedMapProvider | null>(null);
   const [mapsProvider, setMapsProvider] = useState<GoogleMapsProvider | null>(null);
   const [poiDetector, setPOIDetector] = useState<POIDetector | null>(null);
   
@@ -105,75 +117,101 @@ export default function InteractiveMapPlanner({
   const mapRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLInputElement>(null);
 
-  // Initialize Google Maps
+  // Initialize Unified Map Provider (Mapbox with Google Maps fallback)
   useEffect(() => {
     const initializeMap = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-        if (!apiKey) {
-          throw new Error('Google Maps API key not found');
+        const mapboxApiKey = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+        const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        
+        if (!mapboxApiKey && !googleApiKey) {
+          throw new Error('No mapping provider API keys found');
         }
-
-        // Initialize Maps API loader
-        const loader = new Loader({
-          apiKey,
-          version: 'weekly',
-          libraries: ['places', 'geometry'],
-        });
-
-        // Load the Maps API
-        const google = await loader.load();
         
         if (!mapRef.current) {
           throw new Error('Map container not found');
         }
 
-        // Create map instance
-        const mapInstance = new google.maps.Map(mapRef.current, DEFAULT_MAP_CONFIG);
-        
-        // Initialize services
-        const directionsServiceInstance = new google.maps.DirectionsService();
-        const directionsRendererInstance = new google.maps.DirectionsRenderer({
-          draggable: true,
-          panel: undefined,
-        });
-        
-        directionsRendererInstance.setMap(mapInstance);
+        // Initialize unified provider
+        const provider = new UnifiedMapProvider(
+          mapboxApiKey || '',
+          googleApiKey || ''
+        );
 
-        // Initialize our custom services
-        const mapsProviderInstance = new GoogleMapsProvider(apiKey);
-        const poiDetectorInstance = new POIDetector(mapsProviderInstance);
+        // Initialize map with unified provider
+        const instance = await provider.initialize(mapRef.current, DEFAULT_MAP_CONFIG);
+        setMapInstance(instance);
+        setActiveProvider(instance.provider);
+        setUnifiedProvider(provider);
 
-        // Set up event listeners
-        directionsRendererInstance.addListener('directions_changed', () => {
-          handleDirectionsChanged(directionsRendererInstance);
-        });
+        // Set up Google Maps specific services if using Google Maps
+        if (instance.provider === 'google' && googleApiKey) {
+          const { Loader } = await import('@googlemaps/js-api-loader');
+          const loader = new Loader({
+            apiKey: googleApiKey,
+            version: 'weekly',
+            libraries: ['places', 'geometry'],
+          });
+          await loader.load();
 
-        mapInstance.addListener('click', (event: google.maps.MapMouseEvent) => {
-          if (event.latLng) {
-            handleMapClick({
-              lat: event.latLng.lat(),
-              lng: event.latLng.lng(),
-            });
-          }
-        });
+          const directionsServiceInstance = new google.maps.DirectionsService();
+          const directionsRendererInstance = new google.maps.DirectionsRenderer({
+            draggable: true,
+            panel: undefined,
+          });
+          
+          directionsRendererInstance.setMap(instance.instance as google.maps.Map);
+          
+          setDirectionsService(directionsServiceInstance);
+          setDirectionsRenderer(directionsRendererInstance);
 
-        // Set up search box if available
-        if (searchBoxRef.current) {
-          const searchBox = new google.maps.places.SearchBox(searchBoxRef.current);
-          mapInstance.addListener('bounds_changed', () => {
-            searchBox.setBounds(mapInstance.getBounds() as google.maps.LatLngBounds);
+          // Set up event listeners for Google Maps
+          directionsRendererInstance.addListener('directions_changed', () => {
+            handleDirectionsChanged(directionsRendererInstance);
           });
 
-          searchBox.addListener('places_changed', () => {
-            const places = searchBox.getPlaces();
-            if (places && places.length > 0) {
-              handlePlaceSelected(places[0]);
+          (instance.instance as google.maps.Map).addListener('click', (event: google.maps.MapMouseEvent) => {
+            if (event.latLng) {
+              handleMapClick({
+                lat: event.latLng.lat(),
+                lng: event.latLng.lng(),
+              });
             }
           });
+
+          // Set up search box for Google Maps
+          if (searchBoxRef.current) {
+            const searchBox = new google.maps.places.SearchBox(searchBoxRef.current);
+            (instance.instance as google.maps.Map).addListener('bounds_changed', () => {
+              searchBox.setBounds((instance.instance as google.maps.Map).getBounds() as google.maps.LatLngBounds);
+            });
+
+            searchBox.addListener('places_changed', () => {
+              const places = searchBox.getPlaces();
+              if (places && places.length > 0) {
+                handlePlaceSelected(places[0]);
+              }
+            });
+          }
+        } else if (instance.provider === 'mapbox') {
+          // Set up Mapbox specific event listeners
+          (instance.instance as any).on('click', (e: any) => {
+            handleMapClick({
+              lat: e.lngLat.lat,
+              lng: e.lngLat.lng,
+            });
+          });
+        }
+
+        // Initialize services for both providers
+        if (googleApiKey) {
+          const mapsProviderInstance = new GoogleMapsProvider(googleApiKey);
+          const poiDetectorInstance = new POIDetector(mapsProviderInstance);
+          setMapsProvider(mapsProviderInstance);
+          setPOIDetector(poiDetectorInstance);
         }
 
         // Initialize with default waypoints if provided
@@ -200,16 +238,9 @@ export default function InteractiveMapPlanner({
           
           setWaypoints(initialWaypoints);
         }
-
-        // Update state
-        setMap(mapInstance);
-        setDirectionsService(directionsServiceInstance);
-        setDirectionsRenderer(directionsRendererInstance);
-        setMapsProvider(mapsProviderInstance);
-        setPOIDetector(poiDetectorInstance);
         
       } catch (err) {
-        console.error('Failed to initialize Google Maps:', err);
+        console.error('Failed to initialize map provider:', err);
         setError(err instanceof Error ? err.message : 'Failed to load map');
       } finally {
         setIsLoading(false);
@@ -217,6 +248,13 @@ export default function InteractiveMapPlanner({
     };
 
     initializeMap();
+    
+    // Cleanup function
+    return () => {
+      if (unifiedProvider) {
+        unifiedProvider.cleanup();
+      }
+    };
   }, [initialOrigin, initialDestination]);
 
   // Handle directions change
@@ -236,12 +274,20 @@ export default function InteractiveMapPlanner({
 
   // Handle map click for adding waypoints
   const handleMapClick = useCallback(async (location: Coordinate) => {
-    if (!mapsProvider) return;
+    if (!unifiedProvider && !mapsProvider) return;
 
     try {
-      // Geocode the location to get a readable address
-      const geocodeResults = await mapsProvider.geocode({ location });
-      const address = geocodeResults[0]?.formattedAddress || `${location.lat}, ${location.lng}`;
+      let address = `${location.lat}, ${location.lng}`;
+      
+      // Try to geocode the location to get a readable address
+      if (mapsProvider) {
+        try {
+          const geocodeResults = await mapsProvider.geocode({ location });
+          address = geocodeResults[0]?.formattedAddress || address;
+        } catch (geocodeErr) {
+          console.warn('Geocoding failed, using coordinates:', geocodeErr);
+        }
+      }
       
       // Determine waypoint type
       let type: 'origin' | 'destination' | 'waypoint' = 'waypoint';
@@ -258,6 +304,16 @@ export default function InteractiveMapPlanner({
         type,
       };
 
+      // Add marker to map
+      if (unifiedProvider) {
+        const markerColor = type === 'origin' ? '#10b981' : type === 'destination' ? '#ef4444' : '#14b8a6';
+        const marker = await unifiedProvider.addMarker(location, {
+          color: markerColor,
+          draggable: true,
+        });
+        newWaypoint.marker = marker;
+      }
+
       const updatedWaypoints = [...waypoints, newWaypoint];
       setWaypoints(updatedWaypoints);
       onWaypointsChanged?.(updatedWaypoints);
@@ -267,9 +323,9 @@ export default function InteractiveMapPlanner({
         calculateRoute(updatedWaypoints);
       }
     } catch (err) {
-      console.error('Failed to geocode location:', err);
+      console.error('Failed to add waypoint:', err);
     }
-  }, [waypoints, mapsProvider, onWaypointsChanged]);
+  }, [waypoints, unifiedProvider, mapsProvider, onWaypointsChanged]);
 
   // Handle place selection from search
   const handlePlaceSelected = useCallback((place: google.maps.places.PlaceResult) => {
@@ -291,15 +347,15 @@ export default function InteractiveMapPlanner({
     setWaypoints(updatedWaypoints);
     onWaypointsChanged?.(updatedWaypoints);
 
-    if (map) {
-      map.setCenter(location);
-      map.setZoom(12);
+    if (mapInstance && activeProvider === 'google') {
+      (mapInstance.instance as google.maps.Map).setCenter(location);
+      (mapInstance.instance as google.maps.Map).setZoom(12);
     }
-  }, [waypoints, map, onWaypointsChanged]);
+  }, [waypoints, mapInstance, activeProvider, onWaypointsChanged]);
 
-  // Calculate route using Google Maps
+  // Calculate route using unified provider
   const calculateRoute = useCallback(async (waypointsToUse: Waypoint[] = waypoints) => {
-    if (!directionsService || !directionsRenderer || waypointsToUse.length < 2) {
+    if (waypointsToUse.length < 2) {
       return;
     }
 
@@ -308,32 +364,61 @@ export default function InteractiveMapPlanner({
       const destination = waypointsToUse.find(w => w.type === 'destination') || waypointsToUse[waypointsToUse.length - 1];
       const intermediateWaypoints = waypointsToUse.filter(w => w.type === 'waypoint');
 
-      const request: google.maps.DirectionsRequest = {
-        origin: new google.maps.LatLng(origin.location.lat, origin.location.lng),
-        destination: new google.maps.LatLng(destination.location.lat, destination.location.lng),
-        waypoints: intermediateWaypoints.map(w => ({
-          location: new google.maps.LatLng(w.location.lat, w.location.lng),
-          stopover: true,
-        })),
-        travelMode: google.maps.TravelMode[travelMode],
-        optimizeWaypoints: optimizeRoute && enableRouteOptimization,
-        avoidTolls,
-        avoidHighways,
-        unitSystem: google.maps.UnitSystem.METRIC,
-      };
+      // Use unified provider for routing if available
+      if (unifiedProvider) {
+        const routeRequest: RouteRequest = {
+          origin: origin.location,
+          destination: destination.location,
+          waypoints: intermediateWaypoints.map(w => ({ location: w.location, stopover: true })),
+          travelMode: travelMode.toLowerCase() as any,
+          avoidTolls,
+          avoidHighways,
+          optimizeWaypoints: optimizeRoute && enableRouteOptimization,
+        };
 
-      directionsService.route(request, (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
-        if (status === google.maps.DirectionsStatus.OK && result) {
-          directionsRenderer.setDirections(result);
-        } else {
-          setError(`Failed to calculate route: ${status}`);
+        const route = await unifiedProvider.calculateRoute(routeRequest);
+        setCurrentRoute(route);
+        
+        // Find POIs if enabled
+        if (showPOIs && poiDetector && showPOICategories.length > 0) {
+          findPOIsForRoute(route);
         }
-      });
+        
+        // Fit bounds to show entire route
+        unifiedProvider.fitBounds(route.bounds);
+        
+        return;
+      }
+
+      // Fallback to Google Maps DirectionsService for legacy support
+      if (directionsService && directionsRenderer && activeProvider === 'google') {
+        const request: google.maps.DirectionsRequest = {
+          origin: new google.maps.LatLng(origin.location.lat, origin.location.lng),
+          destination: new google.maps.LatLng(destination.location.lat, destination.location.lng),
+          waypoints: intermediateWaypoints.map(w => ({
+            location: new google.maps.LatLng(w.location.lat, w.location.lng),
+            stopover: true,
+          })),
+          travelMode: google.maps.TravelMode[travelMode],
+          optimizeWaypoints: optimizeRoute && enableRouteOptimization,
+          avoidTolls,
+          avoidHighways,
+          unitSystem: google.maps.UnitSystem.METRIC,
+        };
+
+        directionsService.route(request, (result: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+          if (status === google.maps.DirectionsStatus.OK && result) {
+            directionsRenderer.setDirections(result);
+          } else {
+            setError(`Failed to calculate route: ${status}`);
+          }
+        });
+      }
     } catch (err) {
       console.error('Route calculation error:', err);
       setError('Failed to calculate route');
     }
-  }, [waypoints, directionsService, directionsRenderer, travelMode, optimizeRoute, enableRouteOptimization, avoidTolls, avoidHighways]);
+  }, [waypoints, unifiedProvider, directionsService, directionsRenderer, activeProvider, travelMode, optimizeRoute, enableRouteOptimization, avoidTolls, avoidHighways, showPOIs, poiDetector, showPOICategories]);
 
   // Find POIs along the route
   const findPOIsForRoute = useCallback(async (route: RouteResult) => {
@@ -357,6 +442,11 @@ export default function InteractiveMapPlanner({
 
   // Remove waypoint
   const removeWaypoint = useCallback((waypointId: string) => {
+    const waypointToRemove = waypoints.find(w => w.id === waypointId);
+    if (waypointToRemove?.marker && unifiedProvider) {
+      unifiedProvider.removeMarker(waypointToRemove.marker);
+    }
+    
     const updatedWaypoints = waypoints.filter(w => w.id !== waypointId);
     setWaypoints(updatedWaypoints);
     onWaypointsChanged?.(updatedWaypoints);
@@ -364,18 +454,26 @@ export default function InteractiveMapPlanner({
     if (updatedWaypoints.length >= 2) {
       calculateRoute(updatedWaypoints);
     }
-  }, [waypoints, onWaypointsChanged, calculateRoute]);
+  }, [waypoints, unifiedProvider, onWaypointsChanged, calculateRoute]);
 
   // Clear all waypoints
   const clearWaypoints = useCallback(() => {
+    // Remove all markers
+    waypoints.forEach(waypoint => {
+      if (waypoint.marker && unifiedProvider) {
+        unifiedProvider.removeMarker(waypoint.marker);
+      }
+    });
+    
     setWaypoints([]);
     setCurrentRoute(null);
     setPOIs([]);
     onWaypointsChanged?.([]);
-    if (directionsRenderer) {
+    
+    if (directionsRenderer && activeProvider === 'google') {
       directionsRenderer.setDirections({ routes: [] } as any);
     }
-  }, [directionsRenderer, onWaypointsChanged]);
+  }, [waypoints, unifiedProvider, directionsRenderer, activeProvider, onWaypointsChanged]);
 
   // Convert Google Maps DirectionsResult to our RouteResult format
   const convertDirectionsToRouteResult = (directions: google.maps.DirectionsResult): RouteResult => {

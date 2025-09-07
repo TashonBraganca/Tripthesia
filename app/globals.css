@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Mapbox GL JS styles */
+@import 'mapbox-gl/dist/mapbox-gl.css';
+
 /* Import React Bits inspired color system */
 @import '../styles/tokens/colors.css';
 

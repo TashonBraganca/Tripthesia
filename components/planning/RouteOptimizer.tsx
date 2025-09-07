@@ -13,10 +13,17 @@ import {
   RefreshCw,
   Car,
   User,
-  Bus
+  Bus,
+  DollarSign,
+  Fuel,
+  ParkingCircle,
+  Activity as ActivityIcon,
+  Leaf
 } from 'lucide-react';
 import { optimizeRoute, RouteOptimizationResult, findLocationClusters, suggestOptimalTiming } from '@/lib/planning/route-optimizer';
-import type { Activity, DayPlan } from './TimelineBuilder';
+import { enhancedOptimizeRoute, EnhancedRouteOptimizationResult, type EnhancedOptimizationOptions } from '@/lib/planning/enhanced-route-optimizer';
+import type { DayPlan } from './TimelineBuilder';
+import type { Activity } from './TimelineBuilder';
 
 interface RouteOptimizerProps {
   dayPlan: DayPlan;
@@ -32,10 +39,22 @@ const travelModeOptions = [
   { value: 'public_transport' as const, label: 'Public Transit', icon: Bus, speed: '20 km/h' },
 ];
 
+const vehicleOptions = [
+  { value: 'compact' as const, label: 'Compact', efficiency: '14.5 km/L' },
+  { value: 'standard' as const, label: 'Standard', efficiency: '11.0 km/L' },
+  { value: 'suv' as const, label: 'SUV', efficiency: '8.5 km/L' },
+  { value: 'electric' as const, label: 'Electric', efficiency: 'No fuel cost' },
+];
+
 export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: RouteOptimizerProps) {
   const [travelMode, setTravelMode] = useState<TravelMode>('driving');
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizationResult, setOptimizationResult] = useState<RouteOptimizationResult | null>(null);
+  const [enhancedResult, setEnhancedResult] = useState<EnhancedRouteOptimizationResult | null>(null);
+  const [useEnhancedOptimization, setUseEnhancedOptimization] = useState(true);
+  const [vehicleType, setVehicleType] = useState<'compact' | 'standard' | 'suv' | 'electric'>('standard');
+  const [considerTraffic, setConsiderTraffic] = useState(true);
+  const [considerCosts, setConsiderCosts] = useState(true);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Calculate current route metrics
@@ -60,25 +79,56 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
     
     setIsOptimizing(true);
     
-    // Simulate processing delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const result = optimizeRoute(dayPlan.activities, {
-      travelMode,
-      prioritizeTime: true,
-      preserveTimeConstraints: true,
-    });
-    
-    setOptimizationResult(result);
-    setIsOptimizing(false);
-  }, [dayPlan.activities, travelMode]);
+    try {
+      if (useEnhancedOptimization) {
+        const enhancedOptions: EnhancedOptimizationOptions = {
+          travelMode,
+          vehicleType,
+          prioritizeTime: true,
+          considerTraffic,
+          considerTolls: considerCosts,
+          considerParking: considerCosts && travelMode === 'driving',
+          fuelPrice: 1.45, // USD per liter
+        };
+        
+        const result = await enhancedOptimizeRoute(dayPlan.activities, enhancedOptions);
+        setEnhancedResult(result);
+        setOptimizationResult(null);
+      } else {
+        // Fallback to basic optimization
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const result = optimizeRoute(dayPlan.activities, {
+          travelMode,
+          prioritizeTime: true,
+          preserveTimeConstraints: true,
+        });
+        setOptimizationResult(result);
+        setEnhancedResult(null);
+      }
+    } catch (error) {
+      console.error('Route optimization failed:', error);
+      // Fallback to basic optimization
+      const result = optimizeRoute(dayPlan.activities, {
+        travelMode,
+        prioritizeTime: true,
+        preserveTimeConstraints: true,
+      });
+      setOptimizationResult(result);
+      setEnhancedResult(null);
+    } finally {
+      setIsOptimizing(false);
+    }
+  }, [dayPlan.activities, travelMode, useEnhancedOptimization, vehicleType, considerTraffic, considerCosts]);
 
   const handleApplyOptimization = useCallback(() => {
-    if (optimizationResult) {
+    if (enhancedResult) {
+      onOptimize(enhancedResult.optimizedActivities);
+      setEnhancedResult(null);
+    } else if (optimizationResult) {
       onOptimize(optimizationResult.optimizedActivities);
       setOptimizationResult(null);
     }
-  }, [optimizationResult, onOptimize]);
+  }, [enhancedResult, optimizationResult, onOptimize]);
 
   const formatTime = (minutes: number): string => {
     if (minutes < 60) return `${Math.round(minutes)}m`;
@@ -123,6 +173,26 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
         </button>
       </div>
 
+      {/* Optimization Mode Toggle */}
+      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div>
+          <h4 className="text-sm font-medium text-blue-900">Enhanced Optimization</h4>
+          <p className="text-xs text-blue-700">Includes traffic data, cost estimation, and advanced algorithms</p>
+        </div>
+        <button
+          onClick={() => setUseEnhancedOptimization(!useEnhancedOptimization)}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            useEnhancedOptimization ? 'bg-blue-600' : 'bg-gray-200'
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              useEnhancedOptimization ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+
       {/* Travel Mode Selection */}
       <fieldset className="space-y-2">
         <legend className="block text-sm font-medium text-gray-700">Transportation Mode</legend>
@@ -151,6 +221,59 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
           })}
         </div>
       </fieldset>
+
+      {/* Enhanced Options for Driving */}
+      {useEnhancedOptimization && travelMode === 'driving' && (
+        <div className="space-y-4">
+          {/* Vehicle Selection */}
+          <fieldset className="space-y-2">
+            <legend className="block text-sm font-medium text-gray-700">Vehicle Type</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {vehicleOptions.map((vehicle) => (
+                <motion.button
+                  key={vehicle.value}
+                  onClick={() => setVehicleType(vehicle.value)}
+                  className={`flex items-center justify-between p-2 rounded-lg border text-xs transition-colors ${
+                    vehicleType === vehicle.value
+                      ? 'bg-green-50 border-green-300 text-green-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="text-left">
+                    <div className="font-medium">{vehicle.label}</div>
+                    <div className="text-xs text-gray-500">{vehicle.efficiency}</div>
+                  </div>
+                  {vehicle.value === 'electric' && <Leaf className="h-3 w-3" />}
+                </motion.button>
+              ))}
+            </div>
+          </fieldset>
+
+          {/* Enhanced Options */}
+          <div className="space-y-2">
+            <label className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Consider traffic conditions</span>
+              <input
+                type="checkbox"
+                checked={considerTraffic}
+                onChange={(e) => setConsiderTraffic(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+            </label>
+            <label className="flex items-center justify-between">
+              <span className="text-sm text-gray-700">Include cost estimation</span>
+              <input
+                type="checkbox"
+                checked={considerCosts}
+                onChange={(e) => setConsiderCosts(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Current Route Stats */}
       {currentRouteMetrics && (
@@ -243,9 +366,9 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
         )}
       </motion.button>
 
-      {/* Optimization Results */}
+      {/* Enhanced Optimization Results */}
       <AnimatePresence>
-        {optimizationResult && (
+        {enhancedResult && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -254,7 +377,201 @@ export default function RouteOptimizer({ dayPlan, onOptimize, className = '' }: 
           >
             {/* Results Header */}
             <div className="flex items-center justify-between">
-              <h4 className="text-lg font-medium text-gray-900">Optimization Results</h4>
+              <h4 className="text-lg font-medium text-gray-900">Enhanced Optimization Results</h4>
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                enhancedResult.routeAnalysis.efficiency >= 80
+                  ? 'bg-green-100 text-green-700'
+                  : enhancedResult.routeAnalysis.efficiency >= 60
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {enhancedResult.routeAnalysis.efficiency}% Efficient
+              </div>
+            </div>
+
+            {/* Enhanced Metrics Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Time with Traffic */}
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium text-blue-900">Total Time</span>
+                </div>
+                <p className="text-lg font-bold text-blue-700 mt-1">
+                  {formatTime(enhancedResult.totalTravelTime)}
+                </p>
+                {enhancedResult.trafficImpact.trafficDelay > 0 && (
+                  <p className="text-xs text-blue-600">
+                    +{Math.round(enhancedResult.trafficImpact.trafficDelay)}m traffic
+                  </p>
+                )}
+              </div>
+              
+              {/* Distance */}
+              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                <div className="flex items-center space-x-2">
+                  <Navigation className="h-4 w-4 text-green-600" />
+                  <span className="text-xs font-medium text-green-900">Distance</span>
+                </div>
+                <p className="text-lg font-bold text-green-700 mt-1">
+                  {formatDistance(enhancedResult.totalDistance)}
+                </p>
+              </div>
+              
+              {/* Cost */}
+              {considerCosts && (
+                <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                  <div className="flex items-center space-x-2">
+                    <DollarSign className="h-4 w-4 text-purple-600" />
+                    <span className="text-xs font-medium text-purple-900">Total Cost</span>
+                  </div>
+                  <p className="text-lg font-bold text-purple-700 mt-1">
+                    ${enhancedResult.costEstimation.total.toFixed(2)}
+                  </p>
+                </div>
+              )}
+              
+              {/* CO2 Emissions */}
+              {vehicleType !== 'electric' && (
+                <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                  <div className="flex items-center space-x-2">
+                    <ActivityIcon className="h-4 w-4 text-orange-600" />
+                    <span className="text-xs font-medium text-orange-900">CO2</span>
+                  </div>
+                  <p className="text-lg font-bold text-orange-700 mt-1">
+                    {enhancedResult.costEstimation.fuel.co2Emissions.toFixed(1)}kg
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Cost Breakdown */}
+            {considerCosts && enhancedResult.costEstimation.total > 0 && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h5 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                  <DollarSign className="h-4 w-4 mr-1" /> Cost Breakdown
+                </h5>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  {enhancedResult.costEstimation.fuel.cost > 0 && (
+                    <div className="text-center">
+                      <Fuel className="h-4 w-4 mx-auto mb-1 text-red-600" />
+                      <p className="font-medium">${enhancedResult.costEstimation.fuel.cost.toFixed(2)}</p>
+                      <p className="text-xs text-gray-600">Fuel</p>
+                    </div>
+                  )}
+                  {enhancedResult.costEstimation.tolls.cost > 0 && (
+                    <div className="text-center">
+                      <Navigation className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+                      <p className="font-medium">${enhancedResult.costEstimation.tolls.cost.toFixed(2)}</p>
+                      <p className="text-xs text-gray-600">Tolls</p>
+                    </div>
+                  )}
+                  {enhancedResult.costEstimation.parking.totalCost > 0 && (
+                    <div className="text-center">
+                      <ParkingCircle className="h-4 w-4 mx-auto mb-1 text-purple-600" />
+                      <p className="font-medium">${enhancedResult.costEstimation.parking.totalCost.toFixed(2)}</p>
+                      <p className="text-xs text-gray-600">Parking</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Traffic Conditions */}
+            {enhancedResult.trafficImpact.conditions.length > 0 && (
+              <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                <h5 className="text-sm font-medium text-red-900 mb-2 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-1" /> Traffic Conditions
+                </h5>
+                <div className="space-y-2">
+                  {enhancedResult.trafficImpact.conditions.slice(0, 3).map((condition, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm">
+                      <span className="text-red-700 truncate">{condition.segment}</span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        condition.severity === 'severe' ? 'bg-red-200 text-red-800' :
+                        condition.severity === 'heavy' ? 'bg-orange-200 text-orange-800' :
+                        condition.severity === 'moderate' ? 'bg-yellow-200 text-yellow-800' :
+                        'bg-green-200 text-green-800'
+                      }`}>
+                        +{condition.delayMinutes}m
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Savings Display */}
+            {(enhancedResult.estimatedSavings.time > 0 || enhancedResult.estimatedSavings.distance > 0 || enhancedResult.estimatedSavings.cost > 0) && (
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                <h5 className="text-sm font-medium text-green-900 mb-3">Estimated Savings</h5>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  {enhancedResult.estimatedSavings.time > 0 && (
+                    <div>
+                      <p className="text-xl font-bold text-green-700">{formatTime(enhancedResult.estimatedSavings.time)}</p>
+                      <p className="text-xs text-green-600">Time Saved</p>
+                    </div>
+                  )}
+                  {enhancedResult.estimatedSavings.distance > 0 && (
+                    <div>
+                      <p className="text-xl font-bold text-green-700">{formatDistance(enhancedResult.estimatedSavings.distance)}</p>
+                      <p className="text-xs text-green-600">Distance Saved</p>
+                    </div>
+                  )}
+                  {enhancedResult.estimatedSavings.cost > 0 && (
+                    <div>
+                      <p className="text-xl font-bold text-green-700">${enhancedResult.estimatedSavings.cost.toFixed(2)}</p>
+                      <p className="text-xs text-green-600">Cost Saved</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Suggestions */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h5 className="text-sm font-medium text-gray-900 mb-2">Enhanced Recommendations</h5>
+              <div className="space-y-1">
+                {enhancedResult.routeAnalysis.suggestions.map((suggestion, index) => (
+                  <div key={index} className="flex items-start space-x-2">
+                    <div className="w-1 h-1 bg-indigo-600 rounded-full mt-2 flex-shrink-0" />
+                    <p className="text-sm text-gray-700">{suggestion}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <motion.button
+                onClick={handleApplyOptimization}
+                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Apply Enhanced Optimization
+              </motion.button>
+              <button
+                onClick={() => setEnhancedResult(null)}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}
+        
+        {/* Basic Optimization Results (Fallback) */}
+        {optimizationResult && !enhancedResult && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="space-y-4"
+          >
+            {/* Results Header */}
+            <div className="flex items-center justify-between">
+              <h4 className="text-lg font-medium text-gray-900">Basic Optimization Results</h4>
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                 optimizationResult.routeAnalysis.efficiency >= 80
                   ? 'bg-green-100 text-green-700'

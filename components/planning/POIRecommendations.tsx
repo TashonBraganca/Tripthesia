@@ -19,9 +19,16 @@ import {
   Camera,
   ShoppingBag,
   Hospital,
-  Wifi
+  Wifi,
+  Globe,
+  Heart,
+  CheckCircle,
+  Sparkles,
+  Eye,
+  Users
 } from 'lucide-react';
 import { POIDetector, type POI, type POICategory, POI_CATEGORIES } from '@/lib/services/poi-detector';
+import { EnhancedPOIDetector, type EnhancedPOI, type EnhancedPOISearchResult } from '@/lib/services/enhanced-poi-detector';
 import { GoogleMapsProvider } from '@/lib/services/google-maps-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,7 +86,13 @@ export default function POIRecommendations({
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'placeholder';
     return new POIDetector(new GoogleMapsProvider(apiKey));
   });
-  const [pois, setPOIs] = useState<POI[]>([]);
+  const [enhancedPOIDetector] = useState(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'placeholder';
+    return new EnhancedPOIDetector(new GoogleMapsProvider(apiKey));
+  });
+  const [pois, setPOIs] = useState<EnhancedPOI[]>([]);
+  const [useEnhancedSearch, setUseEnhancedSearch] = useState(true);
+  const [searchResult, setSearchResult] = useState<EnhancedPOISearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -89,7 +102,7 @@ export default function POIRecommendations({
     new Set(userPreferences.categories)
   );
   const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'relevance'>('relevance');
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'relevance' | 'cultural' | 'popularity'>('relevance');
 
   // Fetch POIs based on route coordinates
   const fetchPOIs = useCallback(async () => {
@@ -139,11 +152,33 @@ export default function POIRecommendations({
         }
       };
 
-      // Detect POIs along the route
-      const searchResult = await poiDetector.findPOIsAlongRoute(searchRequest);
+      // Detect POIs along the route using enhanced or basic detector
+      let searchResult: EnhancedPOISearchResult;
+      if (useEnhancedSearch) {
+        searchResult = await enhancedPOIDetector.findEnhancedPOIsAlongRoute(searchRequest);
+      } else {
+        const basicResult = await poiDetector.findPOIsAlongRoute(searchRequest);
+        // Convert basic result to enhanced format
+        searchResult = {
+          pois: basicResult.pois.map(poi => ({ ...poi, sources: ['google'] as const })),
+          routeSegments: basicResult.routeSegments.map(segment => ({
+            ...segment,
+            culturalSitesCount: 0,
+            localFavoritesCount: 0,
+          })),
+          summary: {
+            ...basicResult.summary,
+            bySourceCount: { google: basicResult.summary.totalPOIs, opentripmap: 0, foursquare: 0 },
+            culturalHighlights: [],
+            localRecommendations: [],
+          },
+        };
+      }
+      
+      setSearchResult(searchResult);
 
       // Filter POIs based on user preferences
-      const filteredPOIs = searchResult.pois.filter((poi: POI) => {
+      const filteredPOIs = searchResult.pois.filter((poi: EnhancedPOI) => {
         const matchesSearch = searchQuery === '' || 
           poi.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (poi.formattedAddress || '').toLowerCase().includes(searchQuery.toLowerCase());
@@ -165,6 +200,10 @@ export default function POIRecommendations({
             return a.distanceFromRoute - b.distanceFromRoute;
           case 'rating':
             return (b.rating || 0) - (a.rating || 0);
+          case 'cultural':
+            return (b.culturalSignificance?.historicalImportance || 0) - (a.culturalSignificance?.historicalImportance || 0);
+          case 'popularity':
+            return (b.localPopularity?.totalReviews || 0) - (a.localPopularity?.totalReviews || 0);
           case 'relevance':
           default:
             return b.recommendationScore - a.recommendationScore;
@@ -177,7 +216,7 @@ export default function POIRecommendations({
     } finally {
       setLoading(false);
     }
-  }, [routeCoordinates, selectedCategories, maxDistance, searchQuery, sortBy, userPreferences]);
+  }, [routeCoordinates, selectedCategories, maxDistance, searchQuery, sortBy, userPreferences, useEnhancedSearch]);
 
   // Re-fetch POIs when dependencies change
   useEffect(() => {
@@ -239,18 +278,40 @@ export default function POIRecommendations({
       {/* Header with search and filters */}
       <Card className="bg-navy-900/50 backdrop-blur-sm border-navy-700/50">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <CardTitle className="text-lg font-semibold text-navy-100">
               Points of Interest
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="text-navy-300 hover:text-navy-100"
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="text-navy-300 hover:text-navy-100"
+              >
+                <Filter className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Enhanced Search Toggle */}
+          <div className="flex items-center justify-between p-3 bg-blue-50/10 rounded-lg border border-blue-500/20">
+            <div>
+              <h4 className="text-sm font-medium text-blue-300">Enhanced Discovery</h4>
+              <p className="text-xs text-blue-400/80">Cultural attractions and local favorites from multiple sources</p>
+            </div>
+            <button
+              onClick={() => setUseEnhancedSearch(!useEnhancedSearch)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                useEnhancedSearch ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
             >
-              <Filter className="w-4 h-4" />
-            </Button>
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  useEnhancedSearch ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
           
           {/* Search bar */}
@@ -322,6 +383,12 @@ export default function POIRecommendations({
                       <option value="relevance">Relevance</option>
                       <option value="distance">Distance</option>
                       <option value="rating">Rating</option>
+                      {useEnhancedSearch && (
+                        <>
+                          <option value="cultural">Cultural Significance</option>
+                          <option value="popularity">Local Popularity</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -370,6 +437,68 @@ export default function POIRecommendations({
         </Card>
       )}
 
+      {/* Search Summary */}
+      {searchResult && useEnhancedSearch && (
+        <Card className="bg-navy-900/50 backdrop-blur-sm border-navy-700/50">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Source Summary */}
+              <div>
+                <h4 className="text-sm font-medium text-navy-200 mb-2 flex items-center">
+                  <Globe className="w-4 h-4 mr-1" /> Data Sources
+                </h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-navy-300">
+                    <span>Google Places:</span>
+                    <span>{searchResult.summary.bySourceCount.google}</span>
+                  </div>
+                  <div className="flex justify-between text-navy-300">
+                    <span>OpenTripMap:</span>
+                    <span>{searchResult.summary.bySourceCount.opentripmap}</span>
+                  </div>
+                  <div className="flex justify-between text-navy-300">
+                    <span>Foursquare:</span>
+                    <span>{searchResult.summary.bySourceCount.foursquare}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Cultural Highlights */}
+              {searchResult.summary.culturalHighlights.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-navy-200 mb-2 flex items-center">
+                    <Eye className="w-4 h-4 mr-1" /> Cultural Highlights
+                  </h4>
+                  <div className="space-y-1">
+                    {searchResult.summary.culturalHighlights.slice(0, 3).map((highlight, idx) => (
+                      <div key={idx} className="text-xs text-yellow-400 truncate">
+                        • {highlight}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Local Recommendations */}
+              {searchResult.summary.localRecommendations.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-navy-200 mb-2 flex items-center">
+                    <Users className="w-4 h-4 mr-1" /> Local Favorites
+                  </h4>
+                  <div className="space-y-1">
+                    {searchResult.summary.localRecommendations.slice(0, 3).map((rec, idx) => (
+                      <div key={idx} className="text-xs text-green-400 truncate">
+                        • {rec}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* POI List */}
       <div className="space-y-3">
         <AnimatePresence>
@@ -397,12 +526,61 @@ export default function POIRecommendations({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="font-semibold text-navy-100 group-hover:text-white transition-colors">
-                              {poi.name}
-                            </h4>
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h4 className="font-semibold text-navy-100 group-hover:text-white transition-colors">
+                                {poi.name}
+                              </h4>
+                              {/* Enhanced POI Indicators */}
+                              {useEnhancedSearch && (
+                                <div className="flex items-center space-x-1">
+                                  {poi.sources.includes('google') && (
+                                    <span className="text-xs bg-blue-500/20 text-blue-400 px-1 py-0.5 rounded" title="Google Places">
+                                      G
+                                    </span>
+                                  )}
+                                  {poi.sources.includes('opentripmap') && (
+                                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-1 py-0.5 rounded" title="OpenTripMap">
+                                      O
+                                    </span>
+                                  )}
+                                  {poi.sources.includes('foursquare') && (
+                                    <span className="text-xs bg-purple-500/20 text-purple-400 px-1 py-0.5 rounded" title="Foursquare">
+                                      F
+                                    </span>
+                                  )}
+                                  {poi.culturalSignificance?.hasWikipedia && (
+                                    <span title="Has Wikipedia">
+                                      <Globe className="w-3 h-3 text-yellow-400" />
+                                    </span>
+                                  )}
+                                  {poi.localPopularity?.verified && (
+                                    <span title="Verified Business">
+                                      <CheckCircle className="w-3 h-3 text-green-400" />
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                             <p className="text-sm text-navy-400 mt-1">
                               {poi.formattedAddress || 'Address not available'}
                             </p>
+                            {/* Cultural/Local Info */}
+                            {useEnhancedSearch && (
+                              <div className="flex items-center space-x-3 mt-1 text-xs">
+                                {poi.culturalSignificance && poi.culturalSignificance.historicalImportance > 0 && (
+                                  <span className="text-yellow-400 flex items-center">
+                                    <Sparkles className="w-3 h-3 mr-1" />
+                                    Cultural ({poi.culturalSignificance.historicalImportance}/10)
+                                  </span>
+                                )}
+                                {poi.localPopularity && poi.localPopularity.totalReviews > 0 && (
+                                  <span className="text-green-400 flex items-center">
+                                    <Heart className="w-3 h-3 mr-1" />
+                                    {poi.localPopularity.totalReviews} reviews
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-navy-300 font-medium">
