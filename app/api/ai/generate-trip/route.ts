@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import OpenAI from 'openai';
 import { z } from 'zod';
 import { withAISubscriptionCheck, getAIAccess } from '@/lib/subscription/ai-restrictions';
+import { AdvancedAIService, TripPreferencesSchema, TripPreferences } from '@/lib/ai/advanced-ai-service';
 
-// Input validation schema
+// Legacy input schema for backward compatibility
 const generateTripSchema = z.object({
   destination: z.string().min(1, 'Destination is required'),
   duration: z.number().min(1).max(30, 'Duration must be between 1-30 days'),
@@ -17,6 +17,12 @@ const generateTripSchema = z.object({
   transportation: z.enum(['flight', 'train', 'bus', 'car']).optional(),
   specialRequests: z.string().optional(),
 });
+
+// Enhanced schema using AdvancedAIService types
+const enhancedTripSchema = z.union([
+  generateTripSchema,
+  TripPreferencesSchema
+]);
 
 type TripGenerationInput = z.infer<typeof generateTripSchema>;
 
@@ -70,92 +76,89 @@ interface Recommendations {
   packingTips: string[];
 }
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-function createTripGenerationPrompt(input: TripGenerationInput): string {
-  const interestsText = input.interests?.length 
-    ? `with interests in ${input.interests.join(', ')}` 
-    : '';
-  
-  const styleText = input.travelStyle ? `in ${input.travelStyle} style` : '';
-  const groupText = input.groupSize && input.groupSize > 1 
-    ? `for a group of ${input.groupSize} people` 
-    : 'for a solo traveler';
-
-  return `Create a comprehensive ${input.duration}-day travel itinerary for ${input.destination} ${groupText} ${interestsText} ${styleText}.
-
-Budget: ${input.budget} ${input.currency}
-${input.accommodation ? `Preferred accommodation: ${input.accommodation}` : ''}
-${input.transportation ? `Preferred transportation: ${input.transportation}` : ''}
-${input.specialRequests ? `Special requests: ${input.specialRequests}` : ''}
-
-Please provide a detailed JSON response with the following structure:
-{
-  "title": "Catchy trip title",
-  "overview": "Brief trip overview and highlights",
-  "dailyItinerary": [
-    {
-      "day": 1,
-      "date": "YYYY-MM-DD format (start from today + 7 days)",
-      "theme": "Day theme (e.g., 'Historical Exploration')",
-      "activities": [
-        {
-          "time": "09:00",
-          "title": "Activity name",
-          "description": "Detailed description",
-          "location": "Specific address or landmark",
-          "duration": 120,
-          "category": "sightseeing",
-          "estimatedCost": 25,
-          "priority": "high",
-          "tips": ["Practical tip 1", "Practical tip 2"]
-        }
-      ],
-      "estimatedCost": 150,
-      "transportation": ["Walking", "Metro"]
-    }
-  ],
-  "budgetBreakdown": {
-    "accommodation": 500,
-    "food": 300,
-    "activities": 200,
-    "transportation": 150,
-    "shopping": 100,
-    "miscellaneous": 50,
-    "total": 1300,
-    "currency": "${input.currency}"
-  },
-  "recommendations": {
-    "bestTimeToVisit": "Season and months",
-    "weatherTips": ["Weather advice"],
-    "culturalTips": ["Cultural etiquette"],
-    "safetyTips": ["Safety advice"],
-    "packingTips": ["What to pack"]
-  },
-  "localInsights": ["Local insight 1", "Local insight 2"],
-  "hiddenGems": ["Hidden gem 1", "Hidden gem 2"]
+// Initialize AI Service
+let aiService: AdvancedAIService;
+try {
+  aiService = new AdvancedAIService();
+} catch (error) {
+  console.error('Failed to initialize AI service:', error);
 }
 
-Make the itinerary realistic, well-paced, and include:
-- Mix of must-see attractions and local experiences
-- Realistic timing and transportation between locations
-- Budget-appropriate suggestions
-- Local restaurants and food experiences
-- Cultural activities and insights
-- Practical tips for each activity
-- Hidden gems and off-the-beaten-path experiences
+// Convert legacy input to TripPreferences
+function convertLegacyInput(input: TripGenerationInput): TripPreferences {
+  const startDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Start in 7 days
+  const endDate = new Date(startDate.getTime() + (input.duration - 1) * 24 * 60 * 60 * 1000);
 
-Ensure all costs are realistic for ${input.destination} and align with the ${input.budget} ${input.currency} budget.`;
+  return {
+    destination: input.destination,
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    travelers: {
+      adults: input.groupSize || 1,
+      children: 0
+    },
+    budget: {
+      total: input.budget,
+      currency: input.currency
+    },
+    preferences: {
+      tripType: getTripTypeFromInterests(input.interests),
+      pace: 'moderate',
+      accommodationType: mapAccommodationType(input.accommodation),
+      transportMode: mapTransportMode(input.transportation),
+      interests: input.interests || [],
+      dietaryRestrictions: [],
+      accessibility: false,
+      groupDynamics: (input.groupSize || 1) === 1 ? 'solo' : 'friends'
+    },
+    constraints: {
+      mustInclude: input.specialRequests ? [input.specialRequests] : [],
+      mustAvoid: [],
+      timeConstraints: [],
+      weatherPreferences: 'any'
+    }
+  };
+}
+
+function getTripTypeFromInterests(interests?: string[]): 'leisure' | 'business' | 'adventure' | 'cultural' | 'family' | 'romantic' | 'backpacking' {
+  if (!interests || interests.length === 0) return 'leisure';
+  
+  const adventureKeywords = ['adventure', 'hiking', 'trekking', 'outdoor', 'sports'];
+  const culturalKeywords = ['culture', 'history', 'museum', 'art', 'heritage'];
+  const familyKeywords = ['family', 'kids', 'children'];
+  
+  if (interests.some(i => adventureKeywords.some(k => i.toLowerCase().includes(k)))) return 'adventure';
+  if (interests.some(i => culturalKeywords.some(k => i.toLowerCase().includes(k)))) return 'cultural';
+  if (interests.some(i => familyKeywords.some(k => i.toLowerCase().includes(k)))) return 'family';
+  
+  return 'leisure';
+}
+
+function mapAccommodationType(accommodation?: string): 'budget' | 'mid-range' | 'luxury' | 'mixed' {
+  switch (accommodation) {
+    case 'hostel': return 'budget';
+    case 'hotel': return 'mid-range';
+    case 'resort': return 'luxury';
+    case 'apartment': return 'mid-range';
+    default: return 'mid-range';
+  }
+}
+
+function mapTransportMode(transportation?: string): 'flights' | 'trains' | 'buses' | 'car' | 'mixed' {
+  switch (transportation) {
+    case 'flight': return 'flights';
+    case 'train': return 'trains';
+    case 'bus': return 'buses';
+    case 'car': return 'car';
+    default: return 'mixed';
+  }
 }
 
 export async function POST(request: NextRequest) {
   return withAISubscriptionCheck('canUseAIGenerator', async (userInfo) => {
     try {
-      // Check if OpenAI is available
-      if (!process.env.OPENAI_API_KEY) {
+      // Check if AI service is available
+      if (!aiService) {
         return NextResponse.json(
           { error: 'AI service not configured' },
           { status: 503 }
@@ -164,98 +167,143 @@ export async function POST(request: NextRequest) {
 
       // Parse and validate request body
       const body = await request.json();
-      const input = generateTripSchema.parse(body);
+      
+      // Try to parse with enhanced schema first, fall back to legacy
+      let tripPreferences: TripPreferences;
+      try {
+        // Check if it's new format (TripPreferences)
+        const enhanced = enhancedTripSchema.parse(body);
+        if ('preferences' in enhanced) {
+          tripPreferences = enhanced as TripPreferences;
+        } else {
+          // Convert legacy format
+          tripPreferences = convertLegacyInput(enhanced as TripGenerationInput);
+        }
+      } catch (error) {
+        // Fallback to legacy parsing
+        const input = generateTripSchema.parse(body);
+        tripPreferences = convertLegacyInput(input);
+      }
 
-      // Get user's AI access settings
-      const aiAccess = userInfo.aiAccess;
-      
-      // Generate trip using OpenAI with appropriate model for user tier
-      const prompt = createTripGenerationPrompt(input);
-      
-      const completion = await openai.chat.completions.create({
-        model: aiAccess.aiModel, // Use tier-appropriate model
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert travel planner with deep knowledge of destinations worldwide. 
-            Create detailed, realistic, and personalized travel itineraries that provide excellent value 
-            within the specified budget. Focus on authentic local experiences alongside must-see attractions.
-            Always respond with valid JSON that matches the requested structure exactly.
-            
-            User tier: ${userInfo.tier} - Adjust response complexity accordingly.
-            ${userInfo.tier === 'pro' ? 'Provide premium insights and advanced recommendations.' : ''}
-            ${userInfo.tier === 'free' ? 'Keep recommendations concise but helpful.' : ''}`
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: userInfo.tier === 'pro' ? 0.8 : 0.7, // More creative for Pro users
-        max_tokens: userInfo.tier === 'pro' ? 5000 : userInfo.tier === 'starter' ? 4000 : 3000,
-        response_format: { type: 'json_object' }
+      // Log request for analytics
+      console.log('AI Trip Generation Request:', {
+        destination: tripPreferences.destination,
+        duration: Math.ceil((new Date(tripPreferences.endDate).getTime() - new Date(tripPreferences.startDate).getTime()) / (1000 * 60 * 60 * 24)),
+        budget: tripPreferences.budget.total,
+        tier: userInfo.tier,
+        userId: userInfo.tier, // Don't expose actual userId
       });
 
-      const generatedContent = completion.choices[0]?.message?.content;
-      if (!generatedContent) {
-        throw new Error('No content generated from AI');
+      // Generate trip using AdvancedAIService
+      const startTime = Date.now();
+      const response = await aiService.generateTrip(tripPreferences);
+      const generationTime = Date.now() - startTime;
+
+      if (!response.success) {
+        return NextResponse.json({
+          error: response.error || 'Failed to generate trip',
+          code: 'GENERATION_FAILED'
+        }, { status: 500 });
       }
 
-      // Parse and validate AI response
-      let generatedTrip: GeneratedTrip;
-      try {
-        generatedTrip = JSON.parse(generatedContent);
-      } catch (error) {
-        console.error('Failed to parse AI response:', error);
-        throw new Error('Invalid AI response format');
-      }
+      // Convert to legacy format for backward compatibility
+      const legacyResponse = convertToLegacyFormat(response.data!);
 
-      // Add metadata
-      const response = {
-        ...generatedTrip,
+      // Add enhanced metadata
+      const enhancedResponse = {
+        ...legacyResponse,
         metadata: {
           generatedAt: new Date().toISOString(),
-          model: aiAccess.aiModel,
-          userId: userInfo.tier, // Don't expose actual userId
-          inputParams: input,
+          generationTime,
+          provider: response.provider,
+          usage: response.usage,
+          cost: response.cost,
           tier: userInfo.tier,
           remainingGenerations: userInfo.limits.aiGenerationsPerTrip - 1,
           upgradeAvailable: userInfo.tier !== 'pro',
+          version: '4.2.0',
+          enhanced: true // Indicates use of AdvancedAIService
+        },
+        // Include original AdvancedAI response for enhanced clients
+        enhanced: {
+          fullItinerary: response.data,
+          aiMetadata: {
+            provider: response.provider,
+            confidence: response.data?.metadata.confidence,
+            sources: response.data?.metadata.sources
+          }
         }
       };
 
-      return NextResponse.json(response);
+      return NextResponse.json(enhancedResponse);
 
-  } catch (error) {
-    console.error('AI trip generation error:', error);
-    
-    if (error instanceof z.ZodError) {
+    } catch (error) {
+      console.error('AI trip generation error:', error);
+      
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { 
+            error: 'Invalid input parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
-        { 
-          error: 'Invalid input parameters',
-          details: error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        },
-        { status: 400 }
+        { error: 'Failed to generate trip itinerary' },
+        { status: 500 }
       );
-    }
-
-    // OpenAI API errors
-    if (error instanceof Error && error.name === 'APIError') {
-      return NextResponse.json(
-        { error: 'AI service temporarily unavailable' },
-        { status: 503 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to generate trip itinerary' },
-      { status: 500 }
-    );
     }
   });
+}
+
+// Convert AdvancedAI response to legacy format for backward compatibility
+function convertToLegacyFormat(itinerary: any): GeneratedTrip {
+  return {
+    title: itinerary.title,
+    overview: itinerary.description,
+    dailyItinerary: itinerary.days.map((day: any, index: number) => ({
+      day: index + 1,
+      date: day.date,
+      theme: day.title,
+      activities: day.activities.map((activity: any) => ({
+        time: activity.time,
+        title: activity.title,
+        description: activity.description,
+        location: activity.location.address,
+        duration: activity.duration,
+        category: activity.category,
+        estimatedCost: activity.estimatedCost,
+        priority: activity.priority === 'must-do' ? 'high' : activity.priority === 'recommended' ? 'medium' : 'low',
+        tips: activity.notes ? [activity.notes] : []
+      })),
+      estimatedCost: day.totalCost,
+      transportation: day.transportation.map((t: any) => t.mode)
+    })),
+    budgetBreakdown: {
+      accommodation: itinerary.estimatedCost.breakdown.accommodation,
+      food: itinerary.estimatedCost.breakdown.dining,
+      activities: itinerary.estimatedCost.breakdown.activities,
+      transportation: itinerary.estimatedCost.breakdown.transportation,
+      shopping: itinerary.estimatedCost.breakdown.other / 2,
+      miscellaneous: itinerary.estimatedCost.breakdown.other / 2,
+      total: itinerary.estimatedCost.total,
+      currency: itinerary.estimatedCost.currency
+    },
+    recommendations: {
+      bestTimeToVisit: itinerary.recommendations.bestTimeToVisit,
+      weatherTips: [],
+      culturalTips: itinerary.recommendations.localEtiquette,
+      safetyTips: [],
+      packingTips: itinerary.recommendations.packingTips
+    },
+    localInsights: itinerary.recommendations.budgetTips,
+    hiddenGems: itinerary.recommendations.hiddenGems.map((gem: any) => gem.name)
+  };
 }
 
 // GET endpoint for testing AI service health
@@ -266,22 +314,45 @@ export async function GET() {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ available: false, reason: 'API key not configured' });
+    if (!aiService) {
+      return NextResponse.json({ 
+        available: false, 
+        reason: 'AI service not initialized',
+        version: '4.2.0'
+      });
     }
-
-    // Test OpenAI connection
-    const models = await openai.models.list();
-    const hasGPT4 = models.data.some(model => model.id.includes('gpt-4'));
 
     return NextResponse.json({
       available: true,
-      model: 'gpt-4o-mini',
-      features: ['trip-generation', 'personalization', 'budget-optimization'],
+      version: '4.2.0',
+      service: 'AdvancedAIService',
+      providers: {
+        openai: !!process.env.OPENAI_API_KEY,
+        gemini: !!process.env.GOOGLE_GEMINI_API_KEY
+      },
+      features: [
+        'intelligent-trip-generation',
+        'multi-provider-support',
+        'personalized-recommendations',
+        'budget-optimization',
+        'structured-output',
+        'fallback-handling',
+        'cost-tracking'
+      ],
       capabilities: {
         maxDays: 30,
         supportedCurrencies: ['USD', 'INR'],
-        supportedStyles: ['budget', 'mid-range', 'luxury']
+        supportedTripTypes: ['leisure', 'business', 'adventure', 'cultural', 'family', 'romantic', 'backpacking'],
+        supportedPaces: ['relaxed', 'moderate', 'fast'],
+        accommodationTypes: ['budget', 'mid-range', 'luxury', 'mixed'],
+        transportModes: ['flights', 'trains', 'buses', 'car', 'mixed']
+      },
+      enhancements: {
+        legacyCompatibility: true,
+        enhancedSchema: true,
+        intelligentRouting: true,
+        structuredValidation: true,
+        costOptimization: true
       }
     });
 
@@ -289,7 +360,8 @@ export async function GET() {
     console.error('AI service health check error:', error);
     return NextResponse.json({ 
       available: false, 
-      reason: 'Service check failed' 
+      reason: 'Service check failed',
+      version: '4.2.0'
     });
   }
 }
