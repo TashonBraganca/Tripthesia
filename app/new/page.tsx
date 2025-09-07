@@ -1361,7 +1361,7 @@ export default function NewTripPage() {
                   <div className="flex items-start">
                     <Clock className="w-5 h-5 text-teal-400 mr-2 mt-0.5" />
                     <div className="text-sm text-teal-300">
-                      <strong>Next Step:</strong> Switch to "Search Hotels" to find specific properties that match your preferences, 
+                      <strong>Next Step:</strong> Switch to &quot;Search Hotels&quot; to find specific properties that match your preferences, 
                       or proceed to the next step to continue planning your trip.
                     </div>
                   </div>
