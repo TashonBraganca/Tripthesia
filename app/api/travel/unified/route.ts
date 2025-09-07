@@ -23,6 +23,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
+import { withCache } from '@/lib/cache/cache-middleware';
+import { createPerformanceOptimizer, measurePerformance } from '@/lib/cache/performance-optimizer';
 import { 
   createUnifiedTravelOrchestrator, 
   UnifiedTravelSearchQuerySchema,
@@ -135,9 +137,10 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
+async function handleUnifiedTravelSearch(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
+  const performanceOptimizer = createPerformanceOptimizer();
   
   try {
     // Authentication check
@@ -340,9 +343,13 @@ export async function POST(request: NextRequest) {
       console.warn('API monitoring failed:', monitorError);
     }
 
-    // Create unified travel orchestrator and perform comprehensive search
+    // Create unified travel orchestrator and perform comprehensive search with performance monitoring
     const travelOrchestrator = createUnifiedTravelOrchestrator();
-    const searchResults = await travelOrchestrator.searchAll(validatedQuery);
+    const searchResults = await measurePerformance(
+      () => travelOrchestrator.searchAll(validatedQuery),
+      'search_result_time',
+      { endpoint: '/api/travel/unified', userId }
+    );
 
     // Enhanced logging with comprehensive metadata
     await logApiRequest({
@@ -462,6 +469,15 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+
+// Export the cached POST handler
+export const POST = withCache(handleUnifiedTravelSearch, {
+  enableStaleWhileRevalidate: true,
+  enableRequestDeduplication: true,
+  enablePerformanceMonitoring: true,
+  defaultTTL: 300, // 5 minutes for comprehensive travel search
+  includePatterns: [/\/api\/travel\/unified/]
+});
 
 // ==================== OPTIONS HANDLER FOR CORS ====================
 
