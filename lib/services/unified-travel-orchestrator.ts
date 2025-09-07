@@ -24,6 +24,8 @@ import { createHotelSearchService, type HotelSearchQuery } from './hotel-search'
 import { createTransportSearchService, type TransportSearchQuery } from './transport-search';
 import { createCarRentalSearchService, type CarRentalSearchQuery } from './car-rental-search';
 import { createTravelNormalizationService, type UnifiedSearchResponse, type UnifiedTravelOffer, type Currency, type ServiceType } from './travel-normalization';
+import { createPriceComparisonEngine, type PriceComparison, type CrossServiceComparison } from './price-comparison-engine';
+import { createDealIdentificationEngine, type Deal, type DealAnalysisResult, analyzePriceComparisonsForDeals } from './deal-identification';
 
 // ==================== UNIFIED SEARCH INTERFACE ====================
 
@@ -156,6 +158,25 @@ export interface UnifiedTravelSearchResponse {
       carbonSavings: { amount: number; percentage: number };
       ecoFeatures: string[];
     };
+    dealOfTheDay?: {
+      combination: Array<{ service: ServiceType; offerId: string; provider: string }>;
+      totalPrice: { amount: number; currency: Currency };
+      savings: { amount: number; percentage: number };
+      dealType: string;
+      urgency: 'low' | 'medium' | 'high' | 'critical';
+      reasoning: string;
+    };
+  };
+  priceAnalysis?: {
+    comparisons: PriceComparison[];
+    deals: Deal[];
+    insights: {
+      totalDealsFound: number;
+      bestDeal: Deal | null;
+      averageSavings: number;
+      rareDealsCount: number;
+      recommendedActions: string[];
+    };
   };
   meta: {
     searchTime: number;
@@ -231,8 +252,14 @@ export class UnifiedTravelOrchestrator {
       // Process and normalize results
       const normalizedResults = await this.processSearchResults(searchResults, servicesToQuery);
       
-      // Generate intelligent recommendations
-      const recommendations = this.generateRecommendations(normalizedResults, query);
+      // Create price comparisons for all services
+      const priceComparisons = await this.generatePriceComparisons(normalizedResults, query.preferences.currency);
+      
+      // Analyze deals and generate alerts
+      const dealAnalysis = await analyzePriceComparisonsForDeals(priceComparisons);
+      
+      // Generate intelligent recommendations (enhanced with price data)
+      const recommendations = this.generateRecommendations(normalizedResults, query, priceComparisons, dealAnalysis);
       
       // Calculate quality metrics
       const qualityMetrics = this.calculateQualityMetrics(normalizedResults);
@@ -243,6 +270,11 @@ export class UnifiedTravelOrchestrator {
         query,
         results: normalizedResults,
         recommendations,
+        priceAnalysis: {
+          comparisons: priceComparisons,
+          deals: dealAnalysis.deals,
+          insights: dealAnalysis.insights
+        },
         meta: {
           searchTime: Date.now() - startTime,
           servicesQueried: servicesToQuery,
@@ -493,33 +525,190 @@ export class UnifiedTravelOrchestrator {
 
   private generateRecommendations(
     results: UnifiedTravelSearchResponse['results'],
-    query: UnifiedTravelSearchQuery
+    query: UnifiedTravelSearchQuery,
+    priceComparisons?: PriceComparison[],
+    dealAnalysis?: DealAnalysisResult
   ): UnifiedTravelSearchResponse['recommendations'] {
-    // This is a simplified implementation - in production, this would use
-    // sophisticated algorithms to find optimal combinations
     const recommendations: UnifiedTravelSearchResponse['recommendations'] = {};
 
-    // Find best overall combination
-    if (results.flights?.offers.length && results.hotels?.offers.length) {
-      const bestFlight = results.flights.offers[0];
-      const bestHotel = results.hotels.offers[0];
+    // Enhanced recommendations using price comparison data
+    if (priceComparisons && priceComparisons.length > 0) {
+      // Cross-service recommendations using price engine
+      const priceEngine = createPriceComparisonEngine();
       
-      recommendations.bestOverall = {
-        combination: [
-          { service: 'flight', offerId: bestFlight.id, provider: (bestFlight as any).provider?.name || 'Unknown' },
-          { service: 'hotel', offerId: bestHotel.id, provider: (bestHotel as any).provider?.name || 'Unknown' }
-        ],
-        totalPrice: {
-          amount: (bestFlight as any).pricing?.totalPrice + (bestHotel as any).pricing?.totalPrice || 0,
-          currency: query.preferences.currency
-        },
-        qualityScore: Math.round(((bestFlight as any).qualityScore + (bestHotel as any).qualityScore) / 2),
-        carbonFootprint: (bestFlight as any).carbonFootprint?.emissions + (bestHotel as any).carbonFootprint?.emissions || 0,
-        reasoning: 'Optimal balance of price, quality, and convenience'
-      };
+      // Extract offers by service type
+      const flightOffers = results.flights?.offers || [];
+      const hotelOffers = results.hotels?.offers || [];
+      const transportOffers = results.transport?.offers || [];
+      const carRentalOffers = results.carRentals?.offers || [];
+      
+      if (flightOffers.length > 0 || hotelOffers.length > 0) {
+        const crossServiceAnalysis = priceEngine.compareAllServices(
+          flightOffers as any[],
+          hotelOffers as any[],
+          transportOffers as any[],
+          carRentalOffers as any[],
+          query.preferences.budget?.total,
+          query.preferences.currency
+        );
+
+        crossServiceAnalysis.then(analysis => {
+          // Best overall value recommendation
+          if (analysis.recommendations.bestOverallValue) {
+            recommendations.bestOverall = {
+              combination: analysis.recommendations.bestOverallValue.combination.map(combo => ({
+                service: combo.serviceType,
+                offerId: combo.offerId,
+                provider: combo.provider
+              })),
+              totalPrice: {
+                amount: analysis.recommendations.bestOverallValue.totalPrice,
+                currency: query.preferences.currency
+              },
+              qualityScore: analysis.recommendations.bestOverallValue.valueScore,
+              carbonFootprint: 0, // TODO: Calculate from individual services
+              reasoning: `Best value combination with ${analysis.recommendations.bestOverallValue.valueScore}% value score`
+            };
+          }
+
+          // Budget optimal recommendation
+          if (analysis.recommendations.budgetOptimal) {
+            recommendations.budgetFriendly = {
+              combination: analysis.recommendations.budgetOptimal.combination.map(combo => ({
+                service: combo.serviceType,
+                offerId: combo.offerId,
+                provider: combo.provider
+              })),
+              totalPrice: {
+                amount: analysis.recommendations.budgetOptimal.totalPrice,
+                currency: query.preferences.currency
+              },
+              savings: {
+                amount: 0, // TODO: Calculate savings compared to average
+                percentage: 0
+              },
+              tradeoffs: ['Lower quality score for budget savings']
+            };
+          }
+
+          // Quality optimal recommendation
+          if (analysis.recommendations.qualityOptimal) {
+            recommendations.premium = {
+              combination: analysis.recommendations.qualityOptimal.combination.map(combo => ({
+                service: combo.serviceType,
+                offerId: combo.offerId,
+                provider: combo.provider
+              })),
+              totalPrice: {
+                amount: analysis.recommendations.qualityOptimal.totalPrice,
+                currency: query.preferences.currency
+              },
+              premiumFeatures: ['Highest rated providers', 'Premium service levels'],
+              qualityScore: analysis.recommendations.qualityOptimal.qualityScore
+            };
+          }
+        });
+      }
+    }
+
+    // Deal-based recommendations
+    if (dealAnalysis && dealAnalysis.deals.length > 0) {
+      const bestDeal = dealAnalysis.insights.bestDeal;
+      if (bestDeal) {
+        recommendations.dealOfTheDay = {
+          combination: [{
+            service: bestDeal.serviceType,
+            offerId: bestDeal.offerId,
+            provider: bestDeal.provider
+          }],
+          totalPrice: {
+            amount: bestDeal.currentPrice,
+            currency: query.preferences.currency
+          },
+          savings: {
+            amount: bestDeal.savings.amount,
+            percentage: bestDeal.savings.percentage
+          },
+          dealType: bestDeal.dealType,
+          urgency: bestDeal.severity === 'exceptional' ? 'critical' : 'high',
+          reasoning: `${bestDeal.title} - ${bestDeal.description}`
+        };
+      }
+    }
+
+    // Fallback to basic recommendations if no price data available
+    if (Object.keys(recommendations).length === 0) {
+      // Find best overall combination using basic logic
+      if (results.flights?.offers.length && results.hotels?.offers.length) {
+        const bestFlight = results.flights.offers[0];
+        const bestHotel = results.hotels.offers[0];
+        
+        recommendations.bestOverall = {
+          combination: [
+            { service: 'flight', offerId: bestFlight.id, provider: (bestFlight as any).provider?.name || 'Unknown' },
+            { service: 'hotel', offerId: bestHotel.id, provider: (bestHotel as any).provider?.name || 'Unknown' }
+          ],
+          totalPrice: {
+            amount: (bestFlight as any).pricing?.totalPrice + (bestHotel as any).pricing?.totalPrice || 0,
+            currency: query.preferences.currency
+          },
+          qualityScore: Math.round(((bestFlight as any).qualityScore + (bestHotel as any).qualityScore) / 2),
+          carbonFootprint: (bestFlight as any).carbonFootprint?.emissions + (bestHotel as any).carbonFootprint?.emissions || 0,
+          reasoning: 'Optimal balance of price, quality, and convenience'
+        };
+      }
     }
 
     return recommendations;
+  }
+
+  private async generatePriceComparisons(
+    results: UnifiedTravelSearchResponse['results'],
+    currency: Currency
+  ): Promise<PriceComparison[]> {
+    const priceEngine = createPriceComparisonEngine();
+    const comparisons: PriceComparison[] = [];
+
+    try {
+      // Compare flights if available
+      if (results.flights?.offers?.length) {
+        const flightComparison = await priceEngine.compareFlights(
+          results.flights.offers as any[],
+          currency
+        );
+        comparisons.push(flightComparison);
+      }
+
+      // Compare hotels if available
+      if (results.hotels?.offers?.length) {
+        const hotelComparison = await priceEngine.compareHotels(
+          results.hotels.offers as any[],
+          currency
+        );
+        comparisons.push(hotelComparison);
+      }
+
+      // TODO: Add transport and car rental comparisons when implemented
+      // if (results.transport?.offers?.length) {
+      //   const transportComparison = await priceEngine.compareTransport(
+      //     results.transport.offers as any[],
+      //     currency
+      //   );
+      //   comparisons.push(transportComparison);
+      // }
+
+      // if (results.carRentals?.offers?.length) {
+      //   const carRentalComparison = await priceEngine.compareCarRentals(
+      //     results.carRentals.offers as any[],
+      //     currency
+      //   );
+      //   comparisons.push(carRentalComparison);
+      // }
+    } catch (error) {
+      console.warn('Price comparison generation failed:', error);
+    }
+
+    return comparisons;
   }
 
   private calculateQualityMetrics(results: UnifiedTravelSearchResponse['results']) {
