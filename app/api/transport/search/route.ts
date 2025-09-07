@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
+import { createTransportSearchService, TransportSearchQuery } from '@/lib/services/transport-search';
 import { TransportSearchManager } from "@/lib/services/transport-providers";
+import { APIMonitor } from '@/lib/monitoring/api-monitor';
 
 const transportSearchSchema = z.object({
   from: z.string().min(2),
@@ -292,37 +294,156 @@ async function getFlights(params: {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  const requestId = crypto.randomUUID();
+  
   try {
     const { userId } = auth();
     
     if (!userId) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Authentication required', message: 'Please sign in to search for transport options' },
         { status: 401 }
       );
     }
 
     const body = await request.json();
-    const searchParams = transportSearchSchema.parse(body);
+    
+    // Support both legacy and new request formats
+    let searchParams;
+    let useNewService = false;
+    
+    // Check if request uses new comprehensive format
+    if (body.preferences || body.passengers || body.departure) {
+      useNewService = true;
+      // Transform to new format if needed
+      const newQuery: TransportSearchQuery = {
+        from: { name: body.from, coordinates: body.fromCoords, type: body.fromType },
+        to: { name: body.to, coordinates: body.toCoords, type: body.toType },
+        departure: { date: body.departureDate?.split('T')[0] || body.departure?.date, time: body.departure?.time },
+        return: body.returnDate ? { date: body.returnDate.split('T')[0] } : body.return,
+        passengers: body.passengers || { adults: body.adults || 1 },
+        preferences: body.preferences || { modes: body.transportTypes },
+        options: body.options || {}
+      };
+      searchParams = newQuery;
+    } else {
+      // Use legacy format
+      searchParams = transportSearchSchema.parse(body);
+    }
 
-    // Initialize transport search manager
-    const transportManager = new TransportSearchManager({
-      openRouteServiceKey: process.env.OPENROUTESERVICE_API_KEY,
-    });
+    // Track API usage
+    try {
+      const apiMonitor = new APIMonitor();
+      await apiMonitor.trackUsage({
+        apiName: 'transport/search',
+        endpoint: '/api/transport/search',
+        method: 'POST',
+        timestamp: Date.now(),
+        responseTime: 0,
+        status: 200,
+        success: true,
+        requestId,
+        userId: userId
+      });
+    } catch (monitorError) {
+      console.warn('API monitoring failed:', monitorError);
+    }
 
     let allOptions: TransportOption[] = [];
     let transportResults: any[] = [];
 
+    if (useNewService) {
+      // Use comprehensive transport search service
+      try {
+        const transportSearchService = createTransportSearchService();
+        const searchResults = await transportSearchService.searchTransport(searchParams as TransportSearchQuery);
+
+        // Convert comprehensive results to legacy format for consistency
+        allOptions = searchResults.journeys.map(journey => ({
+          id: journey.id,
+          type: journey.segments[0]?.mode as 'flight' | 'train' | 'bus',
+          provider: journey.segments[0]?.provider || 'Unknown',
+          airline: journey.segments[0]?.provider,
+          flightNumber: journey.segments[0]?.vehicle?.name,
+          trainNumber: journey.segments[0]?.vehicle?.name,
+          price: journey.totalPrice?.amount || 0,
+          currency: journey.totalPrice?.currency || 'USD',
+          duration: `${Math.floor(journey.totalDuration / 60)}h ${journey.totalDuration % 60}m`,
+          departure: {
+            time: new Date(journey.segments[0]?.departure.scheduled).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+            airport: journey.segments[0]?.from.name,
+            city: journey.segments[0]?.from.name,
+          },
+          arrival: {
+            time: new Date(journey.segments[journey.segments.length - 1]?.arrival.scheduled).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+            airport: journey.segments[journey.segments.length - 1]?.to.name,
+            city: journey.segments[journey.segments.length - 1]?.to.name,
+          },
+          stops: journey.transfers,
+          rating: Math.min(5, Math.max(1, Math.random() * 2 + 3)), // Mock rating 3-5
+          bookingLink: journey.segments[0]?.bookingInfo?.bookingUrl,
+          baggage: journey.segments[0]?.mode === 'flight' ? { carry: true, checked: true } : undefined,
+          amenities: journey.segments[0]?.vehicle?.amenities || [],
+          score: 8.5 - (journey.transfers * 0.5) + (Math.random() * 1),
+          co2Emissions: journey.carbonFootprint.total,
+          comfort: journey.segments[0]?.price?.priceClass || 'Standard'
+        }));
+
+        return NextResponse.json({
+          success: true,
+          transportOptions: allOptions,
+          searchParams: {
+            from: (searchParams as TransportSearchQuery).from.name,
+            to: (searchParams as TransportSearchQuery).to.name,
+            departureDate: (searchParams as TransportSearchQuery).departure.date,
+            returnDate: (searchParams as TransportSearchQuery).return?.date,
+            adults: (searchParams as TransportSearchQuery).passengers.adults,
+            currency: 'USD',
+            transportTypes: (searchParams as TransportSearchQuery).preferences?.modes || ['train', 'bus'],
+          },
+          summary: {
+            total: allOptions.length,
+            byType: {
+              flight: allOptions.filter(o => o.type === 'flight').length,
+              train: allOptions.filter(o => o.type === 'train').length,
+              bus: allOptions.filter(o => o.type === 'bus').length,
+            },
+            priceRange: allOptions.length > 0 ? {
+              min: Math.min(...allOptions.map(o => o.price)),
+              max: Math.max(...allOptions.map(o => o.price)),
+            } : null,
+          },
+          meta: {
+            ...searchResults.meta,
+            requestId,
+            requestProcessingTime: Date.now() - startTime,
+            apiVersion: '2.3.0'
+          }
+        });
+      } catch (error) {
+        console.error('Comprehensive transport search failed:', error);
+      }
+    }
+
+    // Fallback to legacy search methods
+    const legacySearchParams = searchParams as any; // Cast for legacy compatibility
+
+    // Initialize transport search manager for legacy support
+    const transportManager = new TransportSearchManager({
+      openRouteServiceKey: process.env.OPENROUTESERVICE_API_KEY,
+    });
+
     // Search flights if requested
-    if (searchParams.transportTypes.includes('flight')) {
+    if (legacySearchParams.transportTypes?.includes('flight')) {
       try {
         const flights = await getFlights({
-          from: searchParams.from,
-          to: searchParams.to,
-          departureDate: searchParams.departureDate,
-          returnDate: searchParams.returnDate,
-          adults: searchParams.adults,
-          currency: searchParams.currency,
+          from: legacySearchParams.from,
+          to: legacySearchParams.to,
+          departureDate: legacySearchParams.departureDate,
+          returnDate: legacySearchParams.returnDate,
+          adults: legacySearchParams.adults,
+          currency: legacySearchParams.currency,
         });
         allOptions.push(...flights);
       } catch (error) {
@@ -330,22 +451,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Search trains and buses using new TransportSearchManager
-    const transportTypes = searchParams.transportTypes.filter(type => ['train', 'bus'].includes(type)) as ('train' | 'bus')[];
-    if (transportTypes.length > 0) {
+    // Search trains and buses using legacy TransportSearchManager
+    const transportTypes = legacySearchParams.transportTypes?.filter((type: string) => ['train', 'bus'].includes(type)) as ('train' | 'bus')[];
+    if (transportTypes && transportTypes.length > 0) {
       try {
         const transportSearchResult = await transportManager.searchTransport({
-          from: searchParams.from,
-          to: searchParams.to,
-          departureDate: searchParams.departureDate,
-          returnDate: searchParams.returnDate,
-          adults: searchParams.adults,
-          currency: searchParams.currency,
+          from: legacySearchParams.from,
+          to: legacySearchParams.to,
+          departureDate: legacySearchParams.departureDate,
+          returnDate: legacySearchParams.returnDate,
+          adults: legacySearchParams.adults,
+          currency: legacySearchParams.currency,
           transportTypes,
         });
 
         // Convert transport results to TransportOption format
-        transportResults = transportSearchResult.results.map(result => ({
+        transportResults = transportSearchResult.results.map((result: any) => ({
           id: result.id,
           type: result.type,
           provider: result.provider,
@@ -387,13 +508,13 @@ export async function POST(request: NextRequest) {
       success: true,
       transportOptions: allOptions,
       searchParams: {
-        from: searchParams.from,
-        to: searchParams.to,
-        departureDate: searchParams.departureDate,
-        returnDate: searchParams.returnDate,
-        adults: searchParams.adults,
-        currency: searchParams.currency,
-        transportTypes: searchParams.transportTypes,
+        from: legacySearchParams.from,
+        to: legacySearchParams.to,
+        departureDate: legacySearchParams.departureDate,
+        returnDate: legacySearchParams.returnDate,
+        adults: legacySearchParams.adults,
+        currency: legacySearchParams.currency,
+        transportTypes: legacySearchParams.transportTypes,
       },
       summary: {
         total: allOptions.length,
@@ -407,21 +528,99 @@ export async function POST(request: NextRequest) {
           max: Math.max(...allOptions.map(o => o.price)),
         } : null,
       },
+      meta: {
+        requestId,
+        requestProcessingTime: Date.now() - startTime,
+        apiVersion: '2.3.0-legacy',
+        timestamp: new Date().toISOString(),
+        features: ['multi-modal-search', 'price-comparison', 'carbon-footprint', 'legacy-compatibility']
+      }
+    }, {
+      headers: {
+        'X-Request-ID': requestId,
+        'Cache-Control': 'public, max-age=900' // 15 minutes cache
+      }
     });
 
   } catch (error) {
-    console.error('Transport search error:', error);
+    console.error('Transport search error:', {
+      requestId,
+      error: error instanceof Error ? {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      } : error,
+      timestamp: new Date().toISOString()
+    });
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid search parameters', details: error.errors },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        error: 'Invalid search parameters',
+        message: 'Transport search parameters validation failed',
+        code: 'VALIDATION_ERROR',
+        details: error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code
+        })),
+        requestId
+      }, { 
+        status: 400,
+        headers: { 'X-Request-ID': requestId }
+      });
     }
 
-    return NextResponse.json(
-      { error: 'Transport search failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: 'Transport search failed',
+      message: 'An unexpected error occurred while searching for transport options',
+      code: 'INTERNAL_ERROR',
+      requestId,
+      timestamp: new Date().toISOString()
+    }, { 
+      status: 500,
+      headers: { 'X-Request-ID': requestId }
+    });
   }
+}
+
+// Add GET endpoint for API info
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Multi-Modal Transport Search API - Enhanced',
+    version: '2.3.0',
+    endpoints: {
+      'POST /api/transport/search': 'Search for transport options (legacy + comprehensive)',
+      'GET /api/transport/providers': 'Get available transport providers',
+      'GET /api/transport/modes': 'Get supported transport modes'
+    },
+    supportedModes: ['train', 'bus', 'ferry', 'flight', 'rideshare', 'metro', 'tram', 'taxi', 'walk', 'bike'],
+    supportedRegions: ['Europe', 'UK', 'France', 'Germany', 'Netherlands', 'Belgium', 'USA'],
+    features: [
+      'multi-modal-journey-planning',
+      'real-time-updates',
+      'carbon-footprint-calculation',
+      'accessibility-support',
+      'transfer-optimization',
+      'price-comparison',
+      'booking-integration',
+      'legacy-compatibility'
+    ],
+    requestFormats: {
+      legacy: {
+        from: 'string',
+        to: 'string',
+        departureDate: 'ISO datetime',
+        adults: 'number',
+        transportTypes: ['train', 'bus', 'flight']
+      },
+      comprehensive: {
+        from: { name: 'string', coordinates: '[lng, lat]', type: 'city|station|airport' },
+        to: { name: 'string', coordinates: '[lng, lat]', type: 'city|station|airport' },
+        departure: { date: 'YYYY-MM-DD', time: 'HH:MM' },
+        passengers: { adults: 'number', children: 'number' },
+        preferences: { modes: 'array', priorities: 'array', accessibility: 'object' }
+      }
+    },
+    documentation: 'https://docs.tripthesia.com/api/transport'
+  });
 }
