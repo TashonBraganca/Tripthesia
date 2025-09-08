@@ -27,6 +27,24 @@ export const budgetBandEnum = pgEnum('budget_band', ['low', 'med', 'high']);
 export const paceEnum = pgEnum('pace', ['chill', 'standard', 'packed']);
 export const mobilityEnum = pgEnum('mobility', ['walk', 'public', 'car']);
 
+// Personalization enums for Phase 4.3
+export const preferenceTypeEnum = pgEnum('preference_type', [
+  'destination_category', 'activity_type', 'accommodation_style', 'cuisine_preference', 
+  'budget_range', 'trip_pace', 'transport_mode', 'travel_style', 'seasonal_preference',
+  'group_composition', 'accessibility_need', 'cultural_interest'
+]);
+export const interactionTypeEnum = pgEnum('interaction_type', [
+  'search', 'view', 'like', 'dislike', 'book', 'share', 'save', 'skip', 
+  'time_spent', 'click_through', 'comparison', 'filter_apply'
+]);
+export const feedbackTypeEnum = pgEnum('feedback_type', [
+  'rating', 'thumbs', 'detailed', 'implicit', 'behavioral'
+]);
+export const learningSourceEnum = pgEnum('learning_source', [
+  'explicit_input', 'implicit_behavior', 'feedback_analysis', 'collaborative_filtering', 
+  'content_analysis', 'seasonal_pattern', 'booking_history'
+]);
+
 // Users table (managed by Clerk)
 export const users = pgTable("users", {
   id: varchar("id", { length: 64 }).primaryKey(), // Clerk user ID
@@ -288,6 +306,156 @@ export const usageEvents = pgTable("usage_events", {
   createdAtIdx: index("usage_events_created_at_idx").on(table.createdAt),
 }));
 
+// ==================== PERSONALIZATION TABLES - PHASE 4.3 ====================
+
+// User preference profiles for personalized recommendations
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  preferenceType: preferenceTypeEnum("preference_type").notNull(),
+  preferenceValue: varchar("preference_value", { length: 255 }).notNull(),
+  preferenceWeight: numeric("preference_weight", { precision: 3, scale: 2 }).default("1.0").notNull(),
+  confidenceScore: numeric("confidence_score", { precision: 3, scale: 2 }).default("0.5").notNull(),
+  learningSource: learningSourceEnum("learning_source").notNull(),
+  contextData: jsonb("context_data"), // Additional context about when/how preference was learned
+  validFrom: timestamp("valid_from").defaultNow().notNull(),
+  validUntil: timestamp("valid_until"), // For time-sensitive preferences
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "user_preferences_user_id_fk"
+  }),
+  // Unique constraint to prevent duplicate preferences
+  uniqueUserPreference: index("unique_user_preference_idx").on(table.userId, table.preferenceType, table.preferenceValue),
+  // Check constraints
+  weightCheck: check("preference_weight_check", sql`preference_weight >= 0 AND preference_weight <= 10`),
+  confidenceCheck: check("confidence_score_check", sql`confidence_score >= 0 AND confidence_score <= 1`),
+  // Indexes for performance
+  userIdIdx: index("user_preferences_user_id_idx").on(table.userId),
+  preferenceTypeIdx: index("user_preferences_type_idx").on(table.preferenceType),
+  confidenceIdx: index("user_preferences_confidence_idx").on(table.confidenceScore),
+  updatedAtIdx: index("user_preferences_updated_at_idx").on(table.updatedAt),
+}));
+
+// User interaction tracking for behavioral analysis
+export const userInteractions = pgTable("user_interactions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  sessionId: varchar("session_id", { length: 64 }).notNull(),
+  interactionType: interactionTypeEnum("interaction_type").notNull(),
+  targetType: varchar("target_type", { length: 32 }).notNull(), // 'destination', 'activity', 'hotel', 'flight'
+  targetId: varchar("target_id", { length: 64 }).notNull(),
+  interactionValue: numeric("interaction_value", { precision: 5, scale: 2 }), // time_spent, rating, etc.
+  contextData: jsonb("context_data").notNull(), // search params, page context, user agent, etc.
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "user_interactions_user_id_fk"
+  }),
+  // Indexes for performance and analytics
+  userIdIdx: index("user_interactions_user_id_idx").on(table.userId),
+  sessionIdIdx: index("user_interactions_session_idx").on(table.sessionId),
+  interactionTypeIdx: index("user_interactions_type_idx").on(table.interactionType),
+  targetTypeIdx: index("user_interactions_target_type_idx").on(table.targetType),
+  timestampIdx: index("user_interactions_timestamp_idx").on(table.timestamp),
+  // Composite indexes for common queries
+  userTimeIdx: index("user_interactions_user_time_idx").on(table.userId, table.timestamp),
+  typeTargetIdx: index("user_interactions_type_target_idx").on(table.interactionType, table.targetType),
+}));
+
+// Recommendation feedback for continuous learning
+export const recommendationFeedback = pgTable("recommendation_feedback", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  recommendationId: varchar("recommendation_id", { length: 64 }).notNull(),
+  recommendationType: varchar("recommendation_type", { length: 32 }).notNull(),
+  feedbackType: feedbackTypeEnum("feedback_type").notNull(),
+  feedbackValue: numeric("feedback_value", { precision: 5, scale: 2 }).notNull(),
+  feedbackText: text("feedback_text"), // Optional detailed feedback
+  contextData: jsonb("context_data"), // When/where feedback was given
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "recommendation_feedback_user_id_fk"
+  }),
+  // Unique constraint to prevent duplicate feedback
+  uniqueFeedback: index("unique_recommendation_feedback_idx").on(table.userId, table.recommendationId),
+  // Check constraints
+  feedbackValueCheck: check("feedback_value_check", sql`feedback_value >= -10 AND feedback_value <= 10`),
+  // Indexes for performance
+  userIdIdx: index("recommendation_feedback_user_id_idx").on(table.userId),
+  recommendationIdIdx: index("recommendation_feedback_rec_id_idx").on(table.recommendationId),
+  feedbackTypeIdx: index("recommendation_feedback_type_idx").on(table.feedbackType),
+  timestampIdx: index("recommendation_feedback_timestamp_idx").on(table.timestamp),
+}));
+
+// User similarity clusters for collaborative filtering
+export const userClusters = pgTable("user_clusters", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  clusterId: varchar("cluster_id", { length: 64 }).notNull(),
+  clusterName: varchar("cluster_name", { length: 128 }),
+  similarityScore: numeric("similarity_score", { precision: 5, scale: 4 }).notNull(),
+  clusterCharacteristics: jsonb("cluster_characteristics").notNull(),
+  validFrom: timestamp("valid_from").defaultNow().notNull(),
+  validUntil: timestamp("valid_until"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "user_clusters_user_id_fk"
+  }),
+  // Unique constraint for user-cluster pairs
+  uniqueUserCluster: index("unique_user_cluster_idx").on(table.userId, table.clusterId),
+  // Check constraints
+  similarityCheck: check("similarity_score_check", sql`similarity_score >= 0 AND similarity_score <= 1`),
+  // Indexes for performance
+  userIdIdx: index("user_clusters_user_id_idx").on(table.userId),
+  clusterIdIdx: index("user_clusters_cluster_id_idx").on(table.clusterId),
+  similarityIdx: index("user_clusters_similarity_idx").on(table.similarityScore),
+  updatedAtIdx: index("user_clusters_updated_at_idx").on(table.updatedAt),
+}));
+
+// Personalized recommendation cache for performance
+export const personalizedRecommendations = pgTable("personalized_recommendations", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 64 }).notNull(),
+  recommendationType: varchar("recommendation_type", { length: 32 }).notNull(),
+  contextHash: varchar("context_hash", { length: 64 }).notNull(), // Hash of request context
+  recommendations: jsonb("recommendations").notNull(),
+  confidenceScores: jsonb("confidence_scores"), // Individual confidence scores
+  generationAlgorithm: varchar("generation_algorithm", { length: 64 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // Foreign key to users table
+  userIdFk: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "personalized_recommendations_user_id_fk"
+  }),
+  // Unique constraint for caching
+  uniqueRecommendation: index("unique_personalized_rec_idx").on(table.userId, table.recommendationType, table.contextHash),
+  // Indexes for performance
+  userIdIdx: index("personalized_recommendations_user_id_idx").on(table.userId),
+  typeIdx: index("personalized_recommendations_type_idx").on(table.recommendationType),
+  expiresAtIdx: index("personalized_recommendations_expires_idx").on(table.expiresAt),
+  createdAtIdx: index("personalized_recommendations_created_at_idx").on(table.createdAt),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type Profile = typeof profiles.$inferSelect;
@@ -297,3 +465,10 @@ export type Itinerary = typeof itineraries.$inferSelect;
 export type Place = typeof places.$inferSelect;
 export type PriceQuote = typeof priceQuotes.$inferSelect;
 export type SharedTrip = typeof sharedTrips.$inferSelect;
+
+// Personalization type exports - Phase 4.3
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type UserInteraction = typeof userInteractions.$inferSelect;
+export type RecommendationFeedback = typeof recommendationFeedback.$inferSelect;
+export type UserCluster = typeof userClusters.$inferSelect;
+export type PersonalizedRecommendation = typeof personalizedRecommendations.$inferSelect;

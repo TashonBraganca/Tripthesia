@@ -35,7 +35,8 @@
       "Bash(for file in ./app/road-trip/page.tsx ./app/transport/page.tsx ./components/transport/TransportSearchResults.tsx ./components/planning/TimeSlotManager.tsx ./components/planning/TripSharing.tsx)",
       "Bash(done)",
       "Bash(chmod:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm drizzle-kit push:*)"
     ],
     "deny": [],
     "ask": []
