@@ -131,7 +131,14 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = PreferenceQuerySchema.parse(queryParams);
 
-    return withDatabase(async (db) => {
+    const result = await withDatabase(async (db) => {
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Database connection unavailable' },
+          { status: 503 }
+        );
+      }
+
       // Get user preferences
       const preferences = await db
         .select()
@@ -189,6 +196,11 @@ export async function GET(request: NextRequest) {
         }
       });
     });
+
+    return result || NextResponse.json(
+      { error: 'Database operation failed' },
+      { status: 500 }
+    );
     
   } catch (error) {
     console.error('Get preferences error:', error);
@@ -223,7 +235,14 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const preferenceType = searchParams.get('type');
     
-    return withDatabase(async (db) => {
+    const result = await withDatabase(async (db) => {
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Database connection unavailable' },
+          { status: 503 }
+        );
+      }
+
       if (preferenceType) {
         // Delete specific preference type
         await db
@@ -248,6 +267,11 @@ export async function DELETE(request: NextRequest) {
           : 'Deleted all user preferences'
       });
     });
+
+    return result || NextResponse.json(
+      { error: 'Database operation failed' },
+      { status: 500 }
+    );
     
   } catch (error) {
     console.error('Delete preferences error:', error);
@@ -267,7 +291,14 @@ async function handleInteractionLearning(userId: string, body: any) {
   try {
     const { interaction } = InteractionLearningSchema.parse(body);
     
-    return withDatabase(async (db) => {
+    const result = await withDatabase(async (db) => {
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Database connection unavailable' },
+          { status: 503 }
+        );
+      }
+
       // Store the interaction
       await db.insert(userInteractions).values({
         userId,
@@ -299,6 +330,11 @@ async function handleInteractionLearning(userId: string, body: any) {
         message: `Learned ${updatedPreferences.length} preferences from ${interaction.interactionType} interaction`
       });
     });
+
+    return result || NextResponse.json(
+      { error: 'Database operation failed' },
+      { status: 500 }
+    );
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -321,7 +357,14 @@ async function handleExplicitPreferences(userId: string, body: any) {
   try {
     const { preferences } = ExplicitPreferencesSchema.parse(body);
     
-    return withDatabase(async (db) => {
+    const result = await withDatabase(async (db) => {
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Database connection unavailable' },
+          { status: 503 }
+        );
+      }
+
       const updatedPreferences = [];
       
       for (const pref of preferences) {
@@ -349,6 +392,11 @@ async function handleExplicitPreferences(userId: string, body: any) {
         message: `Updated ${updatedPreferences.length} explicit preferences`
       });
     });
+
+    return result || NextResponse.json(
+      { error: 'Database operation failed' },
+      { status: 500 }
+    );
     
   } catch (error) {
     if (error instanceof z.ZodError) {
