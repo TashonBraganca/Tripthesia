@@ -5,7 +5,7 @@
  * collaborative filtering, and machine learning for personalized travel suggestions
  */
 
-import { db } from '@/lib/db';
+import { withDatabase } from '@/lib/db';
 import { 
   userPreferences, 
   userInteractions, 
@@ -303,10 +303,17 @@ export class IntelligentRecommendationEngine {
   private async findSimilarUsers(userProfile: UserProfile): Promise<string[]> {
     try {
       // Find users in the same clusters
-      const clusterUsers = await db
-        .select({ userId: userClusters.userId })
-        .from(userClusters)
-        .where(inArray(userClusters.clusterId, userProfile.clusterIds));
+      const clusterUsers = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select({ userId: userClusters.userId })
+          .from(userClusters)
+          .where(inArray(userClusters.clusterId, userProfile.clusterIds));
+      });
+
+      if (!clusterUsers || clusterUsers.length === 0) {
+        return [];
+      }
 
       // Calculate similarity scores
       const similarityScores = new Map<string, number>();
@@ -346,16 +353,23 @@ export class IntelligentRecommendationEngine {
 
     try {
       // Get interactions from similar users
-      const similarUserInteractions = await db
-        .select()
-        .from(userInteractions)
-        .where(
-          and(
-            inArray(userInteractions.userId, similarUsers),
-            inArray(userInteractions.interactionType, ['like', 'save', 'book', 'share'])
+      const similarUserInteractions = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(userInteractions)
+          .where(
+            and(
+              inArray(userInteractions.userId, similarUsers),
+              inArray(userInteractions.interactionType, ['like', 'save', 'book', 'share'])
+            )
           )
-        )
-        .orderBy(desc(userInteractions.timestamp));
+          .orderBy(desc(userInteractions.timestamp));
+      });
+
+      if (!similarUserInteractions || similarUserInteractions.length === 0) {
+        return scores;
+      }
 
       // Calculate item scores based on similar user preferences
       for (const interaction of similarUserInteractions) {
@@ -432,20 +446,27 @@ export class IntelligentRecommendationEngine {
     
     try {
       // Get interactions from last 7 days
-      const recentInteractions = await db
-        .select({
-          targetId: userInteractions.targetId,
-          interactionType: userInteractions.interactionType,
-          count: sql<number>`count(*)`.as('count')
-        })
-        .from(userInteractions)
-        .where(
-          and(
-            sql`${userInteractions.timestamp} >= NOW() - INTERVAL '7 days'`,
-            inArray(userInteractions.interactionType, ['view', 'like', 'save', 'book', 'share'])
+      const recentInteractions = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select({
+            targetId: userInteractions.targetId,
+            interactionType: userInteractions.interactionType,
+            count: sql<number>`count(*)`.as('count')
+          })
+          .from(userInteractions)
+          .where(
+            and(
+              sql`${userInteractions.timestamp} >= NOW() - INTERVAL '7 days'`,
+              inArray(userInteractions.interactionType, ['view', 'like', 'save', 'book', 'share'])
+            )
           )
-        )
-        .groupBy(userInteractions.targetId, userInteractions.interactionType);
+          .groupBy(userInteractions.targetId, userInteractions.interactionType);
+      });
+
+      if (!recentInteractions || recentInteractions.length === 0) {
+        return scores;
+      }
 
       // Calculate weighted trending scores
       for (const interaction of recentInteractions) {
@@ -489,25 +510,47 @@ export class IntelligentRecommendationEngine {
 
     try {
       // Get user preferences
-      const preferences = await db
-        .select()
-        .from(userPreferences)
-        .where(eq(userPreferences.userId, userId))
-        .orderBy(desc(userPreferences.confidenceScore));
+      const preferences = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(userPreferences)
+          .where(eq(userPreferences.userId, userId))
+          .orderBy(desc(userPreferences.confidenceScore));
+      });
 
       // Get user interactions
-      const interactions = await db
-        .select()
-        .from(userInteractions)
-        .where(eq(userInteractions.userId, userId))
-        .orderBy(desc(userInteractions.timestamp))
-        .limit(100);
+      const interactions = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(userInteractions)
+          .where(eq(userInteractions.userId, userId))
+          .orderBy(desc(userInteractions.timestamp))
+          .limit(100);
+      });
 
       // Get user clusters
-      const clusters = await db
-        .select()
-        .from(userClusters)
-        .where(eq(userClusters.userId, userId));
+      const clusters = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(userClusters)
+          .where(eq(userClusters.userId, userId));
+      });
+
+      if (!preferences || !interactions || !clusters) {
+        // Return default profile if database queries failed
+        const profile: UserProfile = {
+          userId,
+          preferences: {},
+          behaviorVector: [],
+          clusterIds: [],
+          interactionHistory: []
+        };
+        this.userProfiles.set(userId, profile);
+        return profile;
+      }
 
       // Build preference vector
       const preferenceVector: Record<string, number> = {};
@@ -1091,70 +1134,81 @@ export class IntelligentRecommendationEngine {
 
     try {
       // Get places/destinations
-      let placesQuery = db.select().from(places);
-      
-      if (context.currentLocation) {
-        placesQuery = placesQuery.where(
-          sql`ST_DWithin(
-            ST_Point(${places.longitude}, ${places.latitude})::geography,
-            ST_Point(${context.currentLocation.lng}, ${context.currentLocation.lat})::geography,
-            ${geographicRadius}
-          )`
-        );
-      }
+      const placesData = await withDatabase(async (db) => {
+        if (!db) return [];
+        
+        if (context.currentLocation) {
+          // Simplified location filtering without PostGIS for now
+          return await db.select().from(places).where(
+            and(
+              sql`${places.latitude} IS NOT NULL`,
+              sql`${places.longitude} IS NOT NULL`
+            )
+          ).limit(100);
+        } else {
+          return await db.select().from(places).limit(100);
+        }
+      });
 
-      const placesData = await placesQuery.limit(100);
-
-      for (const place of placesData) {
-        candidates.push({
-          id: place.id,
-          type: 'destination',
-          title: place.name,
-          description: place.description || '',
-          imageUrl: place.imageUrl || undefined,
-          price: place.priceRange ? {
-            amount: parseFloat(place.priceRange.split('-')[0]) || 0,
-            currency: 'USD'
-          } : undefined,
-          rating: place.rating ? parseFloat(place.rating.toString()) : undefined,
-          reviewCount: 0,
-          location: {
-            lat: parseFloat(place.latitude.toString()),
-            lng: parseFloat(place.longitude.toString()),
-            address: place.address || ''
-          },
-          features: place.categories ? place.categories.split(',') : [],
-          metadata: {
-            placeId: place.placeId,
-            types: place.types ? place.types.split(',') : [],
-            createdAt: place.createdAt
-          }
-        });
+      if (placesData && placesData.length > 0) {
+        for (const place of placesData) {
+          candidates.push({
+            id: place.id,
+            type: 'destination',
+            title: place.name,
+            description: place.description || '',
+            imageUrl: place.photoUrl || undefined,
+            price: place.priceLevel ? {
+              amount: place.priceLevel * 25, // Convert 1-4 scale to approximate USD
+              currency: 'USD'
+            } : undefined,
+            rating: place.rating ? parseFloat(place.rating.toString()) : undefined,
+            reviewCount: 0,
+            location: place.latitude && place.longitude ? {
+              lat: parseFloat(place.latitude.toString()),
+              lng: parseFloat(place.longitude.toString()),
+              address: place.address || ''
+            } : undefined,
+            features: place.category ? [place.category] : [],
+            metadata: {
+              source: place.source,
+              verified: place.verified,
+              createdAt: place.createdAt
+            }
+          });
+        }
       }
 
       // Get trips and itineraries
-      const tripsData = await db
-        .select()
-        .from(trips)
-        .where(eq(trips.status, 'generated'))
-        .limit(50);
+      const tripsData = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(trips)
+          .where(eq(trips.status, 'generated'))
+          .limit(50);
+      });
 
-      for (const trip of tripsData) {
-        candidates.push({
-          id: trip.id,
-          type: 'trip',
-          title: trip.title,
-          description: trip.description || '',
-          price: {
-            amount: parseFloat(trip.estimatedBudget.toString()),
-            currency: trip.budgetCurrency
-          },
-          features: trip.tripType ? [trip.tripType] : [],
-          metadata: {
-            duration: trip.duration,
-            createdAt: trip.createdAt
-          }
-        });
+      if (tripsData && tripsData.length > 0) {
+        for (const trip of tripsData) {
+          candidates.push({
+            id: trip.id,
+            type: 'trip',
+            title: trip.title,
+            description: '', // No description field in schema
+            price: trip.budgetTotal ? {
+              amount: trip.budgetTotal,
+              currency: trip.budgetCurrency
+            } : undefined,
+            features: trip.tripType ? [trip.tripType] : [],
+            metadata: {
+              destinations: trip.destinations,
+              startDate: trip.startDate,
+              endDate: trip.endDate,
+              createdAt: trip.createdAt
+            }
+          });
+        }
       }
 
     } catch (error) {
@@ -1174,30 +1228,38 @@ export class IntelligentRecommendationEngine {
     recommendations: ScoredRecommendation[]
   ): Promise<void> {
     try {
-      // Cache top recommendations in database
-      const cacheData = recommendations.slice(0, 10).map(rec => ({
+      // Cache top recommendations in database with correct schema
+      const topRecommendations = recommendations.slice(0, 10);
+      const confidenceScores = topRecommendations.map(rec => rec.confidence);
+      
+      const cacheData = {
         userId,
-        itemId: rec.item.id,
-        itemType: rec.item.type,
-        score: rec.score.toString(),
-        confidence: rec.confidence.toString(),
-        reasoning: rec.reasoning,
-        validUntil: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        metadata: {
-          source: rec.source,
-          generatedAt: new Date().toISOString()
-        }
-      }));
+        recommendationType: 'hybrid',
+        contextHash: 'default', // Could hash actual context for better caching
+        recommendations: topRecommendations.map(rec => ({
+          id: rec.item.id,
+          type: rec.item.type,
+          title: rec.item.title,
+          description: rec.item.description,
+          score: rec.score,
+          source: rec.source
+        })),
+        confidenceScores,
+        generationAlgorithm: 'intelligent_hybrid_v1',
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      };
 
-      // Clear old recommendations
-      await db
-        .delete(personalizedRecommendations)
-        .where(eq(personalizedRecommendations.userId, userId));
+      await withDatabase(async (db) => {
+        if (!db) return;
+        
+        // Clear old recommendations
+        await db
+          .delete(personalizedRecommendations)
+          .where(eq(personalizedRecommendations.userId, userId));
 
-      // Insert new recommendations
-      if (cacheData.length > 0) {
+        // Insert new recommendations
         await db.insert(personalizedRecommendations).values(cacheData);
-      }
+      });
 
     } catch (error) {
       console.error('Error caching recommendations:', error);

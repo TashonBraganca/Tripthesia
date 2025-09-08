@@ -266,6 +266,17 @@ export class BehavioralAnalyticsService {
           )
       );
 
+      if (!interactions || interactions.length === 0) {
+        return {
+          searchStyle: 'focused',
+          decisionSpeed: 'moderate',
+          contentPreference: 'detailed',
+          interactionPattern: 'mixed',
+          travelPhase: 'planning',
+          engagementLevel: 'medium'
+        };
+      }
+
       // Analyze search style
       const searchStyle = this.inferSearchStyle(interactions);
       
@@ -481,14 +492,17 @@ export class BehavioralAnalyticsService {
   private async processEvent(event: BehaviorEvent): Promise<void> {
     // Store event in database for real-time processing
     try {
-      await db.insert(userInteractions).values({
-        userId: this.activeSessions.get(event.sessionId)?.userId || '',
-        sessionId: event.sessionId,
-        interactionType: event.eventType,
-        targetType: event.targetType,
-        targetId: event.targetId,
-        interactionValue: event.duration?.toString(),
-        contextData: event.eventData
+      await withDatabase(async (db) => {
+        if (!db) return;
+        await db.insert(userInteractions).values({
+          userId: this.activeSessions.get(event.sessionId)?.userId || '',
+          sessionId: event.sessionId,
+          interactionType: event.eventType,
+          targetType: event.targetType,
+          targetId: event.targetId,
+          interactionValue: event.duration?.toString(),
+          contextData: event.eventData
+        });
       });
     } catch (error) {
       console.error('Error processing event:', error);
@@ -564,7 +578,7 @@ export class BehavioralAnalyticsService {
     }, {} as Record<string, number>);
 
     return Object.entries(actionCounts)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 3)
       .map(([action]) => action);
   }
@@ -589,7 +603,7 @@ export class BehavioralAnalyticsService {
     }, {} as Record<string, number>);
 
     return Object.entries(contentTypes)
-      .sort(([,a], [,b]) => b - a)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
       .map(([type]) => type);
   }
@@ -612,22 +626,29 @@ export class BehavioralAnalyticsService {
   private async calculateEngagementScore(userId: string): Promise<number> {
     try {
       const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const interactions = await db
-        .select()
-        .from(userInteractions)
-        .where(
-          and(
-            eq(userInteractions.userId, userId),
-            gte(userInteractions.timestamp, since)
-          )
-        );
+      const interactions = await withDatabase(async (db) => {
+        if (!db) return [];
+        return await db
+          .select()
+          .from(userInteractions)
+          .where(
+            and(
+              eq(userInteractions.userId, userId),
+              gte(userInteractions.timestamp, since)
+            )
+          );
+      });
+
+      if (!interactions || interactions.length === 0) {
+        return 50; // Default medium engagement
+      }
 
       const totalInteractions = interactions.length;
-      const uniqueDays = new Set(interactions.map(i => 
+      const uniqueDays = new Set(interactions.map((i: any) => 
         new Date(i.timestamp).toDateString()
       )).size;
       
-      const highValueActions = interactions.filter(i => 
+      const highValueActions = interactions.filter((i: any) => 
         ['like', 'save', 'book', 'share'].includes(i.interactionType)
       ).length;
 
