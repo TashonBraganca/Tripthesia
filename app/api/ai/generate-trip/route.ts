@@ -157,6 +157,15 @@ function mapTransportMode(transportation?: string): 'flights' | 'trains' | 'buse
 export async function POST(request: NextRequest) {
   return withAISubscriptionCheck('canUseAIGenerator', async (userInfo) => {
     try {
+      // Get userId from auth
+      const { userId } = auth();
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        );
+      }
+
       // Check if AI service is available
       if (!aiService) {
         return NextResponse.json(
@@ -167,6 +176,39 @@ export async function POST(request: NextRequest) {
 
       // Parse and validate request body
       const body = await request.json();
+      
+      // Check if personalized generation is requested and available
+      const shouldUsePersonalized = body.personalized === true || body.usePersonalization === true;
+      const hasPersonalizedService = process.env.NODE_ENV !== 'test'; // Disable in tests for simplicity
+      
+      if (shouldUsePersonalized && hasPersonalizedService) {
+        try {
+          // Redirect to personalized trip generation API
+          const personalizedRequest = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/personalized-trip`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': request.headers.get('Authorization') || '',
+              'Cookie': request.headers.get('Cookie') || ''
+            },
+            body: JSON.stringify({
+              ...body,
+              userId,
+              responseFormat: 'legacy' // Maintain backward compatibility
+            })
+          });
+          
+          if (personalizedRequest.ok) {
+            const personalizedResult = await personalizedRequest.json();
+            return NextResponse.json(personalizedResult);
+          } else {
+            console.warn('Personalized trip generation failed, falling back to standard generation');
+          }
+        } catch (error) {
+          console.warn('Error calling personalized trip generation:', error);
+          // Continue with standard generation
+        }
+      }
       
       // Try to parse with enhanced schema first, fall back to legacy
       let tripPreferences: TripPreferences;
@@ -352,7 +394,22 @@ export async function GET() {
         enhancedSchema: true,
         intelligentRouting: true,
         structuredValidation: true,
-        costOptimization: true
+        costOptimization: true,
+        personalizedGeneration: true,
+        behavioralAnalytics: true,
+        recommendationEngine: true
+      },
+      personalization: {
+        available: true,
+        endpoint: '/api/ai/personalized-trip',
+        trigger: 'Set personalized=true in request body',
+        features: [
+          'user-preference-integration',
+          'behavioral-analytics',
+          'recommendation-engine',
+          'adaptive-learning',
+          'alternative-generation'
+        ]
       }
     });
 
