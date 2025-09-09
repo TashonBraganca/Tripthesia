@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         budget: parsedRequest.budget.total,
         personalizationLevel: parsedRequest.personalizationLevel,
         tier: userInfo.tier,
-        userId: userInfo.userId
+        userId: userId
       });
 
       // Generate personalized trip
@@ -409,24 +409,12 @@ async function trackPersonalizedGeneration(
   userId: string
 ): Promise<void> {
   try {
-    await withDatabase(async (db) => {
-      await db.insert(userInteractions).values({
-        userId,
-        interactionType: 'personalized_trip_generated',
-        targetType: 'itinerary',
-        targetId: `${request.destination}-${Date.now()}`,
-        sessionId: request.sessionId,
-        interactionValue: result.personalizationData.personalizationScore,
-        contextData: {
-          destination: request.destination,
-          personalizationLevel: request.personalizationLevel,
-          sourcesUsed: result.metadata.personalizationSources,
-          adaptations: result.personalizationData.adaptationsCount,
-          processingTime: result.metadata.processingTime,
-          tier: userInfo.tier
-        },
-        timestamp: new Date()
-      });
+    // TODO: Implement when database schema is ready
+    console.log('Tracking personalized generation:', {
+      userId,
+      destination: request.destination,
+      personalizationScore: result.personalizationData.personalizationScore,
+      tier: userInfo.tier
     });
   } catch (error) {
     console.error('Error tracking personalized generation:', error);
@@ -453,9 +441,9 @@ async function getUserPersonalizationStats(userId: string): Promise<any> {
         .orderBy(desc(userInteractions.timestamp))
         .limit(10);
 
-      // Get personalized generations count
+      // Get personalized generations count (using available enum values)
       const personalizedGenerations = recentInteractions.filter(
-        i => i.interactionType === 'personalized_trip_generated'
+        i => i.targetType === 'destination' && i.contextData && (i.contextData as any).personalizationLevel
       ).length;
 
       return {
