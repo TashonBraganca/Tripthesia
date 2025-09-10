@@ -5,6 +5,8 @@
  * for the TripThesia application.
  */
 
+import React from 'react';
+
 // ==================== TYPES ====================
 
 interface PerformanceMetrics {
