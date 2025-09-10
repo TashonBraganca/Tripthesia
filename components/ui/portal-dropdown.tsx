@@ -126,16 +126,27 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
         left = triggerRect.left + viewport.scrollX;
     }
 
-    // Collision detection and adjustment
+    // Improved collision detection with buffer space
     if (collision === 'flip') {
-      // Flip vertically if not enough space
-      if (actualPlacement.includes('bottom') && top + maxHeight > viewport.height + viewport.scrollY) {
-        if (triggerRect.top - maxHeight - offset > viewport.scrollY) {
-          top = triggerRect.top - offset + viewport.scrollY - maxHeight;
+      const bufferSpace = 80; // Extra buffer to prevent unnecessary flipping
+      const dropdownHeight = maxHeight || 320; // Use actual maxHeight or default
+      
+      // Only flip if there's REALLY not enough space below (more conservative)
+      if (actualPlacement.includes('bottom')) {
+        const spaceBelow = viewport.height + viewport.scrollY - (triggerRect.bottom + offset);
+        const spaceAbove = triggerRect.top + viewport.scrollY - offset;
+        
+        // Only flip if we have significantly more space above AND not enough below
+        if (spaceBelow < dropdownHeight + bufferSpace && spaceAbove > dropdownHeight + bufferSpace && spaceAbove > spaceBelow + 100) {
+          top = triggerRect.top - offset + viewport.scrollY - dropdownHeight;
           actualPlacement = actualPlacement.replace('bottom', 'top') as typeof placement;
         }
-      } else if (actualPlacement.includes('top') && top < viewport.scrollY) {
-        if (triggerRect.bottom + maxHeight + offset < viewport.height + viewport.scrollY) {
+      } else if (actualPlacement.includes('top')) {
+        const spaceAbove = triggerRect.top + viewport.scrollY - offset;
+        const spaceBelow = viewport.height + viewport.scrollY - (triggerRect.bottom + offset);
+        
+        // Flip back to bottom if we have more space below
+        if (spaceAbove < dropdownHeight + bufferSpace && spaceBelow > dropdownHeight + bufferSpace) {
           top = triggerRect.bottom + offset + viewport.scrollY;
           actualPlacement = actualPlacement.replace('top', 'bottom') as typeof placement;
         }
@@ -193,22 +204,30 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
     }
   }, [placement, offset, collision, sameWidth, maxHeight, mounted]);
 
-  // Throttle position calculations for better performance
+  // Improved throttled position update with better scroll handling
   const throttledPositionUpdate = useCallback(() => {
     let rafId: number;
     let lastCall = 0;
     
     return () => {
       const now = Date.now();
-      if (now - lastCall >= 16) { // ~60fps throttling
+      if (now - lastCall >= 8) { // Increased frequency for better scroll responsiveness
         lastCall = now;
         if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(calculatePosition);
+        rafId = requestAnimationFrame(() => {
+          // Ensure trigger element is still visible before repositioning
+          if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+              calculatePosition();
+            }
+          }
+        });
       }
     };
   }, [calculatePosition]);
 
-  // Recalculate position when dropdown opens or window resizes
+  // Improved scroll and resize handling for better dropdown positioning
   useEffect(() => {
     if (isOpen && mounted) {
       calculatePosition();
@@ -217,12 +236,36 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
       const handleResize = throttledUpdate;
       const handleScroll = throttledUpdate;
       
+      // Add event listeners to window and document
       window.addEventListener('resize', handleResize, { passive: true });
       window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+      document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+      
+      // Also listen to scroll events on scrollable parent containers
+      let scrollableParent = triggerRef.current?.parentElement;
+      const scrollableElements: Element[] = [];
+      
+      while (scrollableParent) {
+        const computedStyle = window.getComputedStyle(scrollableParent);
+        const overflow = computedStyle.overflow + computedStyle.overflowY + computedStyle.overflowX;
+        
+        if (overflow.includes('auto') || overflow.includes('scroll')) {
+          scrollableElements.push(scrollableParent);
+          scrollableParent.addEventListener('scroll', handleScroll, { passive: true });
+        }
+        
+        scrollableParent = scrollableParent.parentElement;
+      }
       
       return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('scroll', handleScroll, true);
+        document.removeEventListener('scroll', handleScroll, true);
+        
+        // Clean up scrollable parent listeners
+        scrollableElements.forEach(element => {
+          element.removeEventListener('scroll', handleScroll);
+        });
       };
     }
   }, [isOpen, throttledPositionUpdate, mounted]);
