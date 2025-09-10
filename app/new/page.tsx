@@ -466,11 +466,14 @@ export default function NewTripPage() {
           transition={{ duration: 0.6, delay: 0.5 }}
           className="col-span-full lg:col-span-7 lg:col-start-1 lg:row-span-1 lg:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-purple-500/10 to-purple-400/5 relative overflow-visible"
         >
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-purple-500/20 rounded-lg" aria-hidden="true">
               <Calendar className="w-5 h-5 text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold text-navy-50" id="dates-label">Dates</h3>
+          </div>
+          <div className="mb-4">
+            <h4 className="text-navy-300 text-sm font-medium mb-3">Travel Dates</h4>
           </div>
           <DateRangePicker
             value={{
@@ -499,7 +502,7 @@ export default function NewTripPage() {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="col-span-full lg:col-span-5 lg:col-start-8 lg:row-span-1 lg:row-start-2 glass rounded-2xl border border-navy-400/30 p-6 bg-gradient-to-br from-amber-500/10 to-amber-400/5 relative overflow-visible"
         >
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-amber-500/20 rounded-lg" aria-hidden="true">
               <Users className="w-5 h-5 text-amber-400" />
             </div>
@@ -507,35 +510,35 @@ export default function NewTripPage() {
           </div>
           
           {formData.from && formData.to ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-navy-300">Route:</span>
-                <span className="text-navy-100 font-medium text-sm">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-1">
+                <span className="text-navy-300 text-sm font-medium">Route:</span>
+                <span className="text-navy-100 font-semibold text-sm">
                   {formData.from.name} → {formData.to.name}
                 </span>
               </div>
               {formData.startDate && formData.endDate && (
-                <div className="flex items-center justify-between">
-                  <span className="text-navy-300">Duration:</span>
-                  <span className="text-navy-100 font-medium">
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-navy-300 text-sm font-medium">Duration:</span>
+                  <span className="text-navy-100 font-semibold text-sm">
                     {Math.ceil((new Date(formData.endDate).getTime() - new Date(formData.startDate).getTime()) / (1000 * 60 * 60 * 24))} days
                   </span>
                 </div>
               )}
-              <div className="flex items-center justify-between">
-                <label htmlFor="travelers-count" className="text-navy-300">Travelers:</label>
-                <div className="flex items-center gap-2" role="group" aria-labelledby="travelers-label">
+              <div className="flex items-center justify-between py-1">
+                <label htmlFor="travelers-count" className="text-navy-300 text-sm font-medium">Travelers:</label>
+                <div className="flex items-center gap-3" role="group" aria-labelledby="travelers-label">
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, travelers: Math.max(1, prev.travelers - 1) }))}
                     disabled={formData.travelers <= 1}
-                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    className="w-7 h-7 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm font-medium focus:ring-2 focus:ring-teal-400 focus:outline-none"
                     aria-label="Decrease number of travelers"
                   >
                     -
                   </button>
                   <span 
                     id="travelers-count"
-                    className="text-navy-100 font-medium min-w-[1.5rem] text-center text-sm"
+                    className="text-navy-100 font-semibold min-w-[1.75rem] text-center text-sm"
                     role="status"
                     aria-live="polite"
                     aria-atomic="true"
@@ -545,7 +548,7 @@ export default function NewTripPage() {
                   <button
                     onClick={() => setFormData(prev => ({ ...prev, travelers: prev.travelers + 1 }))}
                     disabled={formData.travelers >= 20}
-                    className="w-6 h-6 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm focus:ring-2 focus:ring-teal-400 focus:outline-none"
+                    className="w-7 h-7 rounded-full bg-navy-700 hover:bg-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-navy-200 flex items-center justify-center transition-colors text-sm font-medium focus:ring-2 focus:ring-teal-400 focus:outline-none"
                     aria-label="Increase number of travelers"
                   >
                     +
