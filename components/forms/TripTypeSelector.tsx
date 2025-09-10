@@ -30,6 +30,49 @@ interface TripTypeSelectorProps {
   onValidation?: (isValid: boolean) => void;
 }
 
+// Helper function to get consistent selected styles for each color
+const getSelectedStyles = (color: string): string => {
+  const styleMap: Record<string, string> = {
+    emerald: 'bg-emerald-400/20 border-emerald-400 ring-2 ring-emerald-400/50',
+    blue: 'bg-blue-400/20 border-blue-400 ring-2 ring-blue-400/50',
+    purple: 'bg-purple-400/20 border-purple-400 ring-2 ring-purple-400/50',
+    cyan: 'bg-cyan-400/20 border-cyan-400 ring-2 ring-cyan-400/50',
+    pink: 'bg-pink-400/20 border-pink-400 ring-2 ring-pink-400/50',
+    amber: 'bg-amber-400/20 border-amber-400 ring-2 ring-amber-400/50',
+    gray: 'bg-gray-400/20 border-gray-400 ring-2 ring-gray-400/50',
+  };
+  return styleMap[color] || 'bg-teal-400/20 border-teal-400 ring-2 ring-teal-400/50';
+};
+
+const getIconStyles = (color: string, isSelected: boolean): string => {
+  if (isSelected) {
+    const iconMap: Record<string, string> = {
+      emerald: 'bg-emerald-400/30 text-emerald-300',
+      blue: 'bg-blue-400/30 text-blue-300',
+      purple: 'bg-purple-400/30 text-purple-300',
+      cyan: 'bg-cyan-400/30 text-cyan-300',
+      pink: 'bg-pink-400/30 text-pink-300',
+      amber: 'bg-amber-400/30 text-amber-300',
+      gray: 'bg-gray-400/30 text-gray-300',
+    };
+    return iconMap[color] || 'bg-teal-400/30 text-teal-300';
+  }
+  return 'bg-navy-700 text-navy-400';
+};
+
+const getTickMarkStyles = (color: string): string => {
+  const tickMap: Record<string, string> = {
+    emerald: 'bg-emerald-400',
+    blue: 'bg-blue-400',
+    purple: 'bg-purple-400',
+    cyan: 'bg-cyan-400',
+    pink: 'bg-pink-400',
+    amber: 'bg-amber-400',
+    gray: 'bg-gray-400',
+  };
+  return tickMap[color] || 'bg-teal-400';
+};
+
 const tripTypes: TripType[] = [
   {
     id: 'adventure',
@@ -126,12 +169,12 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
   error,
   onValidation
 }) => {
-  const [selectedType, setSelectedType] = useState(value);
-  const [previewType, setPreviewType] = useState(value);
+  const [selectedType, setSelectedType] = useState<string | undefined>(value);
+  const [previewType, setPreviewType] = useState(value || 'adventure');
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleTypeSelect = (typeId: string) => {
-    if (typeId === selectedType) return;
+    console.log('Trip type selected:', typeId, 'current:', selectedType);
     
     setIsAnimating(true);
     setSelectedType(typeId);
@@ -204,7 +247,7 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                 className={`
                   relative p-4 rounded-xl transition-all duration-300 cursor-pointer border
                   ${isSelected 
-                    ? `bg-${type.color}-400/20 border-${type.color}-400 ring-2 ring-${type.color}-400/50` 
+                    ? getSelectedStyles(type.color)
                     : error && required && !selectedType
                       ? 'bg-navy-800/50 border-red-400/50 hover:border-red-400'
                       : 'bg-navy-800/50 border-navy-600 hover:border-navy-500'
@@ -225,10 +268,7 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                   <div className="flex flex-col items-center text-center space-y-2">
                     <div className={`
                       p-3 rounded-lg transition-colors duration-300
-                      ${isSelected 
-                        ? `bg-${type.color}-400/30 text-${type.color}-300` 
-                        : 'bg-navy-700 text-navy-400'
-                      }
+                      ${getIconStyles(type.color, isSelected)}
                     `}>
                       <Icon size={20} />
                     </div>
@@ -255,7 +295,7 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                         exit={{ scale: 0 }}
                         className={`
                           absolute -top-1 -right-1 w-6 h-6 rounded-full
-                          bg-${type.color}-400 flex items-center justify-center
+                          ${getTickMarkStyles(type.color)} flex items-center justify-center
                         `}
                       >
                         <motion.div
