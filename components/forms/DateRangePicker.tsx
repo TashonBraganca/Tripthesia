@@ -192,18 +192,30 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const formatDateForDisplay = (dateStr: string, timeStr?: string) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
-    let formatted = date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    if (showTimePicker && timeStr) {
-      formatted += ` at ${formatTime(timeStr)}`;
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date string:', dateStr);
+        return '';
+      }
+      
+      // Use shorter format for mobile screens
+      const isMobile = window.innerWidth < 640;
+      let formatted = date.toLocaleDateString('en-US', { 
+        month: isMobile ? 'short' : 'short', 
+        day: 'numeric',
+        year: isMobile ? '2-digit' : 'numeric'
+      });
+      
+      if (showTimePicker && timeStr) {
+        formatted += ` at ${formatTime(timeStr)}`;
+      }
+      
+      return formatted;
+    } catch (error) {
+      console.warn('Error formatting date:', error);
+      return '';
     }
-    
-    return formatted;
   };
 
   const formatTime = (timeStr: string) => {
@@ -305,7 +317,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           {/* Presets */}
           <div>
             <h3 className="text-sm font-medium text-navy-100 mb-3">Quick Select</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2">
               {datePresets.map((preset) => {
                 const Icon = preset.icon;
                 const isSelected = selectedPreset === preset.id;

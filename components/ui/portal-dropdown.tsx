@@ -69,17 +69,25 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
     setMounted(true);
   }, []);
 
-  // Calculate optimal position for dropdown
+  // Calculate optimal position for dropdown with error handling
   const calculatePosition = useCallback(() => {
     if (!triggerRef.current || !mounted) return;
 
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight,
-      scrollX: window.scrollX,
-      scrollY: window.scrollY,
-    };
+    try {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      
+      // Ensure we have valid dimensions before proceeding
+      if (triggerRect.width === 0 || triggerRect.height === 0) {
+        console.warn('Trigger element has no dimensions, skipping position calculation');
+        return;
+      }
+
+      const viewport = {
+        width: window.innerWidth || document.documentElement.clientWidth || 1024,
+        height: window.innerHeight || document.documentElement.clientHeight || 768,
+        scrollX: window.scrollX || document.documentElement.scrollLeft || 0,
+        scrollY: window.scrollY || document.documentElement.scrollTop || 0,
+      };
 
     let top: number;
     let left: number;
@@ -172,25 +180,52 @@ export const PortalDropdown: React.FC<PortalDropdownProps> = ({
     }
 
     setPosition(newPosition);
+    } catch (error) {
+      console.warn('Error calculating dropdown position:', error);
+      // Fallback positioning - center the dropdown
+      const fallbackPosition: Position = {
+        top: 100,
+        left: Math.max(16, (window.innerWidth - (sameWidth ? 300 : 300)) / 2),
+        maxHeight,
+        width: sameWidth ? 300 : undefined,
+      };
+      setPosition(fallbackPosition);
+    }
   }, [placement, offset, collision, sameWidth, maxHeight, mounted]);
+
+  // Throttle position calculations for better performance
+  const throttledPositionUpdate = useCallback(() => {
+    let rafId: number;
+    let lastCall = 0;
+    
+    return () => {
+      const now = Date.now();
+      if (now - lastCall >= 16) { // ~60fps throttling
+        lastCall = now;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(calculatePosition);
+      }
+    };
+  }, [calculatePosition]);
 
   // Recalculate position when dropdown opens or window resizes
   useEffect(() => {
     if (isOpen && mounted) {
       calculatePosition();
       
-      const handleResize = () => calculatePosition();
-      const handleScroll = () => calculatePosition();
+      const throttledUpdate = throttledPositionUpdate();
+      const handleResize = throttledUpdate;
+      const handleScroll = throttledUpdate;
       
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize, { passive: true });
+      window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
       
       return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('scroll', handleScroll, true);
       };
     }
-  }, [isOpen, calculatePosition, mounted]);
+  }, [isOpen, throttledPositionUpdate, mounted]);
 
   // Close on escape key
   useEffect(() => {

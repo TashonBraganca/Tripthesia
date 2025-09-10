@@ -71,6 +71,9 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const dropdown = useDropdown(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
+  
+  // Memoize search results for better performance
+  const searchCacheRef = useRef<Map<string, LocationData[]>>(new Map());
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const [locationError, setLocationError] = useState<string>('');
   const [showLocationOptions, setShowLocationOptions] = useState(false);
@@ -84,6 +87,8 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const searchDebounceRef = useRef<NodeJS.Timeout>();
   
   const performSearch = useCallback(async (searchQuery: string) => {
+    const cacheKey = `${searchQuery.toLowerCase()}_${maxSuggestions}_${userLocation?.coords.latitude}_${userLocation?.coords.longitude}`;
+    
     if (searchQuery.length < 2) {
       // Show popular destinations or nearby locations when no query
       if (userLocation && showNearbyLocations) {
@@ -101,8 +106,25 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       return;
     }
 
+    // Check cache first
+    if (searchCacheRef.current.has(cacheKey)) {
+      const cachedResults = searchCacheRef.current.get(cacheKey)!;
+      setSuggestions(cachedResults);
+      setSelectedIndex(-1);
+      setLoading(false);
+      return;
+    }
+
     try {
       const results = await searchLocations(searchQuery, maxSuggestions, userLocation || undefined);
+      
+      // Cache results for future use (limit cache size)
+      if (searchCacheRef.current.size > 50) {
+        const firstKey = searchCacheRef.current.keys().next().value;
+        searchCacheRef.current.delete(firstKey);
+      }
+      searchCacheRef.current.set(cacheKey, results);
+      
       setSuggestions(results);
       setSelectedIndex(-1);
     } catch (error) {
@@ -125,10 +147,10 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       clearTimeout(searchDebounceRef.current);
     }
 
-    // Debounce search
+    // Debounce search with improved performance
     searchDebounceRef.current = setTimeout(() => {
       performSearch(newQuery);
-    }, 150); // Slightly faster response
+    }, 300); // Optimal balance between responsiveness and performance
   }, [performSearch, dropdown]);
 
   const handleSuggestionSelect = useCallback((location: LocationData) => {

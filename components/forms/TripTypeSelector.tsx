@@ -25,6 +25,9 @@ interface TripTypeSelectorProps {
   onChange: (typeId: string) => void;
   className?: string;
   showPreview?: boolean;
+  required?: boolean;
+  error?: string;
+  onValidation?: (isValid: boolean) => void;
 }
 
 const tripTypes: TripType[] = [
@@ -115,10 +118,13 @@ const tripTypes: TripType[] = [
 ];
 
 export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
-  value = 'adventure',
+  value = '',
   onChange,
   className = '',
-  showPreview = true
+  showPreview = true,
+  required = false,
+  error,
+  onValidation
 }) => {
   const [selectedType, setSelectedType] = useState(value);
   const [previewType, setPreviewType] = useState(value);
@@ -131,6 +137,11 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
     setSelectedType(typeId);
     onChange(typeId);
     
+    // Validate selection if required
+    if (onValidation) {
+      onValidation(true); // Selection made, so it's valid
+    }
+    
     // Track analytics event
     trackTripTypeSelected(typeId, showPreview);
     
@@ -141,6 +152,22 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
     }, 150);
   };
 
+  // Update selection when value prop changes
+  React.useEffect(() => {
+    if (value !== selectedType) {
+      setSelectedType(value);
+      setPreviewType(value || 'adventure');
+    }
+  }, [value, selectedType]);
+
+  // Validate on mount and when required changes
+  React.useEffect(() => {
+    if (onValidation) {
+      const isValid = !required || Boolean(selectedType);
+      onValidation(isValid);
+    }
+  }, [required, selectedType, onValidation]);
+
   const selectedTripType = tripTypes.find(t => t.id === previewType) || tripTypes[0];
 
   return (
@@ -148,8 +175,15 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
       <div>
         <fieldset>
           <legend className="block text-sm font-medium text-navy-100 mb-3">
-            Trip Type <span className="text-teal-400">*</span>
+            Trip Type {required && <span className="text-teal-400">*</span>}
           </legend>
+          
+          {/* Error Message */}
+          {error && (
+            <div className="mb-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
         
         <motion.div
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3"
@@ -168,10 +202,12 @@ export const TripTypeSelector: React.FC<TripTypeSelectorProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className={`
-                  relative p-4 rounded-xl transition-all duration-300 cursor-pointer
+                  relative p-4 rounded-xl transition-all duration-300 cursor-pointer border
                   ${isSelected 
                     ? `bg-${type.color}-400/20 border-${type.color}-400 ring-2 ring-${type.color}-400/50` 
-                    : 'bg-navy-800/50 border-navy-600 hover:border-navy-500'
+                    : error && required && !selectedType
+                      ? 'bg-navy-800/50 border-red-400/50 hover:border-red-400'
+                      : 'bg-navy-800/50 border-navy-600 hover:border-navy-500'
                   }
                   focus:outline-none focus:ring-2 focus:ring-teal-400/50
                 `}
