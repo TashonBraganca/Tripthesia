@@ -52,6 +52,16 @@ export const ShadCNDatePicker: React.FC<ShadCNDatePickerProps> = ({
     to: value.endDate ? new Date(value.endDate) : undefined
   });
 
+  // Debug state for development
+  const debugState = () => {
+    console.log('ShadCNDatePicker Debug:', {
+      isOpen,
+      selectedRange,
+      value,
+      hasValue: !!(value.startDate && value.endDate)
+    });
+  };
+
   // Update local state when prop changes
   useEffect(() => {
     setSelectedRange({
@@ -128,12 +138,23 @@ export const ShadCNDatePicker: React.FC<ShadCNDatePickerProps> = ({
         </label>
       )}
       
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpen} onOpenChange={(open) => {
+        console.log('Popover state change:', open);
+        setIsOpen(open);
+      }}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             variant="outline"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              debugState();
+              console.log('Date picker button clicked, current state:', isOpen);
+              setIsOpen(!isOpen);
+            }}
             className={cn(
-              'w-full justify-start text-left font-normal h-12 bg-navy-800/60 border-navy-600 hover:bg-navy-700/80 hover:border-navy-500 text-navy-100',
+              'w-full justify-start text-left font-normal h-12 bg-navy-800/60 border-navy-600 hover:bg-navy-700/80 hover:border-navy-500 text-navy-100 cursor-pointer',
               !selectedRange.from && 'text-navy-400'
             )}
           >
