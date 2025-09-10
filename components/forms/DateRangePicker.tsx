@@ -239,7 +239,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             aria-expanded={dropdown.isOpen}
             aria-describedby={hasValidRange ? 'selected-dates' : 'date-placeholder'}
             className={`
-              relative cursor-pointer p-3 rounded-xl border transition-all duration-200 w-full text-left
+              relative cursor-pointer px-4 py-2.5 h-11 rounded-xl border transition-all duration-200 w-full text-left
               ${dropdown.isOpen 
                 ? 'border-teal-400 ring-2 ring-teal-400/20 bg-navy-800/50' 
                 : 'border-navy-600 hover:border-navy-500 bg-navy-800/30'
@@ -279,11 +279,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           </motion.button>
         }
       >
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4">
           {/* Presets */}
           <div>
-            <h3 className="text-sm font-medium text-navy-100 mb-3">Quick Select</h3>
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2">
+            <h3 className="text-sm font-medium text-navy-100 mb-2">Quick Select</h3>
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-3">
               {datePresets.map((preset) => {
                 const Icon = preset.icon;
                 const isSelected = selectedPreset === preset.id;
@@ -315,7 +315,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           
           {/* ShadCN Calendar Integration */}
           <div>
-            <h3 className="text-sm font-medium text-navy-100 mb-3">Select Dates</h3>
+            <h3 className="text-sm font-medium text-navy-100 mb-2">Select Dates</h3>
             <ShadCNDatePicker
               value={value}
               onChange={onChange}

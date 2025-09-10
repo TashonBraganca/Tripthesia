@@ -130,7 +130,7 @@ export const ShadCNDatePicker: React.FC<ShadCNDatePickerProps> = ({
   const duration = getDuration();
 
   return (
-    <div className={`space-y-2 ${className}`}>
+    <div className={`space-y-3 ${className}`}>
       {label && (
         <label className="text-sm font-medium text-navy-200">
           {label}
@@ -154,7 +154,7 @@ export const ShadCNDatePicker: React.FC<ShadCNDatePickerProps> = ({
               setIsOpen(!isOpen);
             }}
             className={cn(
-              'w-full justify-start text-left font-normal h-12 bg-navy-800/60 border-navy-600 hover:bg-navy-700/80 hover:border-navy-500 text-navy-100 cursor-pointer',
+              'w-full justify-start text-left font-normal h-11 bg-navy-800/60 border-navy-600 hover:bg-navy-700/80 hover:border-navy-500 text-navy-100 cursor-pointer',
               !selectedRange.from && 'text-navy-400'
             )}
           >

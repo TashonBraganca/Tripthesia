@@ -347,7 +347,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
               disabled={disabled}
               required={required}
               className={`
-                w-full pl-10 pr-20 py-3 
+                w-full pl-10 pr-20 h-11
                 bg-navy-800/50 border border-navy-600 rounded-xl
                 text-navy-100 placeholder-navy-400
                 focus:border-${config.accent}-400 focus:ring-2 focus:ring-${config.accent}-400/20
