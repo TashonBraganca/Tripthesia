@@ -202,7 +202,7 @@ export const TransportStep: React.FC<TransportStepProps> = ({ className = '' }) 
           How will you get there?
         </h2>
         <p className="text-navy-400 max-w-2xl mx-auto">
-          Choose your preferred transportation option. We'll find the best routes and prices for your journey
+          Choose your preferred transportation option. We&#39;ll find the best routes and prices for your journey
           from {state.formData.from?.name} to {state.formData.to?.name}.
         </p>
       </div>
@@ -458,7 +458,7 @@ export const TransportStep: React.FC<TransportStepProps> = ({ className = '' }) 
               <div className="text-sm text-teal-400/80">
                 ${selectedTransport.price.toLocaleString()} • {selectedTransport.duration}
                 {selectedTransport.bookingUrl && (
-                  <span> • Ready to book when you're ready</span>
+                  <span> • Ready to book when you&#39;re ready</span>
                 )}
               </div>
             </div>

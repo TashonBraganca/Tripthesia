@@ -602,7 +602,7 @@ export const AccommodationStep: React.FC<AccommodationStepProps> = ({ className 
               <div className="text-sm text-teal-400/80">
                 ${selectedAccommodation.price.total.toLocaleString()} total • {selectedAccommodation.rating.score.toFixed(1)}/10 rating
                 {selectedAccommodation.bookingUrl && (
-                  <span> • Ready to book when you're ready</span>
+                  <span> • Ready to book when you&#39;re ready</span>
                 )}
               </div>
             </div>

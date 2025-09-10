@@ -214,7 +214,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ className = '' }) => {
           Review Your Trip
         </h2>
         <p className="text-navy-400 max-w-2xl mx-auto">
-          Here's your complete itinerary for {itinerary.overview.destination}. 
+          Here&#39;s your complete itinerary for {itinerary.overview.destination}. 
           Review everything and finalize your booking when ready.
         </p>
       </div>
