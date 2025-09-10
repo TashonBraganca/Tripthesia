@@ -7,6 +7,7 @@ import { AnimatedButton } from '@/components/effects/AnimatedButton';
 import { InteractiveCard } from '@/components/effects/InteractiveCard';
 import { trackDateRangeSet } from '@/lib/analytics/events';
 import { PortalDropdown, useDropdown } from '@/components/ui/portal-dropdown';
+import { ShadCNDatePicker } from '@/components/forms/ShadCNDatePicker';
 
 interface DateRange {
   startDate: string;
@@ -125,12 +126,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 }) => {
   const dropdown = useDropdown(false);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [focusedInput, setFocusedInput] = useState<'start' | 'end' | 'startTime' | 'endTime' | null>(null);
 
   // Handle dropdown close
   const handleDropdownClose = () => {
     dropdown.close();
-    setFocusedInput(null);
   };
 
   const handlePresetClick = (preset: Preset) => {
@@ -156,39 +155,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     trackDateRangeSet(days, presetMap[preset.id]);
   };
 
-  const handleDateChange = (field: 'start' | 'end', date: string) => {
-    const newRange = {
-      ...value, // Preserve existing times
-      startDate: field === 'start' ? date : value.startDate,
-      endDate: field === 'end' ? date : value.endDate
-    };
-    
-    // Auto-adjust if end date is before start date
-    if (newRange.endDate && newRange.startDate && newRange.endDate < newRange.startDate) {
-      if (field === 'start') {
-        newRange.endDate = newRange.startDate;
-      } else {
-        newRange.startDate = newRange.endDate;
-      }
-    }
-    
-    onChange(newRange);
-    setSelectedPreset(null); // Clear preset when manually changing dates
-    
-    // Track analytics for manual date selection (when both dates are set)
-    if (newRange.startDate && newRange.endDate) {
-      const days = Math.ceil((new Date(newRange.endDate).getTime() - new Date(newRange.startDate).getTime()) / (1000 * 60 * 60 * 24));
-      trackDateRangeSet(days, undefined); // No preset used
-    }
-  };
-
-  const handleTimeChange = (field: 'startTime' | 'endTime', time: string) => {
-    const newRange = {
-      ...value,
-      [field]: time
-    };
-    onChange(newRange);
-  };
 
   const formatDateForDisplay = (dateStr: string, timeStr?: string) => {
     if (!dateStr) return '';
@@ -347,114 +313,19 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
             </div>
           </div>
           
-          {/* Custom Date Inputs */}
+          {/* ShadCN Calendar Integration */}
           <div>
-            <h3 className="text-sm font-medium text-navy-100 mb-3">Custom Range</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="start-date-input" className="block text-xs text-navy-400 mb-1">Start Date</label>
-                <motion.input
-                  id="start-date-input"
-                  type="date"
-                  value={value.startDate || ''}
-                  onChange={(e) => handleDateChange('start', e.target.value)}
-                  onFocus={() => setFocusedInput('start')}
-                  onBlur={() => setFocusedInput(null)}
-                  min={minDate}
-                  max={maxDate}
-                  className={`
-                    w-full px-3 py-2 rounded-lg border transition-all duration-200
-                    bg-navy-800/50 text-navy-100 text-sm
-                    ${focusedInput === 'start' 
-                      ? 'border-teal-400 ring-1 ring-teal-400/20' 
-                      : 'border-navy-600 hover:border-navy-500'
-                    }
-                    focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20
-                  `}
-                  whileFocus={{ scale: 1.02 }}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="end-date-input" className="block text-xs text-navy-400 mb-1">End Date</label>
-                <motion.input
-                  id="end-date-input"
-                  type="date"
-                  value={value.endDate || ''}
-                  onChange={(e) => handleDateChange('end', e.target.value)}
-                  onFocus={() => setFocusedInput('end')}
-                  onBlur={() => setFocusedInput(null)}
-                  min={value.startDate || minDate}
-                  max={maxDate}
-                  className={`
-                    w-full px-3 py-2 rounded-lg border transition-all duration-200
-                    bg-navy-800/50 text-navy-100 text-sm
-                    ${focusedInput === 'end' 
-                      ? 'border-teal-400 ring-1 ring-teal-400/20' 
-                      : 'border-navy-600 hover:border-navy-500'
-                    }
-                    focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20
-                  `}
-                  whileFocus={{ scale: 1.02 }}
-                />
-              </div>
-            </div>
+            <h3 className="text-sm font-medium text-navy-100 mb-3">Select Dates</h3>
+            <ShadCNDatePicker
+              value={value}
+              onChange={onChange}
+              showTimePicker={showTimePicker}
+              minDate={minDate ? new Date(minDate) : undefined}
+              maxDate={maxDate ? new Date(maxDate) : undefined}
+              placeholder={placeholder}
+              required={required}
+            />
           </div>
-          
-          {/* Time Picker Section */}
-          {showTimePicker && (
-            <div>
-              <h3 className="text-sm font-medium text-navy-100 mb-3 flex items-center">
-                <Clock size={16} className="mr-2" />
-                Time Selection
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="start-time-input" className="block text-xs text-navy-400 mb-1">Start Time</label>
-                  <motion.input
-                    id="start-time-input"
-                    type="time"
-                    value={value.startTime || ''}
-                    onChange={(e) => handleTimeChange('startTime', e.target.value)}
-                    onFocus={() => setFocusedInput('startTime')}
-                    onBlur={() => setFocusedInput(null)}
-                    className={`
-                      w-full px-3 py-2 rounded-lg border transition-all duration-200
-                      bg-navy-800/50 text-navy-100 text-sm
-                      ${focusedInput === 'startTime' 
-                        ? 'border-teal-400 ring-1 ring-teal-400/20' 
-                        : 'border-navy-600 hover:border-navy-500'
-                      }
-                      focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20
-                    `}
-                    whileFocus={{ scale: 1.02 }}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="end-time-input" className="block text-xs text-navy-400 mb-1">End Time</label>
-                  <motion.input
-                    id="end-time-input"
-                    type="time"
-                    value={value.endTime || ''}
-                    onChange={(e) => handleTimeChange('endTime', e.target.value)}
-                    onFocus={() => setFocusedInput('endTime')}
-                    onBlur={() => setFocusedInput(null)}
-                    className={`
-                      w-full px-3 py-2 rounded-lg border transition-all duration-200
-                      bg-navy-800/50 text-navy-100 text-sm
-                      ${focusedInput === 'endTime' 
-                        ? 'border-teal-400 ring-1 ring-teal-400/20' 
-                        : 'border-navy-600 hover:border-navy-500'
-                      }
-                      focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400/20
-                    `}
-                    whileFocus={{ scale: 1.02 }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
           
           {/* Duration Display */}
           {hasValidRange && (
