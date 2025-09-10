@@ -242,12 +242,12 @@ export class APIGatewayService {
 
     const searchQuery = {
       from: {
-        code: formData.from.code || this.extractAirportCode(formData.from.name),
+        code: formData.from.iataCode || this.extractAirportCode(formData.from.name),
         name: formData.from.name,
         coordinates: formData.from.coordinates || [0, 0]
       },
       to: {
-        code: formData.to.code || this.extractAirportCode(formData.to.name),
+        code: formData.to.iataCode || this.extractAirportCode(formData.to.name),
         name: formData.to.name,
         coordinates: formData.to.coordinates || [0, 0]
       },

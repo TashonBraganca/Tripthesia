@@ -113,7 +113,7 @@ export const TransportStep: React.FC<TransportStepProps> = ({ className = '' }) 
       amenities: option.instructions?.slice(0, 3) || ['Direct route'],
       sustainability: {
         emissions: option.type === 'train' ? 20 : option.type === 'bus' ? 40 : 120,
-        rating: option.type === 'train' ? 'low' : option.type === 'bus' ? 'medium' : 'high'
+        rating: (option.type === 'train' ? 'low' : option.type === 'bus' ? 'medium' : 'high') as 'low' | 'medium' | 'high'
       },
       comfort: 'comfort' as const,
       score: option.type === 'train' ? 8 : option.type === 'bus' ? 6 : 7
@@ -337,7 +337,7 @@ export const TransportStep: React.FC<TransportStepProps> = ({ className = '' }) 
                             <span>{option.duration}</span>
                           </div>
                           
-                          {option.stops > 0 && (
+                          {(option.stops && option.stops > 0) && (
                             <div className="text-yellow-400">
                               {option.stops} stop{option.stops > 1 ? 's' : ''}
                             </div>

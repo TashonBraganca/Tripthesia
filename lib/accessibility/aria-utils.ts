@@ -18,6 +18,7 @@ export interface AriaProps {
   'aria-checked'?: boolean;
   'aria-disabled'?: boolean;
   'aria-hidden'?: boolean;
+  'aria-pressed'?: boolean;
   'aria-current'?: 'page' | 'step' | 'location' | 'date' | 'time' | boolean;
   'aria-live'?: 'off' | 'polite' | 'assertive';
   'aria-atomic'?: boolean;
@@ -32,6 +33,11 @@ export interface AriaProps {
   'aria-valuetext'?: string;
   'aria-setsize'?: number;
   'aria-posinset'?: number;
+  'aria-multiselectable'?: boolean;
+  'aria-modal'?: boolean;
+  'aria-autocomplete'?: 'none' | 'list' | 'both' | 'inline';
+  'aria-controls'?: string;
+  id?: string;
   role?: string;
   tabIndex?: number;
 }

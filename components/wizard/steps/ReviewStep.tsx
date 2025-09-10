@@ -141,7 +141,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ className = '' }) => {
       const currentDate = new Date(startDate);
       currentDate.setDate(startDate.getDate() + i);
       
-      timeline.push(generateDayItinerary(currentDate, i + 1, state.formData));
+      timeline.push(generateDayItinerary(currentDate, i + 1, state.formData, duration));
     }
 
     return {
@@ -683,7 +683,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ className = '' }) => {
 };
 
 // Helper functions
-function generateDayItinerary(date: Date, dayNumber: number, formData: any): ItineraryDay {
+function generateDayItinerary(date: Date, dayNumber: number, formData: any, totalDuration: number): ItineraryDay {
   const dateStr = date.toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -790,7 +790,7 @@ function generateDayItinerary(date: Date, dayNumber: number, formData: any): Iti
     accommodation: formData.accommodation?.selectedHotel ? {
       name: formData.accommodation.selectedHotel.name,
       checkIn: dayNumber === 1 ? '3:00 PM' : undefined,
-      checkOut: dayNumber === getTripDuration() ? '11:00 AM' : undefined
+      checkOut: dayNumber === totalDuration ? '11:00 AM' : undefined
     } : undefined
   };
 }

@@ -543,6 +543,5 @@ export const WIZARD_STEPS: Record<WizardStep, {
 
 export default TripWizardProvider;
 
-// Export types and constants for use in other components
+// Export types for use in other components
 export type { TripFormData, WizardStep, ValidationErrors, DateRange };
-export { WIZARD_STEPS };

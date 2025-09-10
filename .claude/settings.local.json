@@ -36,7 +36,9 @@
       "Bash(done)",
       "Bash(chmod:*)",
       "Bash(npx tsc:*)",
-      "Bash(pnpm drizzle-kit push:*)"
+      "Bash(pnpm drizzle-kit push:*)",
+      "Bash(git rm:*)",
+      "Read(//d/**)"
     ],
     "deny": [],
     "ask": []

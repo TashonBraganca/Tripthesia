@@ -72,12 +72,13 @@ class PerformanceMonitorClass {
         const entries = list.getEntries();
         entries.forEach((entry) => {
           if (entry.entryType === 'largest-contentful-paint') {
+            const lcpEntry = entry as any; // LCP entries have element property
             this.recordMetric('LCP', {
               name: 'Largest Contentful Paint',
               startTime: entry.startTime,
               endTime: entry.startTime,
               duration: entry.startTime,
-              metadata: { element: entry.element }
+              metadata: { element: lcpEntry.element }
             });
           }
         });
@@ -150,7 +151,7 @@ class PerformanceMonitorClass {
 
   // ==================== METRIC RECORDING ====================
 
-  recordMetric(key: string, metric: Omit<PerformanceMetrics, 'duration'>) {
+  recordMetric(key: string, metric: PerformanceMetrics) {
     if (!this.isEnabled) return;
 
     const duration = metric.endTime && metric.startTime 
@@ -408,7 +409,7 @@ export const BundleAnalyzer = {
 
   trackDynamicImports() {
     // Track when dynamic imports are loaded
-    const originalImport = window.import || (() => Promise.resolve());
+    const originalImport = (window as any).import || (() => Promise.resolve());
     
     (window as any).import = (module: string) => {
       PerformanceMonitor.startTimer(`dynamic-import-${module}`, `Dynamic Import: ${module}`);

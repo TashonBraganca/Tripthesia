@@ -73,7 +73,7 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
   const [loading, setLoading] = useState(false);
   
   // Memoize search results for better performance
-  const searchCacheRef = useRef<Map<string, LocationData[]>>(new Map());
+  const searchCacheRef = useRef<Record<string, LocationData[]>>({});
   const [userLocation, setUserLocation] = useState<GeolocationPosition | null>(null);
   const [locationError, setLocationError] = useState<string>('');
   const [showLocationOptions, setShowLocationOptions] = useState(false);
@@ -107,8 +107,8 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
     }
 
     // Check cache first
-    if (searchCacheRef.current.has(cacheKey)) {
-      const cachedResults = searchCacheRef.current.get(cacheKey)!;
+    if (searchCacheRef.current[cacheKey]) {
+      const cachedResults = searchCacheRef.current[cacheKey];
       setSuggestions(cachedResults);
       setSelectedIndex(-1);
       setLoading(false);
@@ -119,11 +119,14 @@ export const LocationAutocomplete: React.FC<LocationAutocompleteProps> = ({
       const results = await searchLocations(searchQuery, maxSuggestions, userLocation || undefined);
       
       // Cache results for future use (limit cache size)
-      if (searchCacheRef.current.size > 50) {
-        const firstKey = searchCacheRef.current.keys().next().value;
-        searchCacheRef.current.delete(firstKey);
+      const cacheKeys = Object.keys(searchCacheRef.current);
+      if (cacheKeys.length > 50) {
+        const firstKey = cacheKeys[0];
+        if (firstKey) {
+          delete searchCacheRef.current[firstKey];
+        }
       }
-      searchCacheRef.current.set(cacheKey, results);
+      searchCacheRef.current[cacheKey] = results;
       
       setSuggestions(results);
       setSelectedIndex(-1);
